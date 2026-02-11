@@ -1,0 +1,53 @@
+🚀 Iniciando servidor backend...
+[dotenv@17.2.4] injecting env (5) from .env -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+🚀 API corriendo en http://localhost:3001
+📊 Entorno: development
+✅ Servidor listo en puerto 3001
+
+👤 Probando Registro...
+prisma:query INSERT INTO "public"."users" ("id","email","password_hash","name","currency","dark_mode","created_at","updated_at") VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING "public"."users"."id", "public"."users"."email", "public"."users"."name", "public"."users"."currency", "public"."users"."created_at"
+prisma:query INSERT INTO "public"."categories" ("id","user_id","name","color","icon","type","is_default","created_at") VALUES ($1,$2,$3,$4,$5,CAST($6::text AS "public"."CategoryType"),$7,$8), ($9,$10,$11,$12,$13,CAST($14::text AS "public"."CategoryType"),$15,$16), ($17,$18,$19,$20,$21,CAST($22::text AS "public"."CategoryType"),$23,$24), ($25,$26,$27,$28,$29,CAST($30::text AS "public"."CategoryType"),$31,$32), ($33,$34,$35,$36,$37,CAST($38::text AS "public"."CategoryType"),$39,$40), ($41,$42,$43,$44,$45,CAST($46::text AS "public"."CategoryType"),$47,$48), ($49,$50,$51,$52,$53,CAST($54::text AS "public"."CategoryType"),$55,$56), ($57,$58,$59,$60,$61,CAST($62::text AS "public"."CategoryType"),$63,$64), ($65,$66,$67,$68,$69,CAST($70::text AS "public"."CategoryType"),$71,$72), ($73,$74,$75,$76,$77,CAST($78::text AS "public"."CategoryType"),$79,$80), ($81,$82,$83,$84,$85,CAST($86::text AS "public"."CategoryType"),$87,$88), ($89,$90,$91,$92,$93,CAST($94::text AS "public"."CategoryType"),$95,$96), ($97,$98,$99,$100,$101,CAST($102::text AS "public"."CategoryType"),$103,$104)
+prisma:query COMMIT
+✅ Registro exitoso: 201
+
+🔑 Probando Login...
+prisma:query SELECT "public"."users"."id", "public"."users"."email", "public"."users"."password_hash", "public"."users"."name", "public"."users"."currency", "public"."users"."dark_mode", "public"."users"."created_at", "public"."users"."updated_at" FROM "public"."users" WHERE ("public"."users"."email" = $1 AND 1=1) LIMIT $2 OFFSET $3
+✅ Login exitoso: 200
+
+💸 Probando Crear Transacción...
+  -> Creando cuenta...
+prisma:query SELECT "public"."users"."id", "public"."users"."email", "public"."users"."name", "public"."users"."currency" FROM "public"."users" WHERE ("public"."users"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query INSERT INTO "public"."accounts" ("id","user_id","name","type","balance","currency","created_at","updated_at") VALUES ($1,$2,$3,CAST($4::text AS "public"."AccountType"),$5,$6,$7,$8) RETURNING "public"."accounts"."id", "public"."accounts"."user_id", "public"."accounts"."name", "public"."accounts"."type"::text, "public"."accounts"."balance", "public"."accounts"."currency", "public"."accounts"."created_at", "public"."accounts"."updated_at"
+  -> Cuenta creada ID: 51c34312-56cc-4f14-87d7-d65e191fb9f4
+prisma:query SELECT "public"."users"."id", "public"."users"."email", "public"."users"."name", "public"."users"."currency" FROM "public"."users" WHERE ("public"."users"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."categories"."id", "public"."categories"."user_id", "public"."categories"."name", "public"."categories"."color", "public"."categories"."icon", "public"."categories"."type"::text, "public"."categories"."is_default", "public"."categories"."created_at" FROM "public"."categories" WHERE "public"."categories"."user_id" = $1 ORDER BY "public"."categories"."type" ASC, "public"."categories"."name" ASC OFFSET $2
+  -> Usando Categoría ID: 5025155b-a5e0-4945-a3e8-0711b8c08c09
+prisma:query SELECT "public"."users"."id", "public"."users"."email", "public"."users"."name", "public"."users"."currency" FROM "public"."users" WHERE ("public"."users"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."accounts"."id", "public"."accounts"."user_id", "public"."accounts"."name", "public"."accounts"."type"::text, "public"."accounts"."balance", "public"."accounts"."currency", "public"."accounts"."created_at", "public"."accounts"."updated_at" FROM "public"."accounts" WHERE ("public"."accounts"."id" = $1 AND "public"."accounts"."user_id" = $2) LIMIT $3 OFFSET $4
+prisma:query INSERT INTO "public"."transactions" ("id","account_id","category_id","amount","description","transaction_date","created_at","updated_at") VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING "public"."transactions"."id"
+prisma:query SELECT "public"."transactions"."id", "public"."transactions"."account_id", "public"."transactions"."category_id", "public"."transactions"."amount", "public"."transactions"."description", "public"."transactions"."transaction_date", "public"."transactions"."created_at", "public"."transactions"."updated_at" FROM "public"."transactions" WHERE "public"."transactions"."id" = $1 LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."accounts"."id", "public"."accounts"."name" FROM "public"."accounts" WHERE "public"."accounts"."id" = $1 OFFSET $2
+prisma:query SELECT "public"."categories"."id", "public"."categories"."name", "public"."categories"."color" FROM "public"."categories" WHERE "public"."categories"."id" = $1 OFFSET $2
+prisma:query UPDATE "public"."accounts" SET "balance" = ("public"."accounts"."balance" + $1), "updated_at" = $2 WHERE ("public"."accounts"."id" = $3 AND 1=1) RETURNING "public"."accounts"."id", "public"."accounts"."user_id", "public"."accounts"."name", "public"."accounts"."type"::text, "public"."accounts"."balance", "public"."accounts"."currency", "public"."accounts"."created_at", "public"."accounts"."updated_at"
+prisma:query COMMIT
+✅ Transacción creada: 201 d4881626-cef4-4a4f-a5dc-a60792ee76c3
+
+📜 Probando Listar Transacciones...
+prisma:query SELECT "public"."users"."id", "public"."users"."email", "public"."users"."name", "public"."users"."currency" FROM "public"."users" WHERE ("public"."users"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."transactions"."id", "public"."transactions"."account_id", "public"."transactions"."category_id", "public"."transactions"."amount", "public"."transactions"."description", "public"."transactions"."transaction_date", "public"."transactions"."created_at", "public"."transactions"."updated_at" FROM "public"."transactions" LEFT JOIN "public"."accounts" AS "j0" ON ("j0"."id") = ("public"."transactions"."account_id") WHERE ("j0"."user_id" = $1 AND ("j0"."id" IS NOT NULL)) ORDER BY "public"."transactions"."transaction_date" DESC LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."accounts"."id", "public"."accounts"."name" FROM "public"."accounts" WHERE "public"."accounts"."id" IN ($1) OFFSET $2
+prisma:query SELECT COUNT(*) AS "_count$_all" FROM (SELECT "public"."transactions"."id" FROM "public"."transactions" LEFT JOIN "public"."accounts" AS "j0" ON ("j0"."id") = ("public"."transactions"."account_id") WHERE ("j0"."user_id" = $1 AND ("j0"."id" IS NOT NULL)) OFFSET $2) AS "sub"
+prisma:query SELECT "public"."categories"."id", "public"."categories"."name", "public"."categories"."color", "public"."categories"."icon" FROM "public"."categories" WHERE "public"."categories"."id" IN ($1) OFFSET $2
+✅ Listado exitoso. Encontradas: 1
+
+🗑 Probando Eliminar Transacción...
+prisma:query SELECT "public"."users"."id", "public"."users"."email", "public"."users"."name", "public"."users"."currency" FROM "public"."users" WHERE ("public"."users"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."transactions"."id", "public"."transactions"."account_id", "public"."transactions"."category_id", "public"."transactions"."amount", "public"."transactions"."description", "public"."transactions"."transaction_date", "public"."transactions"."created_at", "public"."transactions"."updated_at" FROM "public"."transactions" LEFT JOIN "public"."accounts" AS "j0" ON ("j0"."id") = ("public"."transactions"."account_id") WHERE ("public"."transactions"."id" = $1 AND ("j0"."user_id" = $2 AND ("j0"."id" IS NOT NULL))) LIMIT $3 OFFSET $4
+prisma:query UPDATE "public"."accounts" SET "balance" = ("public"."accounts"."balance" - $1), "updated_at" = $2 WHERE ("public"."accounts"."id" = $3 AND 1=1) RETURNING "public"."accounts"."id", "public"."accounts"."user_id", "public"."accounts"."name", "public"."accounts"."type"::text, "public"."accounts"."balance", "public"."accounts"."currency", "public"."accounts"."created_at", "public"."accounts"."updated_at"
+prisma:query DELETE FROM "public"."transactions" WHERE ("public"."transactions"."id" = $1 AND 1=1) RETURNING "public"."transactions"."id", "public"."transactions"."account_id", "public"."transactions"."category_id", "public"."transactions"."amount", "public"."transactions"."description", "public"."transactions"."transaction_date", "public"."transactions"."created_at", "public"."transactions"."updated_at"
+prisma:query COMMIT
+✅ Eliminación exitosa
+
+✨ TODAS LAS PRUEBAS PASARON
+
+🛑 Deteniendo servidor...
