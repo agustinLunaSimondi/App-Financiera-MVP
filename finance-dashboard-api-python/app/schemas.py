@@ -116,6 +116,8 @@ class TransactionUpdate(CamelModel):
 class Transaction(TransactionBase):
     id: str
     recurring_id: Optional[str] = None
+    external_id: Optional[str] = None
+    source: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     category: Optional[Category] = None
@@ -203,3 +205,20 @@ class RecurringTransaction(RecurringTransactionBase):
     updated_at: datetime
     category: Optional[Category] = None
     account: Optional[Account] = None
+
+
+# Mercado Pago Schemas
+class MercadoPagoCallback(BaseModel):
+    code: str
+
+class MercadoPagoStatus(CamelModel):
+    connected: bool
+    mp_user_id: Optional[str] = None
+    last_sync_at: Optional[datetime] = None
+    expires_at: Optional[datetime] = None
+
+class MercadoPagoSyncResult(CamelModel):
+    transactions_imported: int = 0
+    transactions_skipped: int = 0
+    message: str = ""
+

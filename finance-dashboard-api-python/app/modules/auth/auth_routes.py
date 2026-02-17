@@ -1,11 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+import logging
 from app.database import models
 from app.database.database import get_db
 from app.core import security
 from app.core.deps import get_current_user
 from app import schemas
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 def _create_default_categories(db: Session, user_id: str):
@@ -71,24 +73,18 @@ def register(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
 
 @router.post("/login", response_model=schemas.Token)
 def login(user_in: schemas.UserLogin, db: Session = Depends(get_db)):
-    print(f"DEBUG: Intento de login para {user_in.email}")
-    print(f"DEBUG: Longitud de password recibida: {len(user_in.password)}")
     email_clean = user_in.email.lower()
     user = db.query(models.User).filter(models.User.email == email_clean).first()
-    if user:
-        print(f"DEBUG: Usuario encontrado. Hash en DB: {user.password_hash[:10]}...")
-    else:
-        print("DEBUG: Usuario NO encontrado.")
         
     if not user or not security.verify_password(user_in.password, user.password_hash):
-        print("DEBUG: Error de autenticación.")
+        logger.warning(f"Login fallido para {email_clean}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Email o contraseña incorrectos",
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    print("DEBUG: Login exitoso.")
+    logger.info(f"Login exitoso para {email_clean}")
     access_token = security.create_access_token(
         data={"userId": user.id, "email": user.email}
     )
@@ -119,3 +115,13 @@ def update_me(
     db.commit()
     db.refresh(current_user)
     return current_user
+
+@router.delete("/me")
+def delete_my_account(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """Eliminar la cuenta del usuario autenticado y todos sus datos."""
+    db.delete(current_user)
+    db.commit()
+    return {"message": "Cuenta eliminada correctamente"}

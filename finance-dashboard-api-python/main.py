@@ -1,8 +1,10 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from apscheduler.schedulers.background import BackgroundScheduler
 import uvicorn
 import os
+import logging
 from dotenv import load_dotenv
 
 from app.modules.auth import auth_routes
@@ -13,11 +15,32 @@ from app.modules.budgets import budget_routes
 from app.modules.savings import saving_routes
 from app.modules.recurring import recurring_routes
 from app.modules.analytics import analytics_routes
+from app.modules.mercadopago import mp_routes
 from app.modules.recurring.recurring_processor import process_recurring_transactions
 
 load_dotenv()
 
-app = FastAPI(title="Finance Dashboard API (Python/FastAPI)", version="1.0.0")
+logger = logging.getLogger(__name__)
+
+# Scheduler para Tareas de Fondo
+scheduler = BackgroundScheduler()
+scheduler.add_job(process_recurring_transactions, 'interval', hours=1)
+
+@asynccontextmanager
+async def lifespan(app):
+    # Startup
+    scheduler.start()
+    logger.info("Scheduler iniciado.")
+    yield
+    # Shutdown
+    scheduler.shutdown()
+    logger.info("Scheduler apagado.")
+
+app = FastAPI(
+    title="Finance Dashboard API (Python/FastAPI)",
+    version="1.0.0",
+    lifespan=lifespan
+)
 
 # Configuración de CORS
 origins = [
@@ -43,24 +66,11 @@ app.include_router(budget_routes.router, prefix="/api")
 app.include_router(saving_routes.router, prefix="/api")
 app.include_router(recurring_routes.router, prefix="/api")
 app.include_router(analytics_routes.router, prefix="/api")
+app.include_router(mp_routes.router, prefix="/api")
 
 @app.get("/")
 def read_root():
     return {"message": "Finance Dashboard API Python is running!"}
-
-# Configuración del Scheduler para Tareas de Fondo
-scheduler = BackgroundScheduler()
-scheduler.add_job(process_recurring_transactions, 'interval', hours=1)
-
-@app.on_event("startup")
-def startup_event():
-    scheduler.start()
-    print("Scheduler iniciado...")
-
-@app.on_event("shutdown")
-def shutdown_event():
-    scheduler.shutdown()
-    print("Scheduler apagado.")
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=int(os.getenv("PORT", 8000)), reload=True)

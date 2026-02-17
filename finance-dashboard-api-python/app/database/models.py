@@ -46,6 +46,7 @@ class User(Base):
     budgets = relationship("Budget", back_populates="user", cascade="all, delete-orphan")
     saving_goals = relationship("SavingGoal", back_populates="user", cascade="all, delete-orphan")
     recurring_transactions = relationship("RecurringTransaction", back_populates="user", cascade="all, delete-orphan")
+    mercadopago_connection = relationship("MercadoPagoConnection", back_populates="user", uselist=False, cascade="all, delete-orphan")
 
 class Account(Base):
     __tablename__ = "accounts"
@@ -92,6 +93,8 @@ class Transaction(Base):
     amount = Column(Numeric(12, 2), nullable=False)
     description = Column(String, nullable=False)
     transaction_date = Column(Date, nullable=False)
+    external_id = Column(String, nullable=True)  # ID externo para pagos importados (ej: MP payment ID)
+    source = Column(String, nullable=True)  # 'manual', 'recurring', 'mercadopago'
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
 
@@ -151,3 +154,18 @@ class RecurringTransaction(Base):
     account = relationship("Account", back_populates="recurring_transactions")
     category = relationship("Category", back_populates="recurring_transactions")
     transactions = relationship("Transaction", back_populates="recurring")
+
+class MercadoPagoConnection(Base):
+    __tablename__ = "mercadopago_connections"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False)
+    access_token = Column(String, nullable=False)
+    refresh_token = Column(String, nullable=False)
+    mp_user_id = Column(String, nullable=True)
+    expires_at = Column(DateTime(timezone=True), nullable=True)
+    last_sync_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
+
+    user = relationship("User", back_populates="mercadopago_connection")

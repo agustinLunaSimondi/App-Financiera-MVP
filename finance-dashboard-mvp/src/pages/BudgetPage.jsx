@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { toast } from 'sonner';
 import { useFinance } from '../hooks/useFinance';
 import { Layout } from '../features/common/components/Layout';
 import { Card } from '../features/common/components/Card';
@@ -62,18 +63,26 @@ export function BudgetPage() {
         try {
             if (editingBudget) {
                 await updateBudget(editingBudget.id, formData);
+                toast.success('Presupuesto actualizado correctamente');
             } else {
                 await addBudget(formData);
+                toast.success('Presupuesto creado correctamente');
             }
             handleCloseModal();
         } catch (error) {
             console.error("Error saving budget:", error);
+            toast.error('Error al guardar el presupuesto');
         }
     };
 
     const handleDelete = async (id) => {
         if (window.confirm('¿Estás seguro de eliminar este presupuesto?')) {
-            await deleteBudget(id);
+            try {
+                await deleteBudget(id);
+                toast.success('Presupuesto eliminado correctamente');
+            } catch (error) {
+                toast.error('Error al eliminar el presupuesto');
+            }
         }
     };
 

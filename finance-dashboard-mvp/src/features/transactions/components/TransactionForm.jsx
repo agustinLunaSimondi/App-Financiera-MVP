@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { useFinance } from '../../../hooks/useFinance';
 
 export function TransactionForm({ onClose, transactionToEdit = null }) {
@@ -61,13 +62,16 @@ export function TransactionForm({ onClose, transactionToEdit = null }) {
 
             if (transactionToEdit) {
                 await updateTransaction(transactionToEdit.id, payload);
+                toast.success('Transacción actualizada correctamente');
             } else {
                 await addTransaction(payload);
+                toast.success('Transacción creada correctamente');
             }
 
             onClose();
         } catch (err) {
             setError(err.message || 'Ocurrió un error al guardar');
+            toast.error(err.message || 'Error al guardar la transacción');
         } finally {
             setLoading(false);
         }

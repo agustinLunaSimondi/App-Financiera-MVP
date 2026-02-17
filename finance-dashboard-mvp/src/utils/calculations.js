@@ -152,7 +152,7 @@ export const generateIncomeVsExpensesChartData = (transactions, months = 6) => {
 
     // Formatear para el gráfico
     return recentMonths.map(month => {
-        const [year, monthNum] = month.month.split('-');
+        const [, monthNum] = month.month.split('-');
         const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 
         return {

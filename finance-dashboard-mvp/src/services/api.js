@@ -7,7 +7,9 @@ import client from './client';
 // ============= TRANSACTIONS =============
 
 export const getTransactions = async (filters = {}) => {
-    const params = {};
+    // Request high limit to ensure we get all transactions for client-side calculation
+    // TODO: Future refactor -> move aggregation to backend
+    const params = { limit: 10000 };
     if (filters.startDate) params.startDate = filters.startDate;
     if (filters.endDate) params.endDate = filters.endDate;
     if (filters.category) params.categoryId = filters.category;
@@ -176,6 +178,12 @@ export const updateSettings = async (updates) => {
         darkMode: response.data.darkMode
     };
 };
+
+export const deleteUserAccount = async () => {
+    await client.delete('/auth/me');
+    return true;
+};
+
 // ============= SAVINGS GOALS =============
 
 export const getSavingsGoals = async () => {
@@ -239,5 +247,32 @@ export const updateRecurring = async (id, updates) => {
 
 export const deleteRecurring = async (id) => {
     await client.delete(`/recurring/${id}`);
+    return true;
+};
+
+// ============= MERCADO PAGO =============
+
+export const getMercadoPagoAuthUrl = async () => {
+    const response = await client.get('/mercadopago/auth-url');
+    return response.data.authUrl;
+};
+
+export const handleMercadoPagoCallback = async (code) => {
+    const response = await client.post('/mercadopago/callback', { code });
+    return response.data;
+};
+
+export const getMercadoPagoStatus = async () => {
+    const response = await client.get('/mercadopago/status');
+    return response.data;
+};
+
+export const syncMercadoPago = async () => {
+    const response = await client.post('/mercadopago/sync');
+    return response.data;
+};
+
+export const disconnectMercadoPago = async () => {
+    await client.delete('/mercadopago/disconnect');
     return true;
 };

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { useFinance } from '../hooks/useFinance';
 import { Layout } from '../features/common/components/Layout';
 import { Card } from '../features/common/components/Card';
@@ -23,7 +24,12 @@ export function TransactionsPage() {
 
     const handleDelete = async (id) => {
         if (window.confirm('¿Estás seguro de eliminar esta transacción?')) {
-            await deleteTransaction(id);
+            try {
+                await deleteTransaction(id);
+                toast.success('Transacción eliminada correctamente');
+            } catch (error) {
+                toast.error('Error al eliminar la transacción');
+            }
         }
     };
 
@@ -48,6 +54,21 @@ export function TransactionsPage() {
         const matchesCategory = categoryFilter === 'all' || tx.category === categoryFilter;
         return matchesSearch && matchesCategory;
     });
+
+    // Pagination logic
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
+    const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
+    const paginatedTransactions = filteredTransactions.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
+
+    // Reset pagination when filter changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery, categoryFilter]);
 
     return (
         <Layout>
@@ -114,17 +135,24 @@ export function TransactionsPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-zinc-200/50 dark:divide-zinc-800/50">
-                                {filteredTransactions.length === 0 ? (
+                                {paginatedTransactions.length === 0 ? (
                                     <tr>
                                         <td colSpan="5" className="px-8 py-20 text-center text-zinc-400 font-medium">
                                             No se encontraron transacciones
                                         </td>
                                     </tr>
                                 ) : (
-                                    filteredTransactions.map((tx) => (
+                                    paginatedTransactions.map((tx) => (
                                         <tr key={tx.id} className="group hover:bg-emerald-500/[0.02] transition-colors">
                                             <td className="px-8 py-5">
-                                                <p className="font-bold text-zinc-900 dark:text-white">{tx.description || tx.name}</p>
+                                                <div className="flex flex-col">
+                                                    <span className="font-bold text-zinc-900 dark:text-white">{tx.description || tx.name}</span>
+                                                    {tx.externalId && (
+                                                        <span className="text-[10px] text-sky-500 font-bold flex items-center gap-1 mt-0.5">
+                                                            MP
+                                                        </span>
+                                                    )}
+                                                </div>
                                                 <p className="text-[10px] text-zinc-400 dark:text-zinc-500 font-medium mt-0.5">{tx.account}</p>
                                             </td>
                                             <td className="px-8 py-5">
@@ -137,9 +165,9 @@ export function TransactionsPage() {
                                             </td>
                                             <td className={cn(
                                                 "px-8 py-5 text-right font-black text-base",
-                                                tx.amount > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-900 dark:text-white'
+                                                Number(tx.amount) > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-900 dark:text-white'
                                             )}>
-                                                {tx.amount > 0 ? '+' : ''}{Number(tx.amount).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                                                {Number(tx.amount) > 0 ? '+' : ''}{Number(tx.amount).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
                                             </td>
                                             <td className="px-8 py-5 text-right">
                                                 <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -164,17 +192,28 @@ export function TransactionsPage() {
                         </table>
                     </div>
 
-                    {/* Pagination (placeholder) */}
+                    {/* Pagination Controls */}
                     {filteredTransactions.length > 0 && (
                         <div className="px-8 py-4 flex items-center justify-between border-t border-zinc-200/50 dark:border-zinc-800/50">
                             <div className="text-xs text-zinc-500 font-bold uppercase tracking-widest">
-                                {filteredTransactions.length} items
+                                Mostrando {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, filteredTransactions.length)} de {filteredTransactions.length}
                             </div>
-                            <div className="flex gap-2">
-                                <button className="px-4 py-2 border border-zinc-200/50 dark:border-zinc-800/50 rounded-xl text-xs font-bold text-zinc-500 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                    disabled={currentPage === 1}
+                                    className="px-4 py-2 border border-zinc-200/50 dark:border-zinc-800/50 rounded-xl text-xs font-bold text-zinc-500 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
                                     Anterior
                                 </button>
-                                <button className="px-4 py-2 border border-zinc-200/50 dark:border-zinc-800/50 rounded-xl text-xs font-bold text-zinc-500 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">
+                                <span className="text-xs font-medium text-zinc-400 px-2">
+                                    Página {currentPage} de {totalPages}
+                                </span>
+                                <button
+                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                    disabled={currentPage === totalPages}
+                                    className="px-4 py-2 border border-zinc-200/50 dark:border-zinc-800/50 rounded-xl text-xs font-bold text-zinc-500 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
                                     Siguiente
                                 </button>
                             </div>

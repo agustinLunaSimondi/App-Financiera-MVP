@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Wallet, CreditCard, PieChart, Settings, LogOut, Menu, PiggyBank, Clock } from 'lucide-react';
+import { LayoutDashboard, Wallet, CreditCard, PieChart, Settings, LogOut, Menu, PiggyBank, Clock, Zap } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -145,6 +145,10 @@ export function Layout({ children }) {
                                     />
                                 ))}
                             </nav>
+                            <button onClick={() => { setIsMobileMenuOpen(false); handleLogout(); }} className="flex items-center w-full px-4 py-2.5 text-sm font-medium text-zinc-500 dark:text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-500/5 rounded-xl transition-all duration-300">
+                                <LogOut className="w-5 h-5 mr-3" />
+                                Cerrar Sesión
+                            </button>
                         </motion.div>
                     </div>
                 )}

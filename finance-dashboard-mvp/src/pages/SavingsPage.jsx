@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { toast } from 'sonner';
 import { Plus, PiggyBank, Target, ArrowRight } from 'lucide-react';
 import { SavingGoalCard } from '../features/savings/components/SavingGoalCard';
 import { SavingGoalForm } from '../features/savings/components/SavingGoalForm';
@@ -20,13 +21,16 @@ export function SavingsPage() {
         try {
             if (editingGoal) {
                 await updateSavingGoal(editingGoal.id, formData);
+                toast.success('Meta actualizada correctamente');
             } else {
                 await addSavingGoal(formData);
+                toast.success('Meta creada correctamente');
             }
             setIsModalOpen(false);
             setEditingGoal(null);
         } catch (error) {
             console.error('Error saving goal:', error);
+            toast.error('Error al guardar la meta');
         }
     };
 
@@ -37,8 +41,10 @@ export function SavingsPage() {
         try {
             const updatedAmount = Number(goal.currentAmount) + Number(amount);
             await updateSavingGoal(goalId, { currentAmount: updatedAmount });
+            toast.success('Contribución registrada correctamente');
         } catch (error) {
             console.error('Error contributing to goal:', error);
+            toast.error('Error al registrar la contribución');
         }
     };
 
@@ -46,8 +52,10 @@ export function SavingsPage() {
         if (window.confirm('¿Estás seguro de eliminar esta meta?')) {
             try {
                 await deleteSavingGoal(id);
+                toast.success('Meta eliminada correctamente');
             } catch (error) {
                 console.error('Error deleting goal:', error);
+                toast.error('Error al eliminar la meta');
             }
         }
     };

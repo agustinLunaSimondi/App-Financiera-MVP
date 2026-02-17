@@ -189,8 +189,7 @@ export function FinanceProvider({ children }) {
 
     const deleteUserAccount = useCallback(async () => {
         try {
-            await api.deleteAccount();
-            // Limpiar estado local si es necesario, o dejar que el reload/logout maneje
+            await api.deleteUserAccount();
             return true;
         } catch (err) {
             setError(err.message);
