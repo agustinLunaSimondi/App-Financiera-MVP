@@ -29,6 +29,13 @@ class RecurrenceFrequency(enum.Enum):
     MONTHLY = "MONTHLY"
     YEARLY = "YEARLY"
 
+# Pre-built enum types referencing existing Supabase types (create_type=False prevents
+# SQLAlchemy from trying to CREATE TYPE when they already exist in the DB)
+_accounttype_pg = SQLEnum(AccountType, create_type=False, name="accounttype")
+_categorytype_pg = SQLEnum(CategoryType, create_type=False, name="categorytype")
+_budgetperiod_pg = SQLEnum(BudgetPeriod, create_type=False, name="budgetperiod")
+_recurrencefrequency_pg = SQLEnum(RecurrenceFrequency, create_type=False, name="recurrencefrequency")
+
 class User(Base):
     __tablename__ = "users"
 
@@ -54,7 +61,7 @@ class Account(Base):
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     name = Column(String, nullable=False)
-    type = Column(SQLEnum(AccountType), nullable=False)
+    type = Column(_accounttype_pg, nullable=False)
     balance = Column(Numeric(12, 2), default=0)
     currency = Column(String, default="USD")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -72,7 +79,7 @@ class Category(Base):
     name = Column(String, nullable=False)
     color = Column(String, default="#6B7280")
     icon = Column(String, nullable=True)
-    type = Column(SQLEnum(CategoryType), nullable=False)
+    type = Column(_categorytype_pg, nullable=False)
     is_default = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
@@ -93,8 +100,8 @@ class Transaction(Base):
     amount = Column(Numeric(12, 2), nullable=False)
     description = Column(String, nullable=False)
     transaction_date = Column(Date, nullable=False)
-    external_id = Column(String, nullable=True)  # ID externo para pagos importados (ej: MP payment ID)
-    source = Column(String, nullable=True)  # 'manual', 'recurring', 'mercadopago'
+    external_id = Column(String, nullable=True)
+    source = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
 
@@ -109,7 +116,7 @@ class Budget(Base):
     user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     category_id = Column(String, ForeignKey("categories.id"), nullable=False)
     amount = Column(Numeric(12, 2), nullable=False)
-    period = Column(SQLEnum(BudgetPeriod), default=BudgetPeriod.MONTHLY)
+    period = Column(_budgetperiod_pg, default=BudgetPeriod.MONTHLY)
     start_date = Column(Date, nullable=False)
 
     user = relationship("User", back_populates="budgets")
@@ -142,7 +149,7 @@ class RecurringTransaction(Base):
     category_id = Column(String, ForeignKey("categories.id"), nullable=False)
     amount = Column(Numeric(12, 2), nullable=False)
     description = Column(String, nullable=False)
-    frequency = Column(SQLEnum(RecurrenceFrequency), nullable=False)
+    frequency = Column(_recurrencefrequency_pg, nullable=False)
     start_date = Column(Date, nullable=False)
     next_date = Column(Date, nullable=False)
     end_date = Column(Date, nullable=True)
