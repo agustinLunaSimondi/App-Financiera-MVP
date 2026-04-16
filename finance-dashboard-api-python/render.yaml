@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: finance-dashboard-api
+    runtime: python
+    rootDir: finance-dashboard-api-python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn -w 4 -k uvicorn.workers.UvicornWorker main:app --bind 0.0.0.0:$PORT
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: MP_CLIENT_ID
+        sync: false
+      - key: MP_CLIENT_SECRET
+        sync: false
+      - key: MP_REDIRECT_URI
+        sync: false
+      - key: PYTHON_VERSION
+        value: 3.11.0

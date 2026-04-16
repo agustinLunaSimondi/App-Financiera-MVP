@@ -43,11 +43,12 @@ app = FastAPI(
 )
 
 # Configuración de CORS
-origins = [
-    os.getenv("FRONTEND_URL", "http://localhost:5173"),
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-]
+# Soporta múltiples URLs separadas por coma en FRONTEND_URL
+_frontend_urls = os.getenv("FRONTEND_URL", "http://localhost:5173")
+origins = list(set(
+    [url.strip() for url in _frontend_urls.split(",") if url.strip()]
+    + ["http://localhost:5173", "http://127.0.0.1:5173"]
+))
 
 app.add_middleware(
     CORSMiddleware,
