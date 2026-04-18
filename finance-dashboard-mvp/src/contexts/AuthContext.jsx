@@ -12,7 +12,6 @@ export function AuthProvider({ children }) {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Verificar sesión al cargar
         const checkAuth = async () => {
             const token = localStorage.getItem('token');
             if (token) {
@@ -38,6 +37,15 @@ export function AuthProvider({ children }) {
         return user;
     };
 
+    // Google Sign-In: sends the credential token to the backend for verification
+    const loginWithGoogle = async (credential) => {
+        const res = await client.post('/auth/google', { credential });
+        const { token, user } = res.data;
+        localStorage.setItem('token', token);
+        setUser(user);
+        return user;
+    };
+
     const register = async (name, email, password) => {
         const res = await client.post('/auth/register', { name, email, password });
         const { token, user } = res.data;
@@ -49,12 +57,12 @@ export function AuthProvider({ children }) {
     const logout = () => {
         localStorage.removeItem('token');
         setUser(null);
-        // Opcional: limpiar otros estados o redirigir
     };
 
     const value = {
         user,
         login,
+        loginWithGoogle,
         register,
         logout,
         isAuthenticated: !!user,

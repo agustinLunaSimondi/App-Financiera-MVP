@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Wallet, CreditCard, PieChart, Settings, LogOut, Menu, PiggyBank, Clock, Zap } from 'lucide-react';
+import { LayoutDashboard, Wallet, CreditCard, PieChart, Settings, LogOut, Menu, PiggyBank, Clock, Zap, GraduationCap, Link2 } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -23,6 +23,11 @@ export function Layout({ children }) {
         { icon: PiggyBank, label: 'Ahorros', path: '/savings' },
         { icon: Clock, label: 'Recurrentes', path: '/recurring' },
         { icon: CreditCard, label: 'Cuentas', path: '/cards' },
+    ];
+
+    const extraItems = [
+        { icon: GraduationCap, label: 'Academia', path: '/academy' },
+        { icon: Link2, label: 'Integraciones', path: '/integrations' },
         { icon: Settings, label: 'Configuración', path: '/settings' },
     ];
 
@@ -66,13 +71,13 @@ export function Layout({ children }) {
                     {navItems.map((item) => (
                         <NavItem key={item.path} item={item} />
                     ))}
+                    <p className="px-4 mt-4 mb-2 text-[10px] uppercase tracking-widest font-bold text-zinc-400 dark:text-zinc-500">Herramientas</p>
+                    {extraItems.map((item) => (
+                        <NavItem key={item.path} item={item} />
+                    ))}
                 </nav>
 
                 <div className="p-6 mt-auto border-t border-zinc-200/50 dark:border-zinc-800/50">
-                    <div className="px-4 py-4 mb-4 rounded-2xl bg-emerald-500/5 dark:bg-emerald-500/10 border border-emerald-500/10 dark:border-emerald-500/20">
-                        <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">Próximamente</p>
-                        <p className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1">Sincronización bancaria automática en camino.</p>
-                    </div>
                     <button onClick={handleLogout} className="flex items-center w-full px-4 py-2.5 text-sm font-medium text-zinc-500 dark:text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-500/5 rounded-xl transition-all duration-300">
                         <LogOut className="w-5 h-5 mr-3" />
                         Cerrar Sesión
@@ -137,7 +142,7 @@ export function Layout({ children }) {
                                 </h1>
                             </div>
                             <nav className="flex-1 space-y-1">
-                                {navItems.map((item) => (
+                                {[...navItems, ...extraItems].map((item) => (
                                     <NavItem
                                         key={item.path}
                                         item={item}

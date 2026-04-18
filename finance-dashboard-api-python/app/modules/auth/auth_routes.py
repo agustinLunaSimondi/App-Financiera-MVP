@@ -1,6 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 import logging
+import os
+from typing import Optional
+from pydantic import BaseModel
 from app.database import models
 from app.database.database import get_db
 from app.core import security
@@ -9,6 +12,12 @@ from app import schemas
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
+
+
+class GoogleAuthRequest(BaseModel):
+    credential: str  # Google ID token (credential from google.accounts.id.initialize)
 
 def _create_default_categories(db: Session, user_id: str):
     default_categories = [
@@ -89,6 +98,75 @@ def login(user_in: schemas.UserLogin, db: Session = Depends(get_db)):
         data={"userId": user.id, "email": user.email}
     )
     return {"token": access_token, "user": user}
+
+
+@router.post("/google", response_model=schemas.Token)
+def google_login(payload: GoogleAuthRequest, db: Session = Depends(get_db)):
+    """
+    Verifica un Google ID Token emitido por el Sign-In button.
+    Si el usuario no existe lo registra automáticamente.
+    """
+    if not GOOGLE_CLIENT_ID:
+        raise HTTPException(
+            status_code=503,
+            detail="Google Auth no está configurado en el servidor. Configurá la variable GOOGLE_CLIENT_ID."
+        )
+    
+    try:
+        from google.oauth2 import id_token
+        from google.auth.transport import requests as google_requests
+        id_info = id_token.verify_oauth2_token(
+            payload.credential,
+            google_requests.Request(),
+            GOOGLE_CLIENT_ID
+        )
+    except ValueError as e:
+        logger.warning(f"Google token inválido: {e}")
+        raise HTTPException(status_code=401, detail="Token de Google inválido o expirado.")
+    
+    google_email = id_info.get("email", "").lower()
+    google_name = id_info.get("name") or google_email.split("@")[0]
+
+    if not google_email:
+        raise HTTPException(status_code=400, detail="No se pudo obtener el email de Google.")
+    
+    # Buscar usuario existente
+    user = db.query(models.User).filter(models.User.email == google_email).first()
+    
+    if not user:
+        # Auto-registrar: generamos un hash inutilizable como contraseña (usuario Google-only)
+        import uuid
+        placeholder_hash = security.get_password_hash(f"GOOGLE_ONLY_{uuid.uuid4()}")
+        user = models.User(
+            email=google_email,
+            password_hash=placeholder_hash,
+            name=google_name,
+            currency="ARS",
+            dark_mode=False,
+        )
+        db.add(user)
+        db.flush()
+        
+        # Cuenta por defecto
+        default_account = models.Account(
+            name="Efectivo",
+            type=models.AccountType.CHECKING,
+            balance=0,
+            user_id=user.id
+        )
+        db.add(default_account)
+        _create_default_categories(db, user.id)
+        db.commit()
+        db.refresh(user)
+        logger.info(f"Usuario Google registrado: {google_email}")
+    else:
+        logger.info(f"Login Google exitoso: {google_email}")
+    
+    access_token = security.create_access_token(
+        data={"userId": user.id, "email": user.email}
+    )
+    return {"token": access_token, "user": user}
+
 
 @router.get("/me", response_model=schemas.User)
 def get_me(current_user: models.User = Depends(get_current_user)):

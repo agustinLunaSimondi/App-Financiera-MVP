@@ -2,23 +2,45 @@ import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { LogIn } from 'lucide-react';
+import { GoogleLogin } from '@react-oauth/google';
 
 export function LoginPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
-    const { login } = useAuth();
+    const [isLoading, setIsLoading] = useState(false);
+    const { login, loginWithGoogle } = useAuth();
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
+        setIsLoading(true);
         try {
             await login(email, password);
             navigate('/');
         } catch (err) {
             setError(err.response?.data?.error || 'Error al iniciar sesión');
+        } finally {
+            setIsLoading(false);
         }
+    };
+
+    const handleGoogleSuccess = async (credentialResponse) => {
+        setError('');
+        setIsLoading(true);
+        try {
+            await loginWithGoogle(credentialResponse.credential);
+            navigate('/');
+        } catch (err) {
+            setError(err.response?.data?.error || 'Error al iniciar con Google');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleGoogleError = () => {
+        setError('Error al conectar con Google. Intenta de nuevo.');
     };
 
     return (
@@ -35,7 +57,34 @@ export function LoginPage() {
                         Accede a tu Dashboard Financiero
                     </p>
                 </div>
-                <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+
+                {/* Google Sign-In */}
+                <div className="flex justify-center">
+                    <GoogleLogin
+                        onSuccess={handleGoogleSuccess}
+                        onError={handleGoogleError}
+                        theme="outline"
+                        size="large"
+                        width="100%"
+                        text="signin_with"
+                        shape="rectangular"
+                        locale="es"
+                    />
+                </div>
+
+                {/* Divider */}
+                <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
+                    </div>
+                    <div className="relative flex justify-center text-sm">
+                        <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+                            o continúa con email
+                        </span>
+                    </div>
+                </div>
+
+                <form className="mt-4 space-y-6" onSubmit={handleSubmit}>
                     {error && (
                         <div className="bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 p-3 rounded-md text-sm border border-red-200 dark:border-red-800">
                             {error}
@@ -73,9 +122,10 @@ export function LoginPage() {
                     <div>
                         <button
                             type="submit"
-                            className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                            disabled={isLoading}
+                            className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            Ingresar
+                            {isLoading ? 'Ingresando...' : 'Ingresar'}
                         </button>
                     </div>
                 </form>

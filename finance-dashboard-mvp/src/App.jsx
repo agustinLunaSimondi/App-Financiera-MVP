@@ -16,6 +16,7 @@ import { RegisterPage } from './pages/RegisterPage';
 import { SavingsPage } from './pages/SavingsPage';
 import { RecurringPage } from './pages/RecurringPage';
 import { IntegrationsPage } from './pages/IntegrationsPage';
+import { AcademyPage } from './pages/AcademyPage';
 
 const PrivateRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
@@ -44,6 +45,7 @@ function App() {
               <Route path="/recurring" element={<PrivateRoute><RecurringPage /></PrivateRoute>} />
               <Route path="/cards" element={<PrivateRoute><CardsPage /></PrivateRoute>} />
               <Route path="/integrations" element={<PrivateRoute><IntegrationsPage /></PrivateRoute>} />
+              <Route path="/academy" element={<PrivateRoute><AcademyPage /></PrivateRoute>} />
               <Route path="/settings" element={<PrivateRoute><SettingsPage /></PrivateRoute>} />
             </Routes>
             <Toaster position="top-right" richColors />

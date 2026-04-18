@@ -7,7 +7,8 @@ import { IncomeExpenseChart } from '../features/dashboard/components/charts/Inco
 import { ExpenseBreakdownChart } from '../features/dashboard/components/charts/ExpenseBreakdownChart';
 import { BudgetComparisonChart } from '../features/dashboard/components/charts/BudgetComparisonChart';
 import { CashFlowWaterfallChart } from '../features/dashboard/components/charts/CashFlowWaterfallChart';
-import { ArrowUpRight, TrendingUp, TrendingDown, Wallet, PiggyBank, Calendar } from 'lucide-react';
+import { ArrowUpRight, TrendingUp, TrendingDown, Wallet, PiggyBank, Calendar, Link2, GraduationCap, CheckCircle, AlertCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { cn } from '../lib/utils';
 import {
     calculateTotalIncome,
@@ -213,6 +214,47 @@ export function DashboardPage() {
                     {kpiData.map((kpi, idx) => (
                         <KPICard key={idx} {...kpi} delay={idx * 0.1} />
                     ))}
+                </div>
+
+                {/* Quick Access Widgets */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* MercadoPago Status Widget */}
+                    <div className="flex items-center justify-between bg-white dark:bg-zinc-800/50 border border-zinc-200/50 dark:border-zinc-700/50 rounded-2xl px-5 py-4 shadow-sm">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
+                                <Link2 className="w-5 h-5 text-blue-500" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-semibold text-zinc-900 dark:text-white">Mercado Pago</p>
+                                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">Conectá para importar gastos automáticamente</p>
+                            </div>
+                        </div>
+                        <Link
+                            to="/integrations"
+                            className="flex items-center gap-1.5 text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline"
+                        >
+                            Conectar <ArrowUpRight className="w-3.5 h-3.5" />
+                        </Link>
+                    </div>
+
+                    {/* Academia Widget */}
+                    <div className="flex items-center justify-between bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-200/50 dark:border-purple-800/50 rounded-2xl px-5 py-4 shadow-sm">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center">
+                                <GraduationCap className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-semibold text-zinc-900 dark:text-white">Academia Financiera</p>
+                                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">Aprendé TNA, Plazo Fijo, diversificación y más</p>
+                            </div>
+                        </div>
+                        <Link
+                            to="/academy"
+                            className="flex items-center gap-1.5 text-xs font-bold text-purple-600 dark:text-purple-400 hover:underline"
+                        >
+                            Explorar <ArrowUpRight className="w-3.5 h-3.5" />
+                        </Link>
+                    </div>
                 </div>
 
                 {/* Charts Row 1 */}
