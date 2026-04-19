@@ -21,7 +21,6 @@ export function SettingsPage() {
 
     const handleToggleDarkMode = async () => {
         await updateSettings({ darkMode: !settings.darkMode });
-        document.documentElement.classList.toggle('dark');
     };
 
     // ============= CATEGORY MANAGEMENT =============
