@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Layout } from '../features/common/components/Layout';
 import { Card } from '../features/common/components/Card';
 import { 
@@ -11,9 +11,12 @@ import {
     HelpCircle,
     PlayCircle,
     Info,
-    MessageSquare
+    MessageSquare,
+    X,
+    ExternalLink
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { tutorials } from '../data/tutorials';
 
 const Section = ({ title, icon: Icon, children, delay = 0 }) => (
     <motion.div
@@ -34,8 +37,11 @@ const Section = ({ title, icon: Icon, children, delay = 0 }) => (
     </motion.div>
 );
 
-const TutorialCard = ({ title, description, badge, icon: Icon }) => (
-    <div className="p-6 rounded-2xl glass-card space-y-3 relative overflow-hidden group">
+const TutorialCard = ({ title, description, badge, icon: Icon, onClick }) => (
+    <div 
+        onClick={onClick}
+        className="p-6 rounded-2xl glass-card space-y-3 relative overflow-hidden group cursor-pointer hover:border-emerald-500/30 transition-all"
+    >
         <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
             <Icon size={48} />
         </div>
@@ -44,17 +50,112 @@ const TutorialCard = ({ title, description, badge, icon: Icon }) => (
                 {badge}
             </span>
         )}
-        <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">{title}</h3>
+        <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+            {title}
+        </h3>
         <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">
             {description}
         </p>
-        <button className="flex items-center gap-2 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:gap-3 transition-all">
+        <button className="flex items-center gap-2 text-xs font-bold text-emerald-600 dark:text-emerald-400 group-hover:gap-3 transition-all">
             Ver guía <ArrowRight size={14} />
         </button>
     </div>
 );
 
+const TutorialModal = ({ isOpen, onClose, tutorial }) => {
+    if (!tutorial) return null;
+
+    return (
+        <AnimatePresence>
+            {isOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={onClose}
+                        className="absolute inset-0 bg-black/60 backdrop-blur-md"
+                    />
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                        className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-white dark:bg-zinc-900 rounded-3xl shadow-2xl flex flex-col"
+                    >
+                        {/* Image Header */}
+                        <div className="w-full aspect-video md:aspect-[21/9] relative overflow-hidden">
+                            <img 
+                                src={tutorial.image} 
+                                alt={tutorial.title}
+                                className="w-full h-full object-cover"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-zinc-900/80 via-transparent to-transparent" />
+                            <button 
+                                onClick={onClose}
+                                className="absolute top-4 right-4 p-2 rounded-full bg-black/20 text-white hover:bg-black/40 backdrop-blur-md transition-colors"
+                            >
+                                <X size={24} />
+                            </button>
+                            <div className="absolute bottom-0 left-0 p-8 space-y-2">
+                                {tutorial.badge && (
+                                    <span className="px-2 py-1 rounded-md bg-emerald-500 text-white text-[10px] font-bold uppercase tracking-wider">
+                                        {tutorial.badge}
+                                    </span>
+                                )}
+                                <h2 className="text-3xl font-black text-white">{tutorial.title}</h2>
+                            </div>
+                        </div>
+
+                        {/* Content */}
+                        <div className="p-8 md:p-12 space-y-10">
+                            {tutorial.content.map((item, index) => (
+                                <div key={index} className="space-y-4">
+                                    {item.type === 'text' && (
+                                        <>
+                                            <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                                                <div className="w-8 h-8 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center text-sm">
+                                                    {index + 1}
+                                                </div>
+                                                {item.title}
+                                            </h3>
+                                            <p className="text-zinc-500 dark:text-zinc-400 leading-relaxed text-lg pl-10">
+                                                {item.text}
+                                            </p>
+                                        </>
+                                    )}
+                                </div>
+                            ))}
+
+                            {/* Footer Call to Action */}
+                            <div className="pt-10 border-t border-zinc-100 dark:border-zinc-800 flex flex-col md:flex-row items-center justify-between gap-6">
+                                <div className="space-y-1">
+                                    <p className="font-bold text-zinc-900 dark:text-zinc-100">¿Listo para empezar?</p>
+                                    <p className="text-sm text-zinc-500 dark:text-zinc-400">Pon en práctica lo aprendido ahora mismo.</p>
+                                </div>
+                                <button 
+                                    onClick={onClose}
+                                    className="px-8 py-4 rounded-2xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 transition-all flex items-center gap-2"
+                                >
+                                    Ir al Dashboard <ExternalLink size={18} />
+                                </button>
+                            </div>
+                        </div>
+                    </motion.div>
+                </div>
+            )}
+        </AnimatePresence>
+    );
+};
+
 export default function HelpPage() {
+    const [selectedTutorial, setSelectedTutorial] = useState(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
+    const openTutorial = (id) => {
+        setSelectedTutorial(tutorials[id]);
+        setIsModalOpen(true);
+    };
+
     return (
         <Layout>
             <div className="space-y-12 pb-20">
@@ -82,18 +183,21 @@ export default function HelpPage() {
                         description="Aprende a interpretar tus KPIs, gráficos de ingresos vs gastos y el balance general."
                         badge="Básico"
                         icon={PlayCircle}
+                        onClick={() => openTutorial('dashboard-101')}
                     />
                     <TutorialCard 
                         title="Gestión de Cuentas" 
                         description="Cómo vincular tus cuentas bancarias, billeteras digitales y tarjetas para un seguimiento total."
                         badge="Esencial"
                         icon={Shield}
+                        onClick={() => openTutorial('account-management')}
                     />
                     <TutorialCard 
                         title="Presupuestos Inteligentes" 
                         description="Configura límites por categoría y recibe alertas cuando estés cerca de superarlos."
                         badge="Avanzado"
                         icon={CheckCircle2}
+                        onClick={() => openTutorial('smart-budgets')}
                     />
                 </Section>
 
@@ -103,16 +207,19 @@ export default function HelpPage() {
                         title="Transacciones" 
                         description="Cómo categorizar gastos, filtrar por fecha y exportar reportes en CSV."
                         icon={MessageSquare}
+                        onClick={() => openTutorial('transactions')}
                     />
                     <TutorialCard 
                         title="Metas de Ahorro" 
                         description="Crea objetivos, define plazos y observa el progreso de tu fondo de emergencia."
                         icon={Info}
+                        onClick={() => openTutorial('savings-goals')}
                     />
                     <TutorialCard 
                         title="Integraciones" 
                         description="Vincula Mercado Pago y otras plataformas para automatizar tus registros."
                         icon={Zap}
+                        onClick={() => openTutorial('integrations')}
                     />
                 </Section>
 
@@ -163,6 +270,13 @@ export default function HelpPage() {
                     </div>
                 </div>
             </div>
+
+            <TutorialModal 
+                isOpen={isModalOpen} 
+                onClose={() => setIsModalOpen(false)} 
+                tutorial={selectedTutorial} 
+            />
         </Layout>
     );
 }
+
