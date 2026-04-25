@@ -9,6 +9,7 @@ import { BudgetComparisonChart } from '../features/dashboard/components/charts/B
 import { CashFlowWaterfallChart } from '../features/dashboard/components/charts/CashFlowWaterfallChart';
 import { ArrowUpRight, TrendingUp, TrendingDown, Wallet, PiggyBank, Calendar, Link2, GraduationCap, CheckCircle, AlertCircle, Download } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { cn } from '../lib/utils';
 import {
     calculateTotalIncome,
