@@ -7,7 +7,7 @@ import { IncomeExpenseChart } from '../features/dashboard/components/charts/Inco
 import { ExpenseBreakdownChart } from '../features/dashboard/components/charts/ExpenseBreakdownChart';
 import { BudgetComparisonChart } from '../features/dashboard/components/charts/BudgetComparisonChart';
 import { CashFlowWaterfallChart } from '../features/dashboard/components/charts/CashFlowWaterfallChart';
-import { ArrowUpRight, TrendingUp, TrendingDown, Wallet, PiggyBank, Calendar, Link2, GraduationCap, CheckCircle, AlertCircle, Download } from 'lucide-react';
+import { ArrowUpRight, TrendingUp, TrendingDown, Wallet, PiggyBank, Calendar, Link2, GraduationCap, CheckCircle, AlertCircle, Download, Zap } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { cn } from '../lib/utils';
