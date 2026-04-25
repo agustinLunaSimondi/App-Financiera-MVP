@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Lightbulb, TrendingUp, AlertTriangle } from 'lucide-react';
-import { useFinance } from '../../../hooks/useFinance';
-import { useLanguage } from '../../../contexts/LanguageContext';
-import { formatCurrency } from '../../../utils/formatters';
+import { useFinance } from '../../hooks/useFinance';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { formatCurrency } from '../../utils/formatters';
 
 export function AIInsightsCard() {
     const { t } = useLanguage();
