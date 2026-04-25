@@ -5,6 +5,7 @@ import { Card } from '../features/common/components/Card';
 import { Modal } from '../features/common/components/Modal';
 import { CategoryForm } from '../features/categories/components/CategoryForm';
 import { Moon, Sun, Globe, DollarSign, Palette, Download, Trash2, Edit2, Plus, X } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export function SettingsPage() {
     const {
@@ -13,6 +14,7 @@ export function SettingsPage() {
         transactions, budgets, accounts, // For export
         deleteUserAccount // For delete account
     } = useFinance();
+    const { setLanguage } = useLanguage();
 
     // State for Category Management
     const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
@@ -160,7 +162,11 @@ export function SettingsPage() {
                                 </label>
                                 <select
                                     value={settings.language || 'es'}
-                                    onChange={(e) => updateSettings({ language: e.target.value })}
+                                    onChange={async (e) => {
+                                        const newLang = e.target.value;
+                                        await updateSettings({ language: newLang });
+                                        setLanguage(newLang);
+                                    }}
                                     className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                 >
                                     <option value="es">Español</option>

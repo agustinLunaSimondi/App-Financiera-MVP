@@ -45,6 +45,15 @@ export function IncomeExpenseChart({ data }) {
                     axisLine={false}
                     tickLine={false}
                     tick={{ fill: '#71717A', fontSize: 11 }}
+                    tickFormatter={(value) => 
+                        new Intl.NumberFormat('es-AR', { 
+                            notation: 'compact', 
+                            compactDisplay: 'short',
+                            style: 'currency',
+                            currency: 'ARS',
+                            maximumFractionDigits: 1
+                        }).format(value)
+                    }
                 />
                 <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#10b981', strokeWidth: 1, strokeDasharray: '5 5' }} />
                 <Area

@@ -2,6 +2,24 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+@theme {
+  --color-brand-primary: #10b981;
+  --color-brand-secondary: #0ea5e9;
+  --font-sans: 'Inter', 'Outfit', system-ui, sans-serif;
+}
+
+:root {
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.3);
+  --premium-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.1);
+}
+
+.dark {
+  --glass-bg: rgba(9, 9, 11, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.05);
+  --premium-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+}
+
 @layer base {
   body {
     @apply bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 antialiased min-h-screen transition-colors duration-500;
@@ -36,5 +54,17 @@
 
   .glass-sidebar {
     @apply bg-white/40 dark:bg-zinc-950/40 backdrop-blur-3xl border-r border-zinc-200/50 dark:border-zinc-800/30;
+  }
+
+  .premium-gradient-text {
+    @apply bg-gradient-to-r from-emerald-600 to-blue-600 dark:from-emerald-400 dark:to-blue-400 bg-clip-text text-transparent;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
   }
 }

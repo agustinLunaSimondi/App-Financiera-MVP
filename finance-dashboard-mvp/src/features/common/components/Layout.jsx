@@ -1,24 +1,46 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Wallet, CreditCard, PieChart, Settings, LogOut, Menu, PiggyBank, Clock, Zap, GraduationCap, Link2 } from 'lucide-react';
+import { 
+    LayoutDashboard, Wallet, CreditCard, PieChart, Settings, 
+    LogOut, Menu, PiggyBank, Clock, Zap, GraduationCap, 
+    Link2, HelpCircle, User as UserIcon, X 
+} from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useLanguage } from '../../../contexts/LanguageContext';
 
+const NavItemLink = ({ item, onClick, t }) => {
+    return (
+        <NavLink
+            to={item.path}
+            onClick={onClick}
+            className={({ isActive }) => cn(
+                "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all duration-300 group",
+                isActive 
+                    ? "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 shadow-xl shadow-zinc-900/10 dark:shadow-white/5" 
+                    : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800/50"
+            )}
+        >
+            <item.icon className={cn("w-5 h-5 transition-transform group-hover:scale-110")} />
+            <span className="truncate">{item.label}</span>
+        </NavLink>
+    );
+};
+
 export function Layout({ children }) {
-    const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const { user, logout } = useAuth();
+    const { t } = useLanguage();
     const location = useLocation();
     const navigate = useNavigate();
-    const { logout } = useAuth();
-    const { t } = useLanguage();
 
     const handleLogout = () => {
         logout();
         navigate('/login');
     };
 
-    const navItems = [
+    const mainNav = [
         { icon: LayoutDashboard, label: t('sidebar.dashboard'), path: '/' },
         { icon: Wallet, label: t('sidebar.transactions'), path: '/transactions' },
         { icon: PieChart, label: t('sidebar.budgets'), path: '/budget' },
@@ -27,91 +49,102 @@ export function Layout({ children }) {
         { icon: CreditCard, label: t('sidebar.accounts'), path: '/cards' },
     ];
 
-    const extraItems = [
+    const supportNav = [
         { icon: GraduationCap, label: t('sidebar.academy'), path: '/academy' },
         { icon: Link2, label: t('Integraciones'), path: '/integrations' },
+        { icon: HelpCircle, label: t('Ayuda / Tutorial'), path: '/help' },
         { icon: Settings, label: t('sidebar.settings'), path: '/settings' },
     ];
 
-    const NavItem = ({ item, onClick }) => {
-        const isActive = location.pathname === item.path;
+    const SidebarContent = ({ onMobileNavClick }) => (
+        <div className="flex flex-col h-full py-8">
+            {/* Logo */}
+            <div className="px-6 mb-10">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                        <Wallet className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                        <span className="text-xl font-black text-zinc-900 dark:text-zinc-100 tracking-tighter">FinanceFlow</span>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                            <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Premium Plan</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-        return (
-            <NavLink
-                to={item.path}
-                onClick={onClick}
-                className={cn(
-                    "flex items-center w-full px-4 py-2.5 text-sm font-medium rounded-lg transition-colors",
-                    isActive
-                        ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400"
-                        : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                )}
-            >
-                <item.icon className="w-5 h-5 mr-3" />
-                {item.label}
-            </NavLink>
-        );
-    };
+            {/* Navigation */}
+            <nav className="flex-1 px-4 space-y-8 overflow-y-auto scrollbar-hide">
+                <div>
+                    <span className="px-4 text-[10px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">{t('sidebar.main')}</span>
+                    <div className="mt-4 space-y-1">
+                        {mainNav.map(item => <NavItemLink key={item.path} item={item} t={t} onClick={onMobileNavClick} />)}
+                    </div>
+                </div>
+                <div>
+                    <span className="px-4 text-[10px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">Recursos</span>
+                    <div className="mt-4 space-y-1">
+                        {supportNav.map(item => <NavItemLink key={item.path} item={item} t={t} onClick={onMobileNavClick} />)}
+                    </div>
+                </div>
+            </nav>
+
+            {/* Profile Section */}
+            <div className="px-4 mt-auto pt-6 border-t border-zinc-200/50 dark:border-zinc-800/50">
+                <div className="p-4 rounded-2xl bg-zinc-100/50 dark:bg-zinc-800/40 space-y-4">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
+                            {user?.name?.charAt(0) || user?.email?.charAt(0) || 'U'}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-sm font-bold text-zinc-900 dark:text-white truncate">{user?.name || user?.email}</p>
+                            <p className="text-[10px] text-zinc-400 dark:text-zinc-500 truncate">{user?.email}</p>
+                        </div>
+                    </div>
+                    <button 
+                        onClick={handleLogout}
+                        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-black text-rose-500 hover:bg-rose-500/10 transition-colors border border-rose-500/10"
+                    >
+                        <LogOut className="w-4 h-4" />
+                        {t('sidebar.logout')}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
 
     return (
         <div className="min-h-screen bg-transparent flex text-zinc-900 dark:text-zinc-100 font-sans overflow-hidden">
-            {/* Sidebar Desktop */}
-            <aside className="hidden lg:flex flex-col w-72 glass-sidebar sticky top-0 h-screen">
-                <div className="p-8">
-                    <div className="flex items-center gap-3 px-2">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20">
-                            <Wallet className="w-6 h-6 text-white" />
-                        </div>
-                        <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-emerald-600 to-teal-600 dark:from-emerald-400 dark:to-teal-400 bg-clip-text text-transparent">
-                            FinanceFlow
-                        </h1>
-                    </div>
-                </div>
-
-                <nav className="flex-1 px-4 space-y-1.5 mt-4">
-                    <p className="px-4 mb-2 text-[10px] uppercase tracking-widest font-bold text-zinc-400 dark:text-zinc-500">Menú Principal</p>
-                    {navItems.map((item) => (
-                        <NavItem key={item.path} item={item} />
-                    ))}
-                    <p className="px-4 mt-4 mb-2 text-[10px] uppercase tracking-widest font-bold text-zinc-400 dark:text-zinc-500">Herramientas</p>
-                    {extraItems.map((item) => (
-                        <NavItem key={item.path} item={item} />
-                    ))}
-                </nav>
-
-                <div className="p-6 mt-auto border-t border-zinc-200/50 dark:border-zinc-800/50">
-                    <button onClick={handleLogout} className="flex items-center w-full px-4 py-2.5 text-sm font-medium text-zinc-500 dark:text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-500/5 rounded-xl transition-all duration-300">
-                        <LogOut className="w-5 h-5 mr-3" />
-                        Cerrar Sesión
-                    </button>
-                </div>
+            {/* Desktop Sidebar */}
+            <aside className="hidden lg:flex flex-col w-72 glass-sidebar sticky top-0 h-screen border-r border-zinc-200/50 dark:border-zinc-800/50">
+                <SidebarContent />
             </aside>
 
-            {/* Main Content */}
-            <main className="flex-1 flex flex-col min-w-0 h-screen relative">
+            {/* Main Content Area */}
+            <main className="flex-1 flex flex-col min-w-0 h-screen relative bg-transparent">
                 {/* Mobile Header */}
-                <header className="lg:hidden flex items-center justify-between p-4 glass sticky top-0 z-40">
+                <header className="lg:hidden flex items-center justify-between p-4 glass sticky top-0 z-40 border-b border-zinc-200/50 dark:border-zinc-800/50">
                     <div className="flex items-center gap-2">
                         <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center">
                             <Wallet className="w-5 h-5 text-white" />
                         </div>
-                        <h1 className="text-lg font-bold bg-gradient-to-r from-emerald-500 to-teal-500 bg-clip-text text-transparent">
-                            FinanceFlow
-                        </h1>
+                        <span className="text-lg font-black tracking-tighter">FinanceFlow</span>
                     </div>
-                    <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 -mr-2 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg">
+                    <button onClick={() => setIsMobileMenuOpen(true)} className="p-2 -mr-2 text-zinc-600 dark:text-zinc-400">
                         <Menu className="w-6 h-6" />
                     </button>
                 </header>
 
-                <div className="flex-1 overflow-y-auto overflow-x-hidden scroll-smooth">
+                {/* Page Content */}
+                <div className="flex-1 overflow-y-auto overflow-x-hidden scroll-smooth relative">
                     <AnimatePresence mode="wait">
                         <motion.div
                             key={location.pathname}
-                            initial={{ opacity: 0, y: 8 }}
+                            initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -8 }}
-                            transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
+                            exit={{ opacity: 0, y: -10 }}
+                            transition={{ duration: 0.3, ease: "easeOut" }}
                             className="p-6 lg:p-10 max-w-[1400px] mx-auto w-full"
                         >
                             {children}
@@ -120,44 +153,33 @@ export function Layout({ children }) {
                 </div>
             </main>
 
-            {/* Mobile Menu Overlay */}
+            {/* Mobile Sidebar Overlay */}
             <AnimatePresence>
                 {isMobileMenuOpen && (
-                    <div className="fixed inset-0 z-50 lg:hidden flex">
+                    <>
                         <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="fixed inset-0 bg-black/50"
+                            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60]"
                             onClick={() => setIsMobileMenuOpen(false)}
                         />
                         <motion.div
-                            initial={{ x: -256 }}
+                            initial={{ x: "-100%" }}
                             animate={{ x: 0 }}
-                            exit={{ x: -256 }}
+                            exit={{ x: "-100%" }}
                             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                            className="relative flex flex-col w-64 bg-white dark:bg-zinc-900 h-full p-4 shadow-xl"
+                            className="fixed inset-y-0 left-0 w-80 bg-white dark:bg-zinc-900 z-[70] shadow-2xl"
                         >
-                            <div className="mb-6 px-2">
-                                <h1 className="text-xl font-bold bg-gradient-to-r from-emerald-500 to-teal-500 bg-clip-text text-transparent">
-                                    FinanceFlow
-                                </h1>
-                            </div>
-                            <nav className="flex-1 space-y-1">
-                                {[...navItems, ...extraItems].map((item) => (
-                                    <NavItem
-                                        key={item.path}
-                                        item={item}
-                                        onClick={() => setIsMobileMenuOpen(false)}
-                                    />
-                                ))}
-                            </nav>
-                            <button onClick={() => { setIsMobileMenuOpen(false); handleLogout(); }} className="flex items-center w-full px-4 py-2.5 text-sm font-medium text-zinc-500 dark:text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-500/5 rounded-xl transition-all duration-300">
-                                <LogOut className="w-5 h-5 mr-3" />
-                                Cerrar Sesión
+                            <button 
+                                onClick={() => setIsMobileMenuOpen(false)} 
+                                className="absolute top-4 right-4 p-2 text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
+                            >
+                                <X className="w-6 h-6" />
                             </button>
+                            <SidebarContent onMobileNavClick={() => setIsMobileMenuOpen(false)} />
                         </motion.div>
-                    </div>
+                    </>
                 )}
             </AnimatePresence>
         </div>

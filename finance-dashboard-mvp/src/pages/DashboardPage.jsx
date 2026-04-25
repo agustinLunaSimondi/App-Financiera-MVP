@@ -169,41 +169,54 @@ export function DashboardPage() {
     return (
         <Layout>
             <div className="space-y-10">
-                {/* Header Section */}
-                <div className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <div className="space-y-1">
-                        <h1 className="text-3xl font-black text-zinc-900 dark:text-zinc-100 tracking-tight">
-                            {t('dashboard.title')}
-                        </h1>
-                        <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-                            {t('dashboard.subtitle')}
-                        </p>
-                    </div>
-                    <div className="flex items-center gap-3 w-full md:w-auto">
-                        <button onClick={downloadReport} className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 border-2 border-zinc-200 dark:border-zinc-800 rounded-xl text-sm font-bold text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">
-                            <Download className="w-4 h-4" />
-                            {t('dashboard.download')}
-                        </button>
-                        <div className="flex bg-zinc-100 dark:bg-zinc-800/50 p-1.5 rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50">
-                            {[
-                                { id: 'thisMonth', label: t('dashboard.thisMonth') },
-                                { id: 'last7Days', label: t('dashboard.last7Days') },
-                                { id: 'year', label: t('dashboard.thisYear') },
-                                { id: 'all', label: t('dashboard.allTime') }
-                            ].map((item) => (
-                                <button
-                                    key={item.id}
-                                    onClick={() => handleQuickFilter(item.id)}
-                                    className={cn(
-                                        "px-4 py-2 rounded-xl text-xs font-bold transition-all",
-                                        quickFilter === item.id
-                                            ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm"
-                                            : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300"
-                                    )}
-                                >
-                                    {item.label}
-                                </button>
-                            ))}
+                {/* Hero Section */}
+                <div className="relative group">
+                    <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 to-blue-600 rounded-3xl blur opacity-10 group-hover:opacity-20 transition duration-1000 group-hover:duration-200"></div>
+                    <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-6 p-8 glass-card rounded-3xl">
+                        <div className="space-y-2">
+                             <motion.div 
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase tracking-widest"
+                            >
+                                <Zap className="w-3 h-3 fill-current" /> {t('dashboard.online')}
+                            </motion.div>
+                            <h1 className="text-4xl font-black text-zinc-900 dark:text-zinc-100 tracking-tighter">
+                                {t('dashboard.title')} <span className="premium-gradient-text">FinanceFlow</span>
+                            </h1>
+                            <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400 max-w-md">
+                                {t('dashboard.subtitle')}
+                            </p>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                            <button 
+                                onClick={downloadReport} 
+                                className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-2.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-xl text-xs font-black hover:scale-105 active:scale-95 transition-all shadow-xl shadow-zinc-900/10 dark:shadow-zinc-100/5"
+                            >
+                                <Download className="w-4 h-4" />
+                                {t('dashboard.download')}
+                            </button>
+                            <div className="flex bg-zinc-100 dark:bg-zinc-800/50 p-1 rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50">
+                                {[
+                                    { id: 'thisMonth', label: t('dashboard.thisMonth') },
+                                    { id: 'last7Days', label: t('dashboard.last7Days') },
+                                    { id: 'year', label: t('dashboard.thisYear') },
+                                    { id: 'all', label: t('dashboard.allTime') }
+                                ].map((item) => (
+                                    <button
+                                        key={item.id}
+                                        onClick={() => handleQuickFilter(item.id)}
+                                        className={cn(
+                                            "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all",
+                                            quickFilter === item.id
+                                                ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm"
+                                                : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300"
+                                        )}
+                                    >
+                                        {item.label}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                     </div>
                 </div>

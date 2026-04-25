@@ -18,6 +18,7 @@ export const en = {
     "sidebar.savings": "Saving Goals",
     "sidebar.academy": "Academy",
     "sidebar.settings": "Settings",
+    "sidebar.help": "Help",
     "sidebar.logout": "Log Out",
 
     // Dashboard

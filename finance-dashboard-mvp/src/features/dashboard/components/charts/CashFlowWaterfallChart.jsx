@@ -69,7 +69,20 @@ export function CashFlowWaterfallChart({ data }) {
                     tickLine={false}
                     tick={{ fill: '#71717A', fontSize: 11, fontWeight: 500 }}
                 />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#71717A', fontSize: 11 }} />
+                <YAxis 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fill: '#71717A', fontSize: 11 }} 
+                    tickFormatter={(value) => 
+                        new Intl.NumberFormat('es-AR', { 
+                            notation: 'compact', 
+                            compactDisplay: 'short',
+                            style: 'currency',
+                            currency: 'ARS',
+                            maximumFractionDigits: 1
+                        }).format(value)
+                    }
+                />
                 <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.1)' }} />
                 <Bar dataKey="uv" stackId="a" fill="transparent" />
                 <Bar dataKey="pv" stackId="a" radius={[6, 6, 6, 6]} animationDuration={1500}>

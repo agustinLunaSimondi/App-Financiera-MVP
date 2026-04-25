@@ -18,6 +18,7 @@ export const es = {
     "sidebar.savings": "Metas de Ahorro",
     "sidebar.academy": "Academia",
     "sidebar.settings": "Configuración",
+    "sidebar.help": "Ayuda",
     "sidebar.logout": "Cerrar Sesión",
 
     // Dashboard
