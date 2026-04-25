@@ -4,6 +4,7 @@ import { FinanceProvider } from './contexts/FinanceContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ErrorBoundary } from './features/common/components/ErrorBoundary';
 import { Toaster } from 'sonner';
+import { LanguageProvider } from './contexts/LanguageContext';
 
 // Pages
 import { DashboardPage } from './pages/DashboardPage';
@@ -31,27 +32,29 @@ const PrivateRoute = ({ children }) => {
 function App() {
   return (
     <ErrorBoundary>
-      <Router>
-        <AuthProvider>
-          <FinanceProvider>
-            <Routes>
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/register" element={<RegisterPage />} />
+      <LanguageProvider>
+        <Router>
+          <AuthProvider>
+            <FinanceProvider>
+              <Routes>
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/register" element={<RegisterPage />} />
 
-              <Route path="/" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
-              <Route path="/transactions" element={<PrivateRoute><TransactionsPage /></PrivateRoute>} />
-              <Route path="/budget" element={<PrivateRoute><BudgetPage /></PrivateRoute>} />
-              <Route path="/savings" element={<PrivateRoute><SavingsPage /></PrivateRoute>} />
-              <Route path="/recurring" element={<PrivateRoute><RecurringPage /></PrivateRoute>} />
-              <Route path="/cards" element={<PrivateRoute><CardsPage /></PrivateRoute>} />
-              <Route path="/integrations" element={<PrivateRoute><IntegrationsPage /></PrivateRoute>} />
-              <Route path="/academy" element={<PrivateRoute><AcademyPage /></PrivateRoute>} />
-              <Route path="/settings" element={<PrivateRoute><SettingsPage /></PrivateRoute>} />
-            </Routes>
-            <Toaster position="top-right" richColors />
-          </FinanceProvider>
-        </AuthProvider>
-      </Router>
+                <Route path="/" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
+                <Route path="/transactions" element={<PrivateRoute><TransactionsPage /></PrivateRoute>} />
+                <Route path="/budget" element={<PrivateRoute><BudgetPage /></PrivateRoute>} />
+                <Route path="/savings" element={<PrivateRoute><SavingsPage /></PrivateRoute>} />
+                <Route path="/recurring" element={<PrivateRoute><RecurringPage /></PrivateRoute>} />
+                <Route path="/cards" element={<PrivateRoute><CardsPage /></PrivateRoute>} />
+                <Route path="/integrations" element={<PrivateRoute><IntegrationsPage /></PrivateRoute>} />
+                <Route path="/academy" element={<PrivateRoute><AcademyPage /></PrivateRoute>} />
+                <Route path="/settings" element={<PrivateRoute><SettingsPage /></PrivateRoute>} />
+              </Routes>
+              <Toaster position="top-right" richColors />
+            </FinanceProvider>
+          </AuthProvider>
+        </Router>
+      </LanguageProvider>
     </ErrorBoundary>
   );
 }

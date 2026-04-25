@@ -6,6 +6,7 @@ import { Plus, CreditCard as CreditCardIcon, Wallet as WalletIcon, Edit2, Trash2
 import { Modal } from '../features/common/components/Modal';
 import { AccountForm } from '../features/accounts/components/AccountForm';
 import { cn } from '../lib/utils';
+import { formatCurrency } from '../utils/formatters';
 
 export function CardsPage() {
     const { accounts, loading, deleteAccount } = useFinance();
@@ -126,13 +127,13 @@ export function CardsPage() {
                                     <div className="pt-4 border-t border-zinc-200/50 dark:border-zinc-800/50 flex justify-between items-end">
                                         <div>
                                             <p className="text-[10px] uppercase tracking-widest font-black text-zinc-400 mb-1">Saldo Disponible</p>
-                                            <p className={cn(
+                                            <div className={cn(
                                                 "text-2xl font-black",
                                                 Number(account.balance) < 0 ? "text-rose-500" : "text-zinc-900 dark:text-white"
                                             )}>
-                                                ${Number(account.balance).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                                                {formatCurrency(account.balance)}
                                                 <span className="text-xs font-bold text-zinc-400 ml-1.5 uppercase">{account.currency}</span>
-                                            </p>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -152,9 +153,11 @@ export function CardsPage() {
                     <div className="relative z-10 grid grid-cols-1 sm:grid-cols-3 gap-8 text-center sm:text-left">
                         <div>
                             <p className="text-[10px] uppercase tracking-widest font-black text-zinc-400 mb-2">Total Consolidado</p>
-                            <p className="text-3xl font-black text-emerald-600 dark:text-emerald-400">
-                                ${accounts.reduce((sum, acc) => sum + Number(acc.balance), 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
-                            </p>
+                            <div className="flex items-center gap-4">
+                                <div className="text-3xl font-black text-zinc-900 dark:text-white">
+                                    {formatCurrency(accounts.reduce((sum, acc) => sum + Number(acc.balance), 0))}
+                                </div>
+                            </div>
                         </div>
                         <div className="sm:border-l sm:border-zinc-200/50 dark:sm:border-zinc-800/50 sm:pl-8">
                             <p className="text-[10px] uppercase tracking-widest font-black text-zinc-400 mb-2">Cuentas Activas</p>
@@ -164,9 +167,11 @@ export function CardsPage() {
                         </div>
                         <div className="sm:border-l sm:border-zinc-200/50 dark:sm:border-zinc-800/50 sm:pl-8">
                             <p className="text-[10px] uppercase tracking-widest font-black text-zinc-400 mb-2">Promedio p/ Cuenta</p>
-                            <p className="text-3xl font-black text-zinc-900 dark:text-white">
-                                ${accounts.length > 0 ? (accounts.reduce((sum, acc) => sum + Number(acc.balance), 0) / accounts.length).toLocaleString('es-AR', { maximumFractionDigits: 0 }) : '0'}
-                            </p>
+                            <div className="flex items-center gap-4">
+                                <div className="text-3xl font-black text-zinc-900 dark:text-white">
+                                    {formatCurrency(accounts.length > 0 ? accounts.reduce((sum, acc) => sum + Number(acc.balance), 0) / accounts.length : 0)}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

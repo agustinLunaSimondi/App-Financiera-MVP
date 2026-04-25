@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { toast } from 'sonner';
 import { useFinance } from '../hooks/useFinance';
+import { formatCurrency } from '../utils/formatters';
 import { Layout } from '../features/common/components/Layout';
 import { Card } from '../features/common/components/Card';
 import { Modal } from '../features/common/components/Modal';
@@ -149,8 +150,8 @@ export function BudgetPage() {
                                             <div>
                                                 <p className="text-[10px] uppercase tracking-widest font-black text-zinc-400 mb-1">Consumido</p>
                                                 <p className="text-2xl font-black text-zinc-900 dark:text-white">
-                                                    ${budget.spent.toLocaleString()}
-                                                    <span className="text-sm font-medium text-zinc-400 ml-1">/ ${budget.amount.toLocaleString()}</span>
+                                                    {formatCurrency(budget.spent)}
+                                                    <span className="text-sm font-medium text-zinc-400 ml-1">/ {formatCurrency(budget.amount)}</span>
                                                 </p>
                                             </div>
                                             <div className="text-right">
@@ -188,7 +189,7 @@ export function BudgetPage() {
                                                     <span>Dentro del presupuesto</span>
                                                 </div>
                                             )}
-                                            <span className="text-zinc-400">Restan ${budget.remaining.toLocaleString()}</span>
+                                            <span className="text-zinc-400">Restan {formatCurrency(budget.remaining)}</span>
                                         </div>
                                     </div>
 

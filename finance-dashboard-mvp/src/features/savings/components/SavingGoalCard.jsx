@@ -3,6 +3,7 @@ import { Card } from '../../common/components/Card';
 import { Target, TrendingUp, Calendar, MoreVertical, Trash2 } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { motion } from 'framer-motion';
+import { formatCurrency } from '../../../utils/formatters';
 
 export function SavingGoalCard({ goal, onEdit, onDelete, onContribute, delay = 0 }) {
     const percentage = Math.min(Math.round((goal.currentAmount / goal.targetAmount) * 100), 100);
@@ -47,8 +48,8 @@ export function SavingGoalCard({ goal, onEdit, onDelete, onContribute, delay = 0
                     <div>
                         <p className="text-[10px] uppercase tracking-widest font-black text-zinc-400 mb-1">Progreso</p>
                         <p className="text-2xl font-black text-zinc-900 dark:text-white">
-                            ${goal.currentAmount.toLocaleString()}
-                            <span className="text-sm font-medium text-zinc-400 ml-1">/ ${goal.targetAmount.toLocaleString()}</span>
+                            {formatCurrency(goal.currentAmount)}
+                            <span className="text-sm font-medium text-zinc-400 ml-1">/ {formatCurrency(goal.targetAmount)}</span>
                         </p>
                     </div>
                     <div className="text-right">

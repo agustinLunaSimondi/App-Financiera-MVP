@@ -8,6 +8,8 @@ import { Modal } from '../features/common/components/Modal';
 import { TransactionForm } from '../features/transactions/components/TransactionForm';
 import { cn } from '../lib/utils';
 
+import { formatCurrency } from '../utils/formatters';
+
 export function TransactionsPage() {
     const { transactions, categories, loading, deleteTransaction } = useFinance();
     const [searchQuery, setSearchQuery] = useState('');
@@ -163,11 +165,10 @@ export function TransactionsPage() {
                                             <td className="px-8 py-5 text-zinc-500 dark:text-zinc-400 font-medium">
                                                 {new Date((tx.transactionDate || tx.date) + 'T00:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })}
                                             </td>
-                                            <td className={cn(
-                                                "px-8 py-5 text-right font-black text-base",
+                                            <td className={`px-8 py-5 text-right font-medium ${
                                                 Number(tx.amount) > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-900 dark:text-white'
-                                            )}>
-                                                {Number(tx.amount) > 0 ? '+' : ''}{Number(tx.amount).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                                            }`}>
+                                                {formatCurrency(tx.amount)}
                                             </td>
                                             <td className="px-8 py-5 text-right">
                                                 <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">

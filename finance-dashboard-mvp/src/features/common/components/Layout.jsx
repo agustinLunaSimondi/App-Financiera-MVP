@@ -4,12 +4,14 @@ import { LayoutDashboard, Wallet, CreditCard, PieChart, Settings, LogOut, Menu, 
 import { cn } from '../../../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useLanguage } from '../../../contexts/LanguageContext';
 
 export function Layout({ children }) {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
     const location = useLocation();
     const navigate = useNavigate();
     const { logout } = useAuth();
+    const { t } = useLanguage();
 
     const handleLogout = () => {
         logout();
@@ -17,18 +19,18 @@ export function Layout({ children }) {
     };
 
     const navItems = [
-        { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
-        { icon: Wallet, label: 'Transacciones', path: '/transactions' },
-        { icon: PieChart, label: 'Presupuestos', path: '/budget' },
-        { icon: PiggyBank, label: 'Ahorros', path: '/savings' },
-        { icon: Clock, label: 'Recurrentes', path: '/recurring' },
-        { icon: CreditCard, label: 'Cuentas', path: '/cards' },
+        { icon: LayoutDashboard, label: t('sidebar.dashboard'), path: '/' },
+        { icon: Wallet, label: t('sidebar.transactions'), path: '/transactions' },
+        { icon: PieChart, label: t('sidebar.budgets'), path: '/budget' },
+        { icon: PiggyBank, label: t('sidebar.savings'), path: '/savings' },
+        { icon: Clock, label: t('Recurrentes'), path: '/recurring' },
+        { icon: CreditCard, label: t('sidebar.accounts'), path: '/cards' },
     ];
 
     const extraItems = [
-        { icon: GraduationCap, label: 'Academia', path: '/academy' },
-        { icon: Link2, label: 'Integraciones', path: '/integrations' },
-        { icon: Settings, label: 'Configuración', path: '/settings' },
+        { icon: GraduationCap, label: t('sidebar.academy'), path: '/academy' },
+        { icon: Link2, label: t('Integraciones'), path: '/integrations' },
+        { icon: Settings, label: t('sidebar.settings'), path: '/settings' },
     ];
 
     const NavItem = ({ item, onClick }) => {

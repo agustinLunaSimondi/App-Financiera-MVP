@@ -16,12 +16,15 @@ import {
     calculateNetSavings,
     calculateTotalBalance,
     generateIncomeVsExpensesChartData,
-    groupTransactionsByCategory,
     calculatePercentageChange
 } from '../utils/calculations';
+import { formatCurrency } from '../utils/formatters';
+import { useLanguage } from '../contexts/LanguageContext';
+import { AIInsightsCard } from './components/AIInsightsCard';
 
 export function DashboardPage() {
     const { transactions, accounts, budgets, categories, loading, filters, updateFilters, clearFilters } = useFinance();
+    const { t } = useLanguage();
 
     const [quickFilter, setQuickFilter] = React.useState('thisMonth');
 
@@ -96,33 +99,33 @@ export function DashboardPage() {
     // KPIs data
     const kpiData = [
         {
-            label: 'Balance Total',
-            value: `$${totalBalance.toFixed(2)}`,
+            label: t('balance'),
+            value: formatCurrency(totalBalance),
             change: '+2.5%',
             type: 'positive',
             icon: Wallet
         },
         {
-            label: 'Ingresos Mensuales',
-            value: `$${totalIncome.toFixed(2)}`,
-            change: 'En camino',
+            label: t('income'),
+            value: formatCurrency(totalIncome),
+            change: t('onTrack'),
             type: 'neutral',
             icon: TrendingUp
         },
         {
-            label: 'Gastos Mensuales',
-            value: `$${totalExpenses.toFixed(2)}`,
+            label: t('expenses'),
+            value: formatCurrency(totalExpenses),
             change: '-4.1%',
             type: 'positive',
             icon: TrendingDown
         },
         {
-            label: 'Ahorro Neto',
-            value: `$${netSavings.toFixed(2)}`,
+            label: t('netSavings'),
+            value: formatCurrency(netSavings),
             change: '+12%',
             type: 'positive',
             icon: PiggyBank
-        },
+        }
     ];
 
     // Generar datos para gráficos
@@ -166,25 +169,26 @@ export function DashboardPage() {
         <Layout>
             <div className="space-y-10">
                 {/* Header Section */}
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-                    <div>
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 mb-4">
-                            <span className="relative flex h-2 w-2">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                            </span>
-                            <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">Sistema Activo</span>
-                        </div>
-                        <h1 className="text-4xl font-black text-zinc-900 dark:text-white tracking-tight">Finanzas Personales</h1>
-                        <p className="text-zinc-500 dark:text-zinc-400 mt-1 font-medium italic">"Toma el control de tu futuro financiero hoy."</p>
+                <div className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div className="space-y-1">
+                        <h1 className="text-3xl font-black text-zinc-900 dark:text-zinc-100 tracking-tight">
+                            {t('dashboard.title')}
+                        </h1>
+                        <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
+                            {t('dashboard.subtitle')}
+                        </p>
                     </div>
-                    <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex items-center gap-3 w-full md:w-auto">
+                        <button onClick={downloadReport} className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 border-2 border-zinc-200 dark:border-zinc-800 rounded-xl text-sm font-bold text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">
+                            <Download className="w-4 h-4" />
+                            {t('dashboard.download')}
+                        </button>
                         <div className="flex bg-zinc-100 dark:bg-zinc-800/50 p-1.5 rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50">
                             {[
-                                { id: 'thisMonth', label: 'Este Mes' },
-                                { id: 'last7Days', label: '7 Días' },
-                                { id: 'year', label: 'Este Año' },
-                                { id: 'all', label: 'Todo' }
+                                { id: 'thisMonth', label: t('dashboard.thisMonth') },
+                                { id: 'last7Days', label: t('dashboard.last7Days') },
+                                { id: 'year', label: t('dashboard.thisYear') },
+                                { id: 'all', label: t('dashboard.allTime') }
                             ].map((item) => (
                                 <button
                                     key={item.id}
@@ -200,25 +204,18 @@ export function DashboardPage() {
                                 </button>
                             ))}
                         </div>
-                        <button
-                            onClick={downloadReport}
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3.5 rounded-2xl font-bold text-sm shadow-xl shadow-emerald-600/20 transition-all active:scale-95"
-                        >
-                            Descargar Reporte
-                        </button>
                     </div>
                 </div>
 
-                {/* KPIs Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                     {kpiData.map((kpi, idx) => (
                         <KPICard key={idx} {...kpi} delay={idx * 0.1} />
                     ))}
                 </div>
 
-                {/* Quick Access Widgets */}
+                <AIInsightsCard />
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* MercadoPago Status Widget */}
                     <div className="flex items-center justify-between bg-white dark:bg-zinc-800/50 border border-zinc-200/50 dark:border-zinc-700/50 rounded-2xl px-5 py-4 shadow-sm">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
@@ -237,7 +234,6 @@ export function DashboardPage() {
                         </Link>
                     </div>
 
-                    {/* Academia Widget */}
                     <div className="flex items-center justify-between bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-200/50 dark:border-purple-800/50 rounded-2xl px-5 py-4 shadow-sm">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center">
@@ -257,9 +253,8 @@ export function DashboardPage() {
                     </div>
                 </div>
 
-                {/* Charts Row 1 */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <Card className="lg:col-span-2 group" title="Flujo de Caja Mensual" subtitle="Comparativa de ingresos y gastos" delay={0.4}>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <Card title={t('dashboard.budgetStatus')} className="lg:col-span-2" subtitle="Comparativa de ingresos y gastos" delay={0.4}>
                         <div className="h-[300px]">
                             <IncomeExpenseChart data={incomeVsExpensesData} />
                         </div>
@@ -271,7 +266,6 @@ export function DashboardPage() {
                     </Card>
                 </div>
 
-                {/* Charts Row 2 */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <Card className="lg:col-span-1" title="Cumplimiento de Presupuesto" subtitle="Actual vs Planeado" delay={0.6}>
                         <div className="h-[300px]">
@@ -315,7 +309,7 @@ export function DashboardPage() {
                                             {new Date((tx.date || tx.transactionDate) + 'T00:00:00').toLocaleDateString('es-AR')}
                                         </td>
                                         <td className={`px-6 py-4 text-right font-medium ${Number(tx.amount) > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-900 dark:text-zinc-100'}`}>
-                                            {Number(tx.amount) > 0 ? '+' : ''}{Number(tx.amount).toFixed(2)}
+                                            {formatCurrency(tx.amount)}
                                         </td>
                                     </tr>
                                 ))}
