@@ -1,16 +1,80 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { 
     LayoutDashboard, Wallet, CreditCard, PieChart, Settings, 
     LogOut, Menu, PiggyBank, Clock, Zap, GraduationCap, 
-    Link2, HelpCircle, User as UserIcon, X 
+    Link2, HelpCircle, X, Sun, Moon
 } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useLanguage } from '../../../contexts/LanguageContext';
+import { OnboardingTour } from './OnboardingTour';
 
-const NavItemLink = ({ item, onClick, t }) => {
+// ─── Dark Mode Hook ────────────────────────────────────────────
+function useDarkMode() {
+    const [isDark, setIsDark] = useState(() => {
+        // Read from localStorage first, then from document class
+        const stored = localStorage.getItem('darkMode');
+        if (stored !== null) return stored === 'true';
+        return document.documentElement.classList.contains('dark');
+    });
+
+    useEffect(() => {
+        if (isDark) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+        localStorage.setItem('darkMode', String(isDark));
+    }, [isDark]);
+
+    return [isDark, setIsDark];
+}
+
+// ─── Dark Mode Toggle Button ───────────────────────────────────
+function DarkModeToggle({ isDark, onToggle, compact = false }) {
+    return (
+        <button
+            onClick={onToggle}
+            aria-label="Cambiar modo oscuro"
+            className={cn(
+                "relative flex items-center justify-center rounded-xl transition-all duration-300",
+                "hover:scale-105 active:scale-95",
+                compact
+                    ? "w-9 h-9 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700"
+                    : "w-10 h-10 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700"
+            )}
+        >
+            <AnimatePresence mode="wait" initial={false}>
+                {isDark ? (
+                    <motion.div
+                        key="sun"
+                        initial={{ rotate: -90, opacity: 0 }}
+                        animate={{ rotate: 0, opacity: 1 }}
+                        exit={{ rotate: 90, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                    >
+                        <Sun size={18} />
+                    </motion.div>
+                ) : (
+                    <motion.div
+                        key="moon"
+                        initial={{ rotate: 90, opacity: 0 }}
+                        animate={{ rotate: 0, opacity: 1 }}
+                        exit={{ rotate: -90, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                    >
+                        <Moon size={18} />
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </button>
+    );
+}
+
+// ─── Nav Item ─────────────────────────────────────────────────
+const NavItemLink = ({ item, onClick }) => {
     return (
         <NavLink
             to={item.path}
@@ -28,11 +92,10 @@ const NavItemLink = ({ item, onClick, t }) => {
     );
 };
 
-export function Layout({ children }) {
-    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+// ─── Sidebar Content ──────────────────────────────────────────
+function SidebarContent({ onMobileNavClick, isDark, onToggleDark }) {
     const { user, logout } = useAuth();
     const { t } = useLanguage();
-    const location = useLocation();
     const navigate = useNavigate();
 
     const handleLogout = () => {
@@ -56,7 +119,7 @@ export function Layout({ children }) {
         { icon: Settings, label: t('sidebar.settings'), path: '/settings' },
     ];
 
-    const SidebarContent = ({ onMobileNavClick }) => (
+    return (
         <div className="flex flex-col h-full py-8">
             {/* Logo */}
             <div className="px-6 mb-10">
@@ -74,18 +137,18 @@ export function Layout({ children }) {
                 </div>
             </div>
 
-            {/* Navigation */}
+            {/* Navigation – scrollable area that does NOT reset when route changes */}
             <nav className="flex-1 px-4 space-y-8 overflow-y-auto scrollbar-hide">
                 <div>
                     <span className="px-4 text-[10px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">{t('sidebar.main')}</span>
                     <div className="mt-4 space-y-1">
-                        {mainNav.map(item => <NavItemLink key={item.path} item={item} t={t} onClick={onMobileNavClick} />)}
+                        {mainNav.map(item => <NavItemLink key={item.path} item={item} onClick={onMobileNavClick} />)}
                     </div>
                 </div>
                 <div>
                     <span className="px-4 text-[10px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">Recursos</span>
                     <div className="mt-4 space-y-1">
-                        {supportNav.map(item => <NavItemLink key={item.path} item={item} t={t} onClick={onMobileNavClick} />)}
+                        {supportNav.map(item => <NavItemLink key={item.path} item={item} onClick={onMobileNavClick} />)}
                     </div>
                 </div>
             </nav>
@@ -113,16 +176,30 @@ export function Layout({ children }) {
             </div>
         </div>
     );
+}
+
+// ─── Layout ───────────────────────────────────────────────────
+export function Layout({ children }) {
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [isDark, setIsDark] = useDarkMode();
+    const location = useLocation();
+
+    const handleToggleDark = () => setIsDark(prev => !prev);
 
     return (
         <div className="min-h-screen bg-transparent flex text-zinc-900 dark:text-zinc-100 font-sans overflow-hidden">
             {/* Desktop Sidebar */}
             <aside className="hidden lg:flex flex-col w-72 glass-sidebar sticky top-0 h-screen border-r border-zinc-200/50 dark:border-zinc-800/50">
-                <SidebarContent />
+                <SidebarContent isDark={isDark} onToggleDark={handleToggleDark} />
             </aside>
 
             {/* Main Content Area */}
             <main className="flex-1 flex flex-col min-w-0 h-screen relative bg-transparent">
+                {/* Top Header – always visible, contains dark mode toggle */}
+                <header className="hidden lg:flex items-center justify-end gap-3 px-8 py-4 border-b border-zinc-200/30 dark:border-zinc-800/30 bg-white/30 dark:bg-zinc-900/30 backdrop-blur-sm sticky top-0 z-40">
+                    <DarkModeToggle isDark={isDark} onToggle={handleToggleDark} />
+                </header>
+
                 {/* Mobile Header */}
                 <header className="lg:hidden flex items-center justify-between p-4 glass sticky top-0 z-40 border-b border-zinc-200/50 dark:border-zinc-800/50">
                     <div className="flex items-center gap-2">
@@ -131,9 +208,12 @@ export function Layout({ children }) {
                         </div>
                         <span className="text-lg font-black tracking-tighter">FinanceFlow</span>
                     </div>
-                    <button onClick={() => setIsMobileMenuOpen(true)} className="p-2 -mr-2 text-zinc-600 dark:text-zinc-400">
-                        <Menu className="w-6 h-6" />
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <DarkModeToggle isDark={isDark} onToggle={handleToggleDark} compact />
+                        <button onClick={() => setIsMobileMenuOpen(true)} className="p-2 -mr-2 text-zinc-600 dark:text-zinc-400">
+                            <Menu className="w-6 h-6" />
+                        </button>
+                    </div>
                 </header>
 
                 {/* Page Content */}
@@ -177,11 +257,18 @@ export function Layout({ children }) {
                             >
                                 <X className="w-6 h-6" />
                             </button>
-                            <SidebarContent onMobileNavClick={() => setIsMobileMenuOpen(false)} />
+                            <SidebarContent 
+                                onMobileNavClick={() => setIsMobileMenuOpen(false)}
+                                isDark={isDark}
+                                onToggleDark={handleToggleDark}
+                            />
                         </motion.div>
                     </>
                 )}
             </AnimatePresence>
+
+            {/* Onboarding Tour – shows automatically for new users */}
+            <OnboardingTour />
         </div>
     );
 }

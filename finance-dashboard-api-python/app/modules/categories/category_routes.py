@@ -14,8 +14,11 @@ def get_categories(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
+    # Only return categories belonging to this user (default categories are created
+    # per-user at registration, so there's no need for the global is_default OR clause
+    # which was causing duplicate categories across all users)
     return db.query(models.Category).filter(
-        or_(models.Category.user_id == current_user.id, models.Category.is_default == True)
+        models.Category.user_id == current_user.id
     ).all()
 
 @router.post("/", response_model=schemas.Category)

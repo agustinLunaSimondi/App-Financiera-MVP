@@ -4,9 +4,9 @@ import { Plus, PiggyBank, Target, ArrowRight } from 'lucide-react';
 import { SavingGoalCard } from '../features/savings/components/SavingGoalCard';
 import { SavingGoalForm } from '../features/savings/components/SavingGoalForm';
 import { Modal } from '../features/common/components/Modal';
-import { Layout } from '../features/common/components/Layout';
+
 import { useFinance } from '../hooks/useFinance';
-import { formatCurrency } from '../utils/formatters';
+import { formatCurrency, formatCompactCurrency } from '../utils/formatters';
 
 export function SavingsPage() {
     const { savingsGoals, loading, addSavingGoal, updateSavingGoal, deleteSavingGoal } = useFinance();
@@ -66,8 +66,7 @@ export function SavingsPage() {
     const overallPercentage = totalTarget > 0 ? Math.round((totalCurrent / totalTarget) * 100) : 0;
 
     return (
-        <Layout>
-            <div className="space-y-10">
+        <div className="space-y-10">
                 <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                     <div>
                         <div className="flex items-center gap-3 mb-2">
@@ -93,7 +92,7 @@ export function SavingsPage() {
                         <div className="space-y-4 max-w-md">
                             <h3 className="text-2xl font-black text-zinc-900 dark:text-white">Tu Progreso Global</h3>
                             <p className="text-zinc-500 dark:text-zinc-400 font-medium">
-                                Has ahorrado <span className="text-emerald-600 dark:text-emerald-400 font-bold">{formatCurrency(totalCurrent)}</span> de tu objetivo total de <span className="text-zinc-900 dark:text-white font-bold">{formatCurrency(totalTarget)}</span>.
+                                Has ahorrado <span className="text-emerald-600 dark:text-emerald-400 font-bold">{formatCompactCurrency(totalCurrent)}</span> de tu objetivo total de <span className="text-zinc-900 dark:text-white font-bold">{formatCompactCurrency(totalTarget)}</span>.
                             </p>
                             <button className="flex items-center gap-2 text-sm font-bold text-emerald-600 dark:text-emerald-400 group/btn">
                                 Ver detalles del plan <ArrowRight className="w-4 h-4 transition-transform group-hover/btn:translate-x-1" />
@@ -173,6 +172,5 @@ export function SavingsPage() {
                     />
                 </Modal>
             </div>
-        </Layout>
     );
 }

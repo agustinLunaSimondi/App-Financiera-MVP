@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { toast } from 'sonner';
 import { useFinance } from '../hooks/useFinance';
-import { formatCurrency } from '../utils/formatters';
-import { Layout } from '../features/common/components/Layout';
+import { formatCurrency, formatCompactCurrency } from '../utils/formatters';
+
 import { Card } from '../features/common/components/Card';
 import { Modal } from '../features/common/components/Modal';
 import { BudgetForm } from '../features/budgets/components/BudgetForm';
@@ -18,11 +18,9 @@ export function BudgetPage() {
 
     if (loading) {
         return (
-            <Layout>
-                <div className="flex items-center justify-center h-64">
-                    <div className="text-zinc-500">Cargando presupuestos...</div>
-                </div>
-            </Layout>
+            <div className="flex items-center justify-center h-64">
+                <div className="text-zinc-500">Cargando presupuestos...</div>
+            </div>
         );
     }
 
@@ -88,8 +86,7 @@ export function BudgetPage() {
     };
 
     return (
-        <Layout>
-            <div className="space-y-10">
+        <div className="space-y-10">
                 {/* Header */}
                 <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                     <div>
@@ -150,8 +147,8 @@ export function BudgetPage() {
                                             <div>
                                                 <p className="text-[10px] uppercase tracking-widest font-black text-zinc-400 mb-1">Consumido</p>
                                                 <p className="text-2xl font-black text-zinc-900 dark:text-white">
-                                                    {formatCurrency(budget.spent)}
-                                                    <span className="text-sm font-medium text-zinc-400 ml-1">/ {formatCurrency(budget.amount)}</span>
+                                                    {formatCompactCurrency(budget.spent)}
+                                                    <span className="text-sm font-medium text-zinc-400 ml-1">/ {formatCompactCurrency(budget.amount)}</span>
                                                 </p>
                                             </div>
                                             <div className="text-right">
@@ -189,7 +186,7 @@ export function BudgetPage() {
                                                     <span>Dentro del presupuesto</span>
                                                 </div>
                                             )}
-                                            <span className="text-zinc-400">Restan {formatCurrency(budget.remaining)}</span>
+                                            <span className="text-zinc-400">Restan {formatCompactCurrency(budget.remaining)}</span>
                                         </div>
                                     </div>
 
@@ -226,6 +223,5 @@ export function BudgetPage() {
                     />
                 </Modal>
             </div>
-        </Layout>
     );
 }

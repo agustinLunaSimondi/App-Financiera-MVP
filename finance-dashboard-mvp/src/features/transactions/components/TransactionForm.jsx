@@ -1,16 +1,98 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import { Plus, X, Tag } from 'lucide-react';
 import { useFinance } from '../../../hooks/useFinance';
 
+const INPUT_CLS = "w-full px-4 py-2.5 border border-zinc-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-emerald-500 focus:outline-none transition-colors text-sm";
+const LABEL_CLS = "block text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5";
+
+// ─── Inline New Category Panel ─────────────────────────────
+function NewCategoryPanel({ onCreated, onCancel, transactionType }) {
+    const { addCategory } = useFinance();
+    const [name, setName] = useState('');
+    const [color, setColor] = useState('#10b981');
+    const [saving, setSaving] = useState(false);
+
+    const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316', '#84cc16'];
+
+    const handleSave = async () => {
+        if (!name.trim()) return;
+        setSaving(true);
+        try {
+            const type = transactionType === 'INCOME' ? 'INCOME' : 'EXPENSE';
+            const newCat = await addCategory({ name: name.trim(), color, type, isDefault: false });
+            toast.success(`Categoría "${name.trim()}" creada`);
+            onCreated(newCat);
+        } catch (err) {
+            toast.error('Error al crear la categoría');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    return (
+        <div className="mt-2 p-4 rounded-xl border-2 border-emerald-500/30 bg-emerald-500/5 space-y-3">
+            <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">Nueva categoría</span>
+                <button type="button" onClick={onCancel} className="text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors">
+                    <X size={16} />
+                </button>
+            </div>
+            <input
+                autoFocus
+                type="text"
+                placeholder="Nombre de la categoría"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleSave()}
+                className={INPUT_CLS}
+            />
+            <div>
+                <p className="text-xs text-zinc-400 mb-2">Color</p>
+                <div className="flex gap-2 flex-wrap">
+                    {COLORS.map(c => (
+                        <button
+                            key={c}
+                            type="button"
+                            onClick={() => setColor(c)}
+                            className="w-7 h-7 rounded-full transition-transform hover:scale-110"
+                            style={{ backgroundColor: c, outline: color === c ? `2px solid ${c}` : 'none', outlineOffset: 2 }}
+                        />
+                    ))}
+                </div>
+            </div>
+            <div className="flex gap-2 pt-1">
+                <button
+                    type="button"
+                    onClick={onCancel}
+                    className="flex-1 py-2 text-xs font-bold text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors"
+                >
+                    Cancelar
+                </button>
+                <button
+                    type="button"
+                    onClick={handleSave}
+                    disabled={!name.trim() || saving}
+                    className="flex-1 py-2 text-xs font-bold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50"
+                >
+                    {saving ? 'Guardando...' : 'Crear'}
+                </button>
+            </div>
+        </div>
+    );
+}
+
+// ─── Main Form ────────────────────────────────────────────
 export function TransactionForm({ onClose, transactionToEdit = null }) {
     const { addTransaction, updateTransaction, accounts, categories } = useFinance();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [showNewCategory, setShowNewCategory] = useState(false);
 
     const [formData, setFormData] = useState({
         description: '',
         amount: '',
-        type: 'EXPENSE', // EXPENSE | INCOME
+        type: 'EXPENSE',
         categoryId: '',
         accountId: '',
         date: new Date().toISOString().split('T')[0]
@@ -28,7 +110,6 @@ export function TransactionForm({ onClose, transactionToEdit = null }) {
                 date: txDate ? txDate.split('T')[0] : new Date().toISOString().split('T')[0]
             });
         } else {
-            // Defaults
             if (accounts.length > 0) setFormData(prev => ({ ...prev, accountId: accounts[0].id }));
             if (categories.length > 0) setFormData(prev => ({ ...prev, categoryId: categories[0].id }));
         }
@@ -39,13 +120,17 @@ export function TransactionForm({ onClose, transactionToEdit = null }) {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
+    const handleCategoryCreated = (newCat) => {
+        setFormData(prev => ({ ...prev, categoryId: newCat.id }));
+        setShowNewCategory(false);
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
         setLoading(true);
 
         try {
-            // Validaciones
             if (!formData.accountId) throw new Error('Debes seleccionar una cuenta');
             if (!formData.categoryId) throw new Error('Debes seleccionar una categoría');
             if (!formData.amount || parseFloat(formData.amount) <= 0) throw new Error('El monto debe ser mayor a 0');
@@ -77,33 +162,38 @@ export function TransactionForm({ onClose, transactionToEdit = null }) {
         }
     };
 
+    // Filter categories by transaction type
+    const filteredCategories = categories.filter(cat =>
+        cat.type === formData.type || cat.type === 'BOTH' || !cat.type
+    );
+
     return (
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
-                <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg border border-red-100">
+                <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm p-3 rounded-xl border border-red-100 dark:border-red-900/30">
                     {error}
                 </div>
             )}
 
             {/* Tipo de Transacción */}
-            <div className="flex gap-2 p-1 bg-zinc-100 dark:bg-zinc-700/50 rounded-lg">
+            <div className="flex gap-2 p-1 bg-zinc-100 dark:bg-zinc-800 rounded-xl">
                 <button
                     type="button"
                     onClick={() => setFormData(prev => ({ ...prev, type: 'EXPENSE' }))}
-                    className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-colors ${formData.type === 'EXPENSE'
-                        ? 'bg-white dark:bg-zinc-600 text-red-600 dark:text-red-400 shadow-sm'
-                        : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400'
-                        }`}
+                    className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${formData.type === 'EXPENSE'
+                        ? 'bg-white dark:bg-zinc-700 text-red-600 dark:text-red-400 shadow-sm'
+                        : 'text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300'
+                    }`}
                 >
                     Gasto
                 </button>
                 <button
                     type="button"
                     onClick={() => setFormData(prev => ({ ...prev, type: 'INCOME' }))}
-                    className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-colors ${formData.type === 'INCOME'
-                        ? 'bg-white dark:bg-zinc-600 text-emerald-600 dark:text-emerald-400 shadow-sm'
-                        : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400'
-                        }`}
+                    className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${formData.type === 'INCOME'
+                        ? 'bg-white dark:bg-zinc-700 text-emerald-600 dark:text-emerald-400 shadow-sm'
+                        : 'text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300'
+                    }`}
                 >
                     Ingreso
                 </button>
@@ -111,18 +201,16 @@ export function TransactionForm({ onClose, transactionToEdit = null }) {
 
             {/* Monto */}
             <div>
-                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                    Monto
-                </label>
+                <label className={LABEL_CLS}>Monto</label>
                 <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500">$</span>
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400 font-bold">$</span>
                     <input
                         type="number"
                         name="amount"
                         step="0.01"
                         placeholder="0.00"
                         required
-                        className="w-full pl-7 pr-4 py-2 border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                        className={`${INPUT_CLS} pl-8`}
                         value={formData.amount}
                         onChange={handleChange}
                     />
@@ -131,70 +219,81 @@ export function TransactionForm({ onClose, transactionToEdit = null }) {
 
             {/* Descripción */}
             <div>
-                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                    Descripción
-                </label>
+                <label className={LABEL_CLS}>Descripción</label>
                 <input
                     type="text"
                     name="description"
                     placeholder="Ej. Compra supermercado"
                     required
-                    className="w-full px-4 py-2 border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                    className={INPUT_CLS}
                     value={formData.description}
                     onChange={handleChange}
                 />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-                {/* Categoría */}
-                <div>
-                    <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                        Categoría
-                    </label>
-                    <select
-                        name="categoryId"
-                        required
-                        className="w-full px-4 py-2 border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-                        value={formData.categoryId}
-                        onChange={handleChange}
-                    >
-                        <option value="">Seleccionar</option>
-                        {categories.map(cat => (
-                            <option key={cat.id} value={cat.id}>{cat.name}</option>
-                        ))}
-                    </select>
+            {/* Categoría con opción de crear nueva */}
+            <div>
+                <div className="flex items-center justify-between mb-1.5">
+                    <label className={LABEL_CLS + ' mb-0'}>Categoría</label>
+                    {!showNewCategory && (
+                        <button
+                            type="button"
+                            onClick={() => setShowNewCategory(true)}
+                            className="flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline"
+                        >
+                            <Plus size={12} /> Nueva
+                        </button>
+                    )}
                 </div>
+                <select
+                    name="categoryId"
+                    required
+                    className={INPUT_CLS}
+                    value={formData.categoryId}
+                    onChange={handleChange}
+                >
+                    <option value="">Seleccionar categoría</option>
+                    {filteredCategories.map(cat => (
+                        <option key={cat.id} value={cat.id}>{cat.name}</option>
+                    ))}
+                    {filteredCategories.length === 0 && categories.map(cat => (
+                        <option key={cat.id} value={cat.id}>{cat.name}</option>
+                    ))}
+                </select>
+                {showNewCategory && (
+                    <NewCategoryPanel
+                        transactionType={formData.type}
+                        onCreated={handleCategoryCreated}
+                        onCancel={() => setShowNewCategory(false)}
+                    />
+                )}
+            </div>
 
-                {/* Cuenta */}
-                <div>
-                    <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                        Cuenta
-                    </label>
-                    <select
-                        name="accountId"
-                        required
-                        className="w-full px-4 py-2 border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-                        value={formData.accountId}
-                        onChange={handleChange}
-                    >
-                        <option value="">Seleccionar</option>
-                        {accounts.map(acc => (
-                            <option key={acc.id} value={acc.id}>{acc.name}</option>
-                        ))}
-                    </select>
-                </div>
+            {/* Cuenta */}
+            <div>
+                <label className={LABEL_CLS}>Cuenta</label>
+                <select
+                    name="accountId"
+                    required
+                    className={INPUT_CLS}
+                    value={formData.accountId}
+                    onChange={handleChange}
+                >
+                    <option value="">Seleccionar cuenta</option>
+                    {accounts.map(acc => (
+                        <option key={acc.id} value={acc.id}>{acc.name}</option>
+                    ))}
+                </select>
             </div>
 
             {/* Fecha */}
             <div>
-                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                    Fecha
-                </label>
+                <label className={LABEL_CLS}>Fecha</label>
                 <input
                     type="date"
                     name="date"
                     required
-                    className="w-full px-4 py-2 border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                    className={INPUT_CLS}
                     value={formData.date}
                     onChange={handleChange}
                 />
@@ -205,14 +304,14 @@ export function TransactionForm({ onClose, transactionToEdit = null }) {
                 <button
                     type="button"
                     onClick={onClose}
-                    className="flex-1 px-4 py-2 border border-zinc-200 dark:border-zinc-700 rounded-lg text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+                    className="flex-1 px-4 py-2.5 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors font-medium text-sm"
                 >
                     Cancelar
                 </button>
                 <button
                     type="submit"
                     disabled={loading}
-                    className="flex-1 px-4 py-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-lg hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors disabled:opacity-50 font-medium"
+                    className="flex-1 px-4 py-2.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-xl hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors disabled:opacity-50 font-bold text-sm"
                 >
                     {loading ? 'Guardando...' : (transactionToEdit ? 'Actualizar' : 'Guardar')}
                 </button>

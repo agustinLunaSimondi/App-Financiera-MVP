@@ -20,6 +20,10 @@ export const es = {
     "sidebar.settings": "Configuración",
     "sidebar.help": "Ayuda",
     "sidebar.logout": "Cerrar Sesión",
+    "sidebar.main": "Principal",
+    "Recurrentes": "Recurrentes",
+    "Integraciones": "Integraciones",
+    "Ayuda / Tutorial": "Ayuda / Tutorial",
 
     // Dashboard
     "dashboard.title": "Panorama Financiero",

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Layout } from '../features/common/components/Layout';
+
 import {
     GraduationCap, TrendingUp, PiggyBank, CreditCard, Calculator,
     ChevronDown, ChevronUp, Lightbulb, BookOpen, DollarSign, Percent,
@@ -170,7 +170,6 @@ function ConceptCard({ concept }) {
                                 return <p key={i} className="ml-4 text-sm">• {line.slice(2)}</p>;
                             }
                             if (line.trim() === '') return <br key={i} />;
-                            // Bold inline
                             const parts = line.split(/(\*\*.*?\*\*)/g);
                             return (
                                 <p key={i} className="text-sm leading-relaxed">
@@ -218,60 +217,38 @@ function PlazoFijoCalculator() {
                         Capital a invertir: {formatMoney(capital)}
                     </label>
                     <input
-                        type="range"
-                        min="10000"
-                        max="10000000"
-                        step="10000"
-                        value={capital}
+                        type="range" min="10000" max="10000000" step="10000" value={capital}
                         onChange={(e) => setCapital(Number(e.target.value))}
                         className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-green-500"
                     />
                     <div className="flex justify-between text-xs text-gray-400 mt-1">
-                        <span>$10.000</span>
-                        <span>$10.000.000</span>
+                        <span>$10.000</span><span>$10.000.000</span>
                     </div>
                 </div>
-
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        TNA: {tna}%
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">TNA: {tna}%</label>
                     <input
-                        type="range"
-                        min="1"
-                        max="200"
-                        step="0.5"
-                        value={tna}
+                        type="range" min="1" max="200" step="0.5" value={tna}
                         onChange={(e) => setTna(Number(e.target.value))}
                         className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-green-500"
                     />
                     <div className="flex justify-between text-xs text-gray-400 mt-1">
-                        <span>1%</span>
-                        <span>200%</span>
+                        <span>1%</span><span>200%</span>
                     </div>
                 </div>
-
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Plazo: {days} días
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Plazo: {days} días</label>
                     <input
-                        type="range"
-                        min="30"
-                        max="365"
-                        step="1"
-                        value={days}
+                        type="range" min="30" max="365" step="1" value={days}
                         onChange={(e) => setDays(Number(e.target.value))}
                         className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-green-500"
                     />
                     <div className="flex justify-between text-xs text-gray-400 mt-1">
-                        <span>30 días</span>
-                        <span>365 días</span>
+                        <span>30 días</span><span>365 días</span>
                     </div>
                 </div>
             </div>
 
-            {/* Results */}
             <div className="mt-6 grid grid-cols-3 gap-3">
                 <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 text-center">
                     <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Interés ganado</p>
@@ -294,52 +271,50 @@ function PlazoFijoCalculator() {
 
 export function AcademyPage() {
     return (
-        <Layout>
-            <div className="space-y-8">
-                {/* Header */}
-                <div className="flex items-center gap-4">
-                    <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-3 rounded-xl shadow-lg">
-                        <GraduationCap className="h-8 w-8 text-white" />
-                    </div>
-                    <div>
-                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Academia Financiera</h1>
-                        <p className="text-gray-500 dark:text-gray-400">Aprendé conceptos clave para tomar mejores decisiones con tu dinero</p>
-                    </div>
+        <div className="space-y-8">
+            {/* Header */}
+            <div className="flex items-center gap-4">
+                <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-3 rounded-xl shadow-lg">
+                    <GraduationCap className="h-8 w-8 text-white" />
                 </div>
-
-                {/* Tips Banner */}
-                <div className="bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 dark:from-blue-500/20 dark:via-purple-500/20 dark:to-pink-500/20 border border-blue-200/50 dark:border-blue-800/50 rounded-xl p-5">
-                    <h2 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                        <Lightbulb className="h-5 w-5 text-amber-500" />
-                        Tips Financieros Rápidos
-                    </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                        {tips.map((tip, i) => {
-                            const Icon = tip.icon;
-                            return (
-                                <div key={i} className="flex items-start gap-3 bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-lg p-3">
-                                    <Icon className="h-4 w-4 text-blue-500 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-                                    <p className="text-sm text-gray-700 dark:text-gray-300">{tip.text}</p>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-
-                {/* Calculator */}
-                <PlazoFijoCalculator />
-
-                {/* Concepts */}
                 <div>
-                    <h2 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                        <BookOpen className="h-5 w-5 text-purple-500" />
-                        Conceptos Fundamentales
-                    </h2>
-                    <div className="space-y-3">
-                        {concepts.map(c => <ConceptCard key={c.id} concept={c} />)}
-                    </div>
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Academia Financiera</h1>
+                    <p className="text-gray-500 dark:text-gray-400">Aprendé conceptos clave para tomar mejores decisiones con tu dinero</p>
                 </div>
             </div>
-        </Layout>
+
+            {/* Tips Banner */}
+            <div className="bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 dark:from-blue-500/20 dark:via-purple-500/20 dark:to-pink-500/20 border border-blue-200/50 dark:border-blue-800/50 rounded-xl p-5">
+                <h2 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                    <Lightbulb className="h-5 w-5 text-amber-500" />
+                    Tips Financieros Rápidos
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {tips.map((tip, i) => {
+                        const Icon = tip.icon;
+                        return (
+                            <div key={i} className="flex items-start gap-3 bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-lg p-3">
+                                <Icon className="h-4 w-4 text-blue-500 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                                <p className="text-sm text-gray-700 dark:text-gray-300">{tip.text}</p>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* Calculator */}
+            <PlazoFijoCalculator />
+
+            {/* Concepts */}
+            <div>
+                <h2 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                    <BookOpen className="h-5 w-5 text-purple-500" />
+                    Conceptos Fundamentales
+                </h2>
+                <div className="space-y-3">
+                    {concepts.map(c => <ConceptCard key={c.id} concept={c} />)}
+                </div>
+            </div>
+        </div>
     );
 }

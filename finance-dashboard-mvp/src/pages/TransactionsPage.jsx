@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { useFinance } from '../hooks/useFinance';
-import { Layout } from '../features/common/components/Layout';
+
 import { Card } from '../features/common/components/Card';
 import { Search, Filter, Plus, Edit2, Trash2, Calendar } from 'lucide-react';
 import { Modal } from '../features/common/components/Modal';
@@ -42,11 +42,9 @@ export function TransactionsPage() {
 
     if (loading) {
         return (
-            <Layout>
-                <div className="flex items-center justify-center h-64">
-                    <div className="text-zinc-500">Cargando transacciones...</div>
-                </div>
-            </Layout>
+            <div className="flex items-center justify-center h-64">
+                <div className="text-zinc-500">Cargando transacciones...</div>
+            </div>
         );
     }
 
@@ -73,8 +71,7 @@ export function TransactionsPage() {
     }, [searchQuery, categoryFilter]);
 
     return (
-        <Layout>
-            <div className="space-y-10">
+        <div className="space-y-10">
                 {/* Header */}
                 <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                     <div>
@@ -234,6 +231,5 @@ export function TransactionsPage() {
                     />
                 </Modal>
             </div>
-        </Layout>
     );
 }

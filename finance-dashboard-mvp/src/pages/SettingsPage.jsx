@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useFinance } from '../hooks/useFinance';
-import { Layout } from '../features/common/components/Layout';
+
 import { Card } from '../features/common/components/Card';
 import { Modal } from '../features/common/components/Modal';
 import { CategoryForm } from '../features/categories/components/CategoryForm';
-import { Moon, Sun, Globe, DollarSign, Palette, Download, Trash2, Edit2, Plus, X } from 'lucide-react';
+import { Moon, Sun, Globe, DollarSign, Palette, Download, Trash2, Edit2, Plus, X, PlayCircle } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { resetOnboarding } from '../features/common/components/OnboardingTour';
+import { toast } from 'sonner';
 
 export function SettingsPage() {
     const {
@@ -97,7 +99,7 @@ export function SettingsPage() {
     };
 
     return (
-        <Layout>
+        <>
             <div className="space-y-6">
                 {/* Header */}
                 <div>
@@ -233,6 +235,24 @@ export function SettingsPage() {
                             </button>
 
                             <button
+                                onClick={() => {
+                                    resetOnboarding();
+                                    toast.success('El tour se mostrará al volver al dashboard');
+                                }}
+                                className="w-full px-4 py-2 text-left border border-blue-200 dark:border-blue-900/30 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors flex items-center justify-between"
+                            >
+                                <div>
+                                    <p className="font-medium text-blue-700 dark:text-blue-400">
+                                        Ver Tour Nuevamente
+                                    </p>
+                                    <p className="text-sm text-blue-500 dark:text-blue-500 opacity-80">
+                                        Volvé a ver la guía de introducción de FinanceFlow
+                                    </p>
+                                </div>
+                                <PlayCircle className="w-5 h-5 text-blue-400" />
+                            </button>
+
+                            <button
                                 onClick={handleDeleteAccount}
                                 className="w-full px-4 py-2 text-left border border-red-200 dark:border-red-900/30 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors text-red-600 dark:text-red-400 flex items-center justify-between"
                             >
@@ -338,6 +358,6 @@ export function SettingsPage() {
                     )}
                 </div>
             </Modal>
-        </Layout>
+        </>
     );
 }

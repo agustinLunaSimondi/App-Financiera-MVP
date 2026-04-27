@@ -1,6 +1,6 @@
 import React from 'react';
 import { useFinance } from '../hooks/useFinance';
-import { Layout } from '../features/common/components/Layout';
+
 import { KPICard } from '../features/dashboard/components/KPICard';
 import { Card } from '../features/common/components/Card';
 import { IncomeExpenseChart } from '../features/dashboard/components/charts/IncomeExpenseChart';
@@ -20,7 +20,7 @@ import {
     groupTransactionsByCategory,
     calculatePercentageChange
 } from '../utils/calculations';
-import { formatCurrency } from '../utils/formatters';
+import { formatCurrency, formatCompactCurrency } from '../utils/formatters';
 import { useLanguage } from '../contexts/LanguageContext';
 import { AIInsightsCard } from './components/AIInsightsCard';
 
@@ -84,11 +84,9 @@ export function DashboardPage() {
 
     if (loading) {
         return (
-            <Layout>
-                <div className="flex items-center justify-center h-64">
-                    <div className="text-zinc-500">Cargando datos...</div>
-                </div>
-            </Layout>
+            <div className="flex items-center justify-center h-64">
+                <div className="text-zinc-500">Cargando datos...</div>
+            </div>
         );
     }
 
@@ -102,28 +100,28 @@ export function DashboardPage() {
     const kpiData = [
         {
             label: t('balance'),
-            value: formatCurrency(totalBalance),
+            value: formatCompactCurrency(totalBalance),
             change: '+2.5%',
             type: 'positive',
             icon: Wallet
         },
         {
             label: t('income'),
-            value: formatCurrency(totalIncome),
+            value: formatCompactCurrency(totalIncome),
             change: t('onTrack'),
             type: 'neutral',
             icon: TrendingUp
         },
         {
             label: t('expenses'),
-            value: formatCurrency(totalExpenses),
+            value: formatCompactCurrency(totalExpenses),
             change: '-4.1%',
             type: 'positive',
             icon: TrendingDown
         },
         {
             label: t('netSavings'),
-            value: formatCurrency(netSavings),
+            value: formatCompactCurrency(netSavings),
             change: '+12%',
             type: 'positive',
             icon: PiggyBank
@@ -168,8 +166,7 @@ export function DashboardPage() {
         .slice(0, 5);
 
     return (
-        <Layout>
-            <div className="space-y-10">
+        <div className="space-y-10">
                 {/* Hero Section */}
                 <div className="relative group">
                     <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 to-blue-600 rounded-3xl blur opacity-10 group-hover:opacity-20 transition duration-1000 group-hover:duration-200"></div>
@@ -333,6 +330,5 @@ export function DashboardPage() {
                     </div>
                 </Card>
             </div>
-        </Layout>
     );
 }

@@ -20,6 +20,10 @@ export const en = {
     "sidebar.settings": "Settings",
     "sidebar.help": "Help",
     "sidebar.logout": "Log Out",
+    "sidebar.main": "Main",
+    "Recurrentes": "Recurring",
+    "Integraciones": "Integrations",
+    "Ayuda / Tutorial": "Help / Tutorial",
 
     // Dashboard
     "dashboard.title": "Financial Overview",

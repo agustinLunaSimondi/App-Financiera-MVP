@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useLocation } from 'react-router-dom';
-import { Layout } from '../features/common/components/Layout';
+
 import { Card } from '../features/common/components/Card';
 import { cn } from '../lib/utils';
 import {
@@ -103,8 +103,7 @@ export function IntegrationsPage() {
     };
 
     return (
-        <Layout>
-            <div className="space-y-10">
+        <div className="space-y-10">
                 {/* Header */}
                 <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                     <div>
@@ -297,6 +296,5 @@ export function IntegrationsPage() {
                     </Card>
                 </div>
             </div>
-        </Layout>
     );
 }

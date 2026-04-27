@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useFinance } from '../hooks/useFinance';
-import { Layout } from '../features/common/components/Layout';
+
 import { Modal } from '../features/common/components/Modal';
 import { Plus, Clock } from 'lucide-react';
 import { RecurringTransactionForm } from '../features/recurring/components/RecurringTransactionForm';
@@ -49,8 +49,7 @@ export function RecurringPage() {
     };
 
     return (
-        <Layout>
-            <div className="space-y-10">
+        <div className="space-y-10">
                 <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                     <div>
                         <div className="flex items-center gap-3 mb-2">
@@ -117,6 +116,5 @@ export function RecurringPage() {
                     />
                 </Modal>
             </div>
-        </Layout>
     );
 }

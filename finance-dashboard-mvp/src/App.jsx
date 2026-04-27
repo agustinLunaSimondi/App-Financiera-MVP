@@ -1,10 +1,11 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { FinanceProvider } from './contexts/FinanceContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ErrorBoundary } from './features/common/components/ErrorBoundary';
 import { Toaster } from 'sonner';
 import { LanguageProvider } from './contexts/LanguageContext';
+import { Layout } from './features/common/components/Layout';
 
 // Pages
 import { DashboardPage } from './pages/DashboardPage';
@@ -20,15 +21,21 @@ import { IntegrationsPage } from './pages/IntegrationsPage';
 import { AcademyPage } from './pages/AcademyPage';
 import HelpPage from './pages/HelpPage';
 
-const PrivateRoute = ({ children }) => {
-  const { isAuthenticated, loading } = useAuth();
+// Layout wrapper for private routes – keeps Layout mounted across navigations
+// so the sidebar scroll position is preserved
+function PrivateLayout() {
+  const { isAuthenticated } = useAuth();
 
-  if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  if (!isAuthenticated) {
+    return <Navigate to="/login" />;
   }
 
-  return isAuthenticated ? children : <Navigate to="/login" />;
-};
+  return (
+    <Layout>
+      <Outlet />
+    </Layout>
+  );
+}
 
 function App() {
   return (
@@ -38,19 +45,23 @@ function App() {
           <AuthProvider>
             <FinanceProvider>
               <Routes>
+                {/* Public routes */}
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
 
-                <Route path="/" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
-                <Route path="/transactions" element={<PrivateRoute><TransactionsPage /></PrivateRoute>} />
-                <Route path="/budget" element={<PrivateRoute><BudgetPage /></PrivateRoute>} />
-                <Route path="/savings" element={<PrivateRoute><SavingsPage /></PrivateRoute>} />
-                <Route path="/recurring" element={<PrivateRoute><RecurringPage /></PrivateRoute>} />
-                <Route path="/cards" element={<PrivateRoute><CardsPage /></PrivateRoute>} />
-                <Route path="/integrations" element={<PrivateRoute><IntegrationsPage /></PrivateRoute>} />
-                <Route path="/academy" element={<PrivateRoute><AcademyPage /></PrivateRoute>} />
-                <Route path="/settings" element={<PrivateRoute><SettingsPage /></PrivateRoute>} />
-                <Route path="/help" element={<PrivateRoute><HelpPage /></PrivateRoute>} />
+                {/* Private routes – all share the same persistent Layout */}
+                <Route element={<PrivateLayout />}>
+                  <Route path="/" element={<DashboardPage />} />
+                  <Route path="/transactions" element={<TransactionsPage />} />
+                  <Route path="/budget" element={<BudgetPage />} />
+                  <Route path="/savings" element={<SavingsPage />} />
+                  <Route path="/recurring" element={<RecurringPage />} />
+                  <Route path="/cards" element={<CardsPage />} />
+                  <Route path="/integrations" element={<IntegrationsPage />} />
+                  <Route path="/academy" element={<AcademyPage />} />
+                  <Route path="/settings" element={<SettingsPage />} />
+                  <Route path="/help" element={<HelpPage />} />
+                </Route>
               </Routes>
               <Toaster position="top-right" richColors />
             </FinanceProvider>

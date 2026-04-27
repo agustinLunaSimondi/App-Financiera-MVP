@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useFinance } from '../hooks/useFinance';
-import { Layout } from '../features/common/components/Layout';
+
 import { Card } from '../features/common/components/Card';
 import { Plus, CreditCard as CreditCardIcon, Wallet as WalletIcon, Edit2, Trash2, Wallet, CreditCard } from 'lucide-react';
 import { Modal } from '../features/common/components/Modal';
@@ -33,11 +33,9 @@ export function CardsPage() {
 
     if (loading) {
         return (
-            <Layout>
-                <div className="flex items-center justify-center h-64">
-                    <div className="text-zinc-500">Cargando cuentas...</div>
-                </div>
-            </Layout>
+            <div className="flex items-center justify-center h-64">
+                <div className="text-zinc-500">Cargando cuentas...</div>
+            </div>
         );
     }
 
@@ -71,8 +69,7 @@ export function CardsPage() {
     };
 
     return (
-        <Layout>
-            <div className="space-y-10">
+        <div className="space-y-10">
                 {/* Header */}
                 <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                     <div>
@@ -188,6 +185,5 @@ export function CardsPage() {
                     />
                 </Modal>
             </div>
-        </Layout>
     );
 }
