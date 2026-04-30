@@ -259,6 +259,11 @@ export const deleteRecurring = async (id) => {
 
 // ============= MERCADO PAGO =============
 
+export const getMercadoPagoBalance = async () => {
+    const response = await client.get('/mercadopago/balance');
+    return response.data;
+};
+
 export const getMercadoPagoAuthUrl = async () => {
     const response = await client.get('/mercadopago/auth-url');
     return response.data.authUrl;

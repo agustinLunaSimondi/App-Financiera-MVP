@@ -1,6 +1,6 @@
 """
 Endpoints de integración con Mercado Pago.
-OAuth flow + sincronización de pagos.
+OAuth flow + sincronización de pagos + saldo de cuenta.
 """
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -33,7 +33,7 @@ async def handle_callback(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    """Intercambia el código OAuth por tokens y guarda la conexión."""
+    """Intercambia el código OAuth por tokens, guarda la conexión y sincroniza automáticamente."""
     try:
         tokens = await mp_service.exchange_code_for_tokens(callback_data.code)
     except ValueError as e:
@@ -67,6 +67,32 @@ async def handle_callback(
     
     logger.info(f"Mercado Pago conectado para usuario {current_user.id}")
     
+    # Auto-crear cuenta y categorías MP si no existen
+    mp_account = mp_service.get_or_create_mp_account(db, current_user)
+    mp_categories = mp_service.get_or_create_mp_categories(db, current_user)
+    
+    # Auto-sincronizar últimos 90 días al conectar por primera vez
+    try:
+        since = datetime.now(timezone.utc) - timedelta(days=90)
+        payments = await mp_service.fetch_payments(connection.access_token, since)
+        
+        if payments:
+            mp_service.sync_payments_to_transactions(
+                db=db,
+                user=current_user,
+                payments=payments,
+                default_account_id=mp_account.id,
+                default_category_id=mp_categories["MP Pagos"].id,
+                income_category_id=mp_categories["MP Cobros"].id,
+            )
+        
+        connection.last_sync_at = datetime.now(timezone.utc)
+        db.commit()
+        db.refresh(connection)
+        logger.info(f"Auto-sincronización completada: {len(payments)} pagos procesados para usuario {current_user.id}")
+    except Exception as e:
+        logger.warning(f"Auto-sincronización falló (no es crítico): {e}")
+    
     return schemas.MercadoPagoStatus(
         connected=True,
         mp_user_id=connection.mp_user_id,
@@ -94,6 +120,34 @@ def get_status(
         last_sync_at=connection.last_sync_at,
         expires_at=connection.expires_at,
     )
+
+
+@router.get("/balance")
+async def get_balance(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Devuelve el saldo e ingresos/egresos del mes de la cuenta Mercado Pago."""
+    connection = db.query(models.MercadoPagoConnection).filter(
+        models.MercadoPagoConnection.user_id == current_user.id
+    ).first()
+    
+    if not connection:
+        raise HTTPException(status_code=404, detail="No hay conexión con Mercado Pago")
+    
+    # Refrescar token si es necesario
+    if connection.expires_at and connection.expires_at < datetime.now(timezone.utc):
+        try:
+            new_tokens = await mp_service.refresh_access_token(connection)
+            connection.access_token = new_tokens["access_token"]
+            connection.refresh_token = new_tokens["refresh_token"]
+            connection.expires_at = datetime.now(timezone.utc) + timedelta(seconds=new_tokens["expires_in"])
+            db.commit()
+        except ValueError:
+            raise HTTPException(status_code=401, detail="Token expirado. Reconectá tu cuenta de Mercado Pago.")
+    
+    balance_data = await mp_service.fetch_account_balance(connection.access_token)
+    return balance_data
 
 
 @router.post("/sync", response_model=schemas.MercadoPagoSyncResult)
@@ -126,7 +180,6 @@ async def sync_transactions(
     # Determinar desde cuándo buscar
     since = connection.last_sync_at
     if not since:
-        # Primera vez: últimos 90 días
         since = datetime.now(timezone.utc) - timedelta(days=90)
     
     # Obtener pagos de MP
@@ -134,7 +187,6 @@ async def sync_transactions(
         payments = await mp_service.fetch_payments(connection.access_token, since)
     except ValueError as e:
         if str(e) == "TOKEN_EXPIRED":
-            # Intentar refresh
             try:
                 new_tokens = await mp_service.refresh_access_token(connection)
                 connection.access_token = new_tokens["access_token"]
@@ -147,43 +199,18 @@ async def sync_transactions(
         else:
             raise HTTPException(status_code=500, detail=str(e))
     
-    # Necesitamos una cuenta y categoría por defecto
-    default_account = db.query(models.Account).filter(
-        models.Account.user_id == current_user.id
-    ).first()
-    
-    if not default_account:
-        raise HTTPException(
-            status_code=400,
-            detail="Necesitás al menos una cuenta para importar transacciones."
-        )
-    
-    # Buscar o crear categoría "Mercado Pago"
-    mp_category = db.query(models.Category).filter(
-        models.Category.user_id == current_user.id,
-        models.Category.name == "Mercado Pago",
-    ).first()
-    
-    if not mp_category:
-        mp_category = models.Category(
-            user_id=current_user.id,
-            name="Mercado Pago",
-            color="#00AAFF",
-            icon="credit-card",
-            type=models.CategoryType.EXPENSE,
-            is_default=False,
-        )
-        db.add(mp_category)
-        db.commit()
-        db.refresh(mp_category)
+    # Obtener o crear cuenta y categorías de MP
+    mp_account = mp_service.get_or_create_mp_account(db, current_user)
+    mp_categories = mp_service.get_or_create_mp_categories(db, current_user)
     
     # Sincronizar
     result = mp_service.sync_payments_to_transactions(
         db=db,
         user=current_user,
         payments=payments,
-        default_account_id=default_account.id,
-        default_category_id=mp_category.id,
+        default_account_id=mp_account.id,
+        default_category_id=mp_categories["MP Pagos"].id,
+        income_category_id=mp_categories["MP Cobros"].id,
     )
     
     # Actualizar última sincronización
