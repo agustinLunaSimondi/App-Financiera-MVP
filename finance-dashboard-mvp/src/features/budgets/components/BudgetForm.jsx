@@ -41,7 +41,14 @@ export function BudgetForm({ onSubmit, onCancel, initialData = null, categories 
     };
 
     // Filtrar categorías que sean de GASTO (EXPENSE) solamente, ya que los presupuestos suelen ser para gastos
-    const expenseCategories = categories.filter(c => c.type === 'EXPENSE');
+    // La comparación es case-insensitive para cubrir distintas serializaciones del enum (EXPENSE / expense)
+    const expenseCategories = categories.filter(c =>
+        typeof c.type === 'string'
+            ? c.type.toUpperCase() === 'EXPENSE'
+            : c.type === 'EXPENSE'
+    );
+    // Si por alguna razón no hay categorías de gasto, mostrar todas como fallback
+    const categoryOptions = expenseCategories.length > 0 ? expenseCategories : categories;
 
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -69,8 +76,10 @@ export function BudgetForm({ onSubmit, onCancel, initialData = null, categories 
                     required
                     className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none transition-colors"
                 >
-                    <option value="">Selecciona una categoría</option>
-                    {expenseCategories.map(cat => (
+                    <option value="">
+                        {categories.length === 0 ? 'Cargando categorías...' : 'Selecciona una categoría'}
+                    </option>
+                    {categoryOptions.map(cat => (
                         <option key={cat.id} value={cat.id}>
                             {cat.name}
                         </option>

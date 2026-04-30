@@ -27,7 +27,7 @@ export function SavingGoalCard({ goal, onEdit, onDelete, onContribute, delay = 0
                         </div>
                     </div>
                 </div>
-                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex gap-1">
                     <button
                         onClick={() => onEdit(goal)}
                         className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors text-zinc-400 hover:text-blue-500"
