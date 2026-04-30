@@ -246,7 +246,7 @@ export function SettingsPage() {
                                         Ver Tour Nuevamente
                                     </p>
                                     <p className="text-sm text-blue-500 dark:text-blue-500 opacity-80">
-                                        Volvé a ver la guía de introducción de FinanceFlow
+                                        Volvé a ver la guía de introducción de FinanzApp
                                     </p>
                                 </div>
                                 <PlayCircle className="w-5 h-5 text-blue-400" />

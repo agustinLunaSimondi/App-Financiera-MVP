@@ -183,7 +183,7 @@ export function DashboardPage() {
                                 <Zap className="w-3 h-3 fill-current" /> {t('dashboard.online')}
                             </motion.div>
                             <h1 className="text-4xl font-black text-zinc-900 dark:text-zinc-100 tracking-tighter">
-                                {t('dashboard.title')} <span className="premium-gradient-text">FinanceFlow</span>
+                                {t('dashboard.title')} <span className="premium-gradient-text">FinanzApp</span>
                             </h1>
                             <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400 max-w-md">
                                 {t('dashboard.subtitle')}

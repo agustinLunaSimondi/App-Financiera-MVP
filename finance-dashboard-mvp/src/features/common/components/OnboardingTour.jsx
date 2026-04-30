@@ -13,7 +13,7 @@ import {
     ArrowRight, X, CheckCircle2, Sparkles
 } from 'lucide-react';
 
-const STORAGE_KEY = 'financeflow_onboarding_done';
+const STORAGE_KEY = 'finanzapp_onboarding_done';
 
 // ─── Steps Definition ─────────────────────────────────────
 const STEPS = [
@@ -21,7 +21,7 @@ const STEPS = [
         id: 'welcome',
         icon: Sparkles,
         iconColor: 'from-emerald-400 to-blue-500',
-        title: '¡Bienvenido a FinanceFlow!',
+        title: '¡Bienvenido a FinanzApp!',
         description: 'Tu asistente financiero personal. En menos de 2 minutos te mostramos todo lo que podés hacer.',
         hint: null,
         cta: 'Comenzar tour',

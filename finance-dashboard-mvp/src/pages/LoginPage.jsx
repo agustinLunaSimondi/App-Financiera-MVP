@@ -58,7 +58,7 @@ export function LoginPage() {
                         <Wallet className="h-8 w-8 text-white" />
                     </div>
                     <h2 className="text-3xl font-black text-zinc-900 dark:text-white tracking-tighter">
-                        Bienvenido a <span className="premium-gradient-text">FinanceFlow</span>
+                        Bienvenido a <span className="premium-gradient-text">FinanzApp</span>
                     </h2>
                     <p className="text-zinc-500 dark:text-zinc-400 font-medium text-sm">
                         Tu libertad financiera comienza con un buen control.
