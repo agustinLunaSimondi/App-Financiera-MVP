@@ -33,11 +33,12 @@ export function KPICard({ label, value, change, type, icon, delay = 0 }) {
                         <span className="text-3xl font-black text-zinc-900 dark:text-white tracking-tighter block">{value}</span>
                         <div className={cn(
                             "inline-flex items-center gap-1 text-[11px] font-black px-2 py-0.5 rounded-lg transition-colors",
+                            change === '--' ? "text-zinc-400 dark:text-zinc-500" :
                             change.includes('+') ? "text-emerald-600 dark:text-emerald-400" :
-                                change.includes('-') ? "text-rose-600 dark:text-rose-400" :
+                                change.includes('-') || change.includes('↓') ? "text-rose-600 dark:text-rose-400" :
                                     "text-zinc-500 dark:text-zinc-500"
                         )}>
-                            {change.includes('+') ? <ArrowUp className="w-3.5 h-3.5" /> : change.includes('-') ? <ArrowDown className="w-3.5 h-3.5" /> : null}
+                            {change.includes('+') ? <ArrowUp className="w-3.5 h-3.5" /> : change.includes('-') || change.includes('↓') ? <ArrowDown className="w-3.5 h-3.5" /> : null}
                             <span className="ml-0.5">{change}</span>
                         </div>
                     </div>

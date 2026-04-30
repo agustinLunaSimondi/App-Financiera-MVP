@@ -162,10 +162,13 @@ export function TransactionForm({ onClose, transactionToEdit = null }) {
         }
     };
 
-    // Filter categories by transaction type
-    const filteredCategories = categories.filter(cat =>
-        cat.type === formData.type || cat.type === 'BOTH' || !cat.type
-    );
+    // Filter categories by transaction type (case-insensitive for safety)
+    const filteredCategories = categories.filter(cat => {
+        const catType = (cat.type || '').toString().toUpperCase();
+        return catType === formData.type || catType === 'BOTH' || !catType;
+    });
+    // Fallback: if the filter yields nothing, show all categories
+    const categoryOptions = filteredCategories.length > 0 ? filteredCategories : categories;
 
     return (
         <form onSubmit={handleSubmit} className="space-y-5">
@@ -252,11 +255,10 @@ export function TransactionForm({ onClose, transactionToEdit = null }) {
                     value={formData.categoryId}
                     onChange={handleChange}
                 >
-                    <option value="">Seleccionar categoría</option>
-                    {filteredCategories.map(cat => (
-                        <option key={cat.id} value={cat.id}>{cat.name}</option>
-                    ))}
-                    {filteredCategories.length === 0 && categories.map(cat => (
+                    <option value="">
+                        {categories.length === 0 ? 'Cargando categorías...' : 'Seleccionar categoría'}
+                    </option>
+                    {categoryOptions.map(cat => (
                         <option key={cat.id} value={cat.id}>{cat.name}</option>
                     ))}
                 </select>

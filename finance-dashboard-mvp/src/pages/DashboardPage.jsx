@@ -96,34 +96,37 @@ export function DashboardPage() {
     const totalExpenses = calculateTotalExpenses(transactions);
     const netSavings = calculateNetSavings(transactions);
 
-    // KPIs data
+    // KPIs data — solo mostrar cambio real si hay datos
+    const hasData = transactions.length > 0;
+    const hasAccounts = accounts.length > 0;
+
     const kpiData = [
         {
             label: t('balance'),
             value: formatCompactCurrency(totalBalance),
-            change: '+2.5%',
-            type: 'positive',
+            change: hasAccounts ? (totalBalance >= 0 ? t('onTrack') : '↓ Negativo') : '--',
+            type: hasAccounts ? (totalBalance >= 0 ? 'positive' : 'negative') : 'neutral',
             icon: Wallet
         },
         {
             label: t('income'),
             value: formatCompactCurrency(totalIncome),
-            change: t('onTrack'),
+            change: hasData ? t('onTrack') : '--',
             type: 'neutral',
             icon: TrendingUp
         },
         {
             label: t('expenses'),
             value: formatCompactCurrency(totalExpenses),
-            change: '-4.1%',
-            type: 'positive',
+            change: hasData ? (totalExpenses > 0 ? t('onTrack') : '--') : '--',
+            type: hasData && totalExpenses > 0 ? 'neutral' : 'neutral',
             icon: TrendingDown
         },
         {
             label: t('netSavings'),
             value: formatCompactCurrency(netSavings),
-            change: '+12%',
-            type: 'positive',
+            change: hasData ? (netSavings >= 0 ? t('onTrack') : '↓ Déficit') : '--',
+            type: hasData ? (netSavings >= 0 ? 'positive' : 'negative') : 'neutral',
             icon: PiggyBank
         }
     ];

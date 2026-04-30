@@ -143,7 +143,14 @@ export const deleteAccount = async (id) => {
 
 export const getCategories = async () => {
     const response = await client.get('/categories');
-    return response.data;
+    // Normalize: ensure 'type' is always an uppercase string regardless of how
+    // Pydantic/the backend serializes the enum (e.g. 'EXPENSE', 'expense', or an object)
+    const normalized = response.data.map(cat => ({
+        ...cat,
+        type: (cat.type || cat.categoryType || '').toString().toUpperCase()
+    }));
+    console.debug('[API] categories loaded:', normalized.map(c => ({ id: c.id, name: c.name, type: c.type })));
+    return normalized;
 };
 
 export const addCategory = async (category) => {
