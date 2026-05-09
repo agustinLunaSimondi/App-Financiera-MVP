@@ -272,14 +272,15 @@ export function SettingsPage() {
             </div>
 
             {/* Category Management Modal */}
-            <Modal isOpen={isCategoryModalOpen} onClose={() => setIsCategoryModalOpen(false)}>
+            <Modal
+                isOpen={isCategoryModalOpen}
+                onClose={() => { setIsCategoryModalOpen(false); setIsCategoryFormOpen(false); setEditingCategory(null); }}
+                title={isCategoryFormOpen ? (editingCategory ? 'Editar Categoría' : 'Nueva Categoría') : 'Mis Categorías'}
+            >
                 <div className="space-y-4">
                     {!isCategoryFormOpen ? (
                         <>
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-                                    Mis Categorías
-                                </h3>
+                            <div className="flex justify-end mb-2">
                                 <button
                                     onClick={() => setIsCategoryFormOpen(true)}
                                     className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1"
@@ -289,61 +290,40 @@ export function SettingsPage() {
                                 </button>
                             </div>
 
-                            <div className="max-h-[60vh] overflow-y-auto space-y-2 pr-2">
-                                {categories.filter(c => !c.isDefault).length === 0 && (
-                                    <p className="text-center text-zinc-500 py-4">
-                                        No tienes categorías personalizadas.
-                                    </p>
+                            <div className="space-y-2">
+                                {categories.length === 0 && (
+                                    <p className="text-center text-zinc-500 py-4">Sin categorías.</p>
                                 )}
-                                {categories.filter(c => !c.isDefault).map(category => (
+                                {categories.map(category => (
                                     <div key={category.id} className="flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-700/50 rounded-lg">
-                                        <div className="flex items-center gap-3">
+                                        <div className="flex items-center gap-3 min-w-0">
                                             <div
-                                                className="w-4 h-4 rounded-full"
+                                                className="w-4 h-4 rounded-full shrink-0"
                                                 style={{ backgroundColor: category.color }}
                                             />
-                                            <span className="text-zinc-900 dark:text-zinc-100 font-medium">
+                                            <span className="text-zinc-900 dark:text-zinc-100 font-medium truncate">
                                                 {category.name}
                                             </span>
-                                            <span className="text-xs px-2 py-0.5 bg-zinc-200 dark:bg-zinc-600 rounded text-zinc-600 dark:text-zinc-300">
+                                            <span className="text-xs px-2 py-0.5 bg-zinc-200 dark:bg-zinc-600 rounded text-zinc-600 dark:text-zinc-300 shrink-0">
                                                 {category.type === 'INCOME' ? 'Ingreso' : 'Gasto'}
                                             </span>
                                         </div>
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-1 shrink-0 ml-2">
                                             <button
                                                 onClick={() => handleEditCategory(category)}
-                                                className="p-1.5 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-md text-zinc-500 dark:text-zinc-400"
+                                                className="p-2 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg text-zinc-500 dark:text-zinc-400 transition-colors"
                                             >
                                                 <Edit2 className="w-4 h-4" />
                                             </button>
                                             <button
                                                 onClick={() => handleDeleteCategory(category.id)}
-                                                className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-md text-red-500 dark:text-red-400"
+                                                className="p-2 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg text-red-500 dark:text-red-400 transition-colors"
                                             >
                                                 <Trash2 className="w-4 h-4" />
                                             </button>
                                         </div>
                                     </div>
                                 ))}
-
-                                {categories.some(c => c.isDefault) && (
-                                    <div className="pt-4 border-t border-zinc-200 dark:border-zinc-700 mt-4">
-                                        <p className="text-xs font-semibold text-zinc-500 uppercase mb-2">
-                                            Categorías del Sistema (No editables)
-                                        </p>
-                                        <div className="grid grid-cols-2 gap-2">
-                                            {categories.filter(c => c.isDefault).map(category => (
-                                                <div key={category.id} className="flex items-center gap-2 p-2 rounded text-zinc-500 dark:text-zinc-400 text-sm">
-                                                    <div
-                                                        className="w-3 h-3 rounded-full opacity-70"
-                                                        style={{ backgroundColor: category.color }}
-                                                    />
-                                                    {category.name}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
                             </div>
                         </>
                     ) : (

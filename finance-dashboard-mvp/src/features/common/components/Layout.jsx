@@ -1,36 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { 
-    LayoutDashboard, Wallet, CreditCard, PieChart, Settings, 
-    LogOut, Menu, PiggyBank, Clock, Zap, GraduationCap, 
+import {
+    LayoutDashboard, Wallet, CreditCard, PieChart, Settings,
+    LogOut, Menu, PiggyBank, Clock, Zap, GraduationCap,
     Link2, HelpCircle, X, Sun, Moon
 } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useLanguage } from '../../../contexts/LanguageContext';
+import { useFinance } from '../../../hooks/useFinance';
 import { OnboardingTour } from './OnboardingTour';
-
-// ─── Dark Mode Hook ────────────────────────────────────────────
-function useDarkMode() {
-    const [isDark, setIsDark] = useState(() => {
-        // Read from localStorage first, then from document class
-        const stored = localStorage.getItem('darkMode');
-        if (stored !== null) return stored === 'true';
-        return document.documentElement.classList.contains('dark');
-    });
-
-    useEffect(() => {
-        if (isDark) {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-        }
-        localStorage.setItem('darkMode', String(isDark));
-    }, [isDark]);
-
-    return [isDark, setIsDark];
-}
 
 // ─── Dark Mode Toggle Button ───────────────────────────────────
 function DarkModeToggle({ isDark, onToggle, compact = false }) {
@@ -181,10 +161,38 @@ function SidebarContent({ onMobileNavClick, isDark, onToggleDark }) {
 // ─── Layout ───────────────────────────────────────────────────
 export function Layout({ children }) {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    const [isDark, setIsDark] = useDarkMode();
+    const { settings, updateSettings } = useFinance();
     const location = useLocation();
 
-    const handleToggleDark = () => setIsDark(prev => !prev);
+    // Inicializar desde localStorage mientras settings cargan
+    const [isDark, setIsDark] = useState(() => {
+        const stored = localStorage.getItem('darkMode');
+        return stored !== null ? stored === 'true' : false;
+    });
+
+    // Sincronizar cuando settings.darkMode llega del backend
+    useEffect(() => {
+        if (settings.darkMode !== undefined) {
+            setIsDark(settings.darkMode);
+        }
+    }, [settings.darkMode]);
+
+    const handleToggleDark = async () => {
+        const next = !isDark;
+        setIsDark(next);
+        // Aplicar inmediatamente sin esperar al backend
+        if (next) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+        localStorage.setItem('darkMode', String(next));
+        try {
+            await updateSettings({ darkMode: next });
+        } catch {
+            // no-op: la clase ya está aplicada y localStorage actualizado
+        }
+    };
 
     return (
         <div className="min-h-screen bg-transparent flex text-zinc-900 dark:text-zinc-100 font-sans overflow-hidden">

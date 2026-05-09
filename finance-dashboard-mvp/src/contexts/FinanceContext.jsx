@@ -63,13 +63,15 @@ export function FinanceProvider({ children }) {
         loadData();
     }, [loadData]);
 
-    // Aplicar modo oscuro al cargar settings
+    // Aplicar modo oscuro al cargar settings y sincronizar localStorage
     useEffect(() => {
+        if (settings.darkMode === undefined) return;
         if (settings.darkMode) {
             document.documentElement.classList.add('dark');
         } else {
             document.documentElement.classList.remove('dark');
         }
+        localStorage.setItem('darkMode', String(settings.darkMode));
     }, [settings.darkMode]);
 
     // ============= TRANSACTIONS =============

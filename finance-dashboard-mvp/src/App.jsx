@@ -58,6 +58,8 @@ function App() {
                   <Route path="/recurring" element={<RecurringPage />} />
                   <Route path="/cards" element={<CardsPage />} />
                   <Route path="/integrations" element={<IntegrationsPage />} />
+                  {/* Alias para el redirect de OAuth de Mercado Pago */}
+                  <Route path="/integrations/mercadopago/callback" element={<IntegrationsPage />} />
                   <Route path="/academy" element={<AcademyPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
                   <Route path="/help" element={<HelpPage />} />

@@ -89,26 +89,34 @@ export function CategoryForm({ onSubmit, onCancel, initialData = null }) {
                 <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
                     Color
                 </label>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 items-center">
                     {colors.map(color => (
                         <button
                             key={color}
                             type="button"
                             onClick={() => setFormData(prev => ({ ...prev, color }))}
-                            className={`w-8 h-8 rounded-full flex items-center justify-center transition-transform hover:scale-110 ${formData.color === color ? 'ring-2 ring-offset-2 ring-emerald-500 dark:ring-offset-zinc-900' : ''
+                            className={`w-9 h-9 rounded-full flex items-center justify-center transition-transform hover:scale-110 active:scale-95 ${formData.color === color ? 'ring-2 ring-offset-2 ring-emerald-500 dark:ring-offset-zinc-900' : ''
                                 }`}
                             style={{ backgroundColor: color }}
                         >
                             {formData.color === color && <Check className="w-4 h-4 text-white" />}
                         </button>
                     ))}
-                    <input
-                        type="color"
-                        name="color"
-                        value={formData.color}
-                        onChange={handleChange}
-                        className="w-8 h-8 opacity-0 absolute"
-                    />
+                    {/* Color personalizado */}
+                    <label
+                        title="Color personalizado"
+                        className="w-9 h-9 rounded-full flex items-center justify-center border-2 border-dashed border-zinc-300 dark:border-zinc-600 cursor-pointer hover:scale-110 transition-transform overflow-hidden"
+                        style={!colors.includes(formData.color) ? { backgroundColor: formData.color, borderColor: formData.color } : {}}
+                    >
+                        <input
+                            type="color"
+                            name="color"
+                            value={formData.color}
+                            onChange={handleChange}
+                            className="w-0 h-0 opacity-0 absolute"
+                        />
+                        {!colors.includes(formData.color) && <Check className="w-4 h-4 text-white" />}
+                    </label>
                 </div>
             </div>
 

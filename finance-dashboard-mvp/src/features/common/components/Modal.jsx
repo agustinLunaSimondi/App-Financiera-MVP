@@ -36,9 +36,11 @@ export function Modal({ isOpen, onClose, title, children }) {
                     <div className="w-10 h-1 bg-zinc-300 dark:bg-zinc-600 rounded-full" />
                 </div>
                 <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100 dark:border-zinc-700 flex-shrink-0">
-                    <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-                        {title}
-                    </h3>
+                    {title ? (
+                        <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">{title}</h3>
+                    ) : (
+                        <span />
+                    )}
                     <button
                         onClick={onClose}
                         className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-700"

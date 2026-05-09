@@ -36,13 +36,14 @@ def get_mp_config():
 
 def get_auth_url() -> str:
     """Genera la URL de autorización OAuth de Mercado Pago."""
+    from urllib.parse import quote
     config = get_mp_config()
     return (
         f"https://auth.mercadopago.com.ar/authorization"
         f"?client_id={config['client_id']}"
         f"&response_type=code"
         f"&platform_id=mp"
-        f"&redirect_uri={config['redirect_uri']}"
+        f"&redirect_uri={quote(config['redirect_uri'], safe='')}"
     )
 
 
