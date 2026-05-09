@@ -75,7 +75,7 @@ export function SavingsPage() {
                             </div>
                             <h2 className="text-sm font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Mis Metas</h2>
                         </div>
-                        <h1 className="text-4xl font-black text-zinc-900 dark:text-white tracking-tight">Metas de Ahorro</h1>
+                        <h1 className="text-3xl md:text-4xl font-black text-zinc-900 dark:text-white tracking-tight">Metas de Ahorro</h1>
                     </div>
                     <button
                         onClick={() => handleOpenModal()}
@@ -88,7 +88,7 @@ export function SavingsPage() {
 
                 {/* Resumen General */}
                 <div className="glass p-8 rounded-[2rem] relative overflow-hidden group">
-                    <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
+                    <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                         <div className="space-y-4 max-w-md">
                             <h3 className="text-2xl font-black text-zinc-900 dark:text-white">Tu Progreso Global</h3>
                             <p className="text-zinc-500 dark:text-zinc-400 font-medium">

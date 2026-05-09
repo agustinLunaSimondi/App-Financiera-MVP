@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card } from '../../common/components/Card';
-import { Target, TrendingUp, Calendar, MoreVertical, Trash2 } from 'lucide-react';
+import { Target, TrendingUp, Calendar, MoreVertical, Trash2, Check, X } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { motion } from 'framer-motion';
 import { formatCurrency } from '../../../utils/formatters';
@@ -8,6 +8,23 @@ import { formatCurrency } from '../../../utils/formatters';
 export function SavingGoalCard({ goal, onEdit, onDelete, onContribute, delay = 0 }) {
     const percentage = Math.min(Math.round((goal.currentAmount / goal.targetAmount) * 100), 100);
     const color = goal.color || '#10B981';
+
+    const [depositMode, setDepositMode] = useState(false);
+    const [depositAmount, setDepositAmount] = useState('');
+
+    const handleConfirmDeposit = () => {
+        const parsed = parseFloat(depositAmount);
+        if (!isNaN(parsed) && parsed > 0) {
+            onContribute(goal.id, parsed);
+        }
+        setDepositMode(false);
+        setDepositAmount('');
+    };
+
+    const handleCancelDeposit = () => {
+        setDepositMode(false);
+        setDepositAmount('');
+    };
 
     return (
         <Card className="group relative overflow-hidden" delay={delay}>
@@ -70,23 +87,45 @@ export function SavingGoalCard({ goal, onEdit, onDelete, onContribute, delay = 0
                     />
                 </div>
 
-                <div className="pt-4 flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-lg text-[11px] font-bold">
-                        <TrendingUp className="w-3.5 h-3.5" />
-                        <span>En camino</span>
+                {depositMode ? (
+                    <div className="pt-2 flex items-center gap-2">
+                        <input
+                            type="number"
+                            inputMode="decimal"
+                            min="0"
+                            placeholder="Monto a depositar"
+                            value={depositAmount}
+                            onChange={(e) => setDepositAmount(e.target.value)}
+                            autoFocus
+                            className="flex-1 px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-sm font-bold text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                        />
+                        <button
+                            onClick={handleConfirmDeposit}
+                            className="p-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl transition-colors"
+                        >
+                            <Check className="w-4 h-4" />
+                        </button>
+                        <button
+                            onClick={handleCancelDeposit}
+                            className="p-2 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-500 rounded-xl transition-colors"
+                        >
+                            <X className="w-4 h-4" />
+                        </button>
                     </div>
-                    <button
-                        onClick={() => {
-                            const amount = window.prompt('¿Cuánto deseas depositar?');
-                            if (amount && !isNaN(amount)) {
-                                onContribute(goal.id, parseFloat(amount));
-                            }
-                        }}
-                        className="px-4 py-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-xl text-xs font-bold hover:scale-105 transition-transform"
-                    >
-                        Depósito
-                    </button>
-                </div>
+                ) : (
+                    <div className="pt-4 flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-lg text-[11px] font-bold">
+                            <TrendingUp className="w-3.5 h-3.5" />
+                            <span>En camino</span>
+                        </div>
+                        <button
+                            onClick={() => setDepositMode(true)}
+                            className="px-4 py-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-xl text-xs font-bold hover:scale-105 transition-transform"
+                        >
+                            Depósito
+                        </button>
+                    </div>
+                )}
             </div>
 
             {/* Decoración Glass sutil */}

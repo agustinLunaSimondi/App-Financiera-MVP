@@ -81,7 +81,7 @@ export function TransactionsPage() {
                             </div>
                             <h2 className="text-sm font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Historial</h2>
                         </div>
-                        <h1 className="text-4xl font-black text-zinc-900 dark:text-white tracking-tight">Transacciones</h1>
+                        <h1 className="text-3xl md:text-4xl font-black text-zinc-900 dark:text-white tracking-tight">Transacciones</h1>
                     </div>
                     <button
                         onClick={() => setIsModalOpen(true)}
@@ -120,8 +120,51 @@ export function TransactionsPage() {
                     </div>
                 </div>
 
-                {/* Transactions Table */}
-                <Card className="overflow-hidden border-none shadow-xl shadow-zinc-200/50 dark:shadow-none bg-white/40 dark:bg-zinc-900/40 backdrop-blur-xl">
+                {/* Mobile: Cards view */}
+                <div className="md:hidden space-y-3">
+                    {paginatedTransactions.length === 0 ? (
+                        <div className="py-16 text-center text-zinc-400 font-medium">
+                            No se encontraron transacciones
+                        </div>
+                    ) : paginatedTransactions.map((tx) => (
+                        <div key={tx.id} className="bg-white/60 dark:bg-zinc-900/60 backdrop-blur-xl border border-zinc-200/50 dark:border-zinc-800/50 rounded-2xl px-4 py-4 flex items-center gap-3">
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                    <span className="font-bold text-zinc-900 dark:text-white text-sm truncate">{tx.description || tx.name}</span>
+                                    {tx.externalId && <span className="text-[10px] text-sky-500 font-black shrink-0">MP</span>}
+                                </div>
+                                <div className="flex items-center gap-2 mt-1">
+                                    <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400">
+                                        {tx.category}
+                                    </span>
+                                    <span className="text-[10px] text-zinc-400 font-medium">
+                                        {new Date((tx.transactionDate || tx.date) + 'T00:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })}
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0">
+                                <span className={`text-sm font-black mr-2 ${Number(tx.amount) > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-900 dark:text-white'}`}>
+                                    {formatCurrency(tx.amount)}
+                                </span>
+                                <button
+                                    onClick={() => handleEdit(tx)}
+                                    className="p-2 text-zinc-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-500/10 rounded-xl transition-all"
+                                >
+                                    <Edit2 className="w-4 h-4" />
+                                </button>
+                                <button
+                                    onClick={() => handleDelete(tx.id)}
+                                    className="p-2 text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-500/10 rounded-xl transition-all"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                {/* Desktop: Table view */}
+                <Card className="hidden md:block overflow-hidden border-none shadow-xl shadow-zinc-200/50 dark:shadow-none bg-white/40 dark:bg-zinc-900/40 backdrop-blur-xl">
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm text-left">
                             <thead className="text-[10px] text-zinc-400 dark:text-zinc-500 uppercase tracking-widest font-black border-b border-zinc-200/50 dark:border-zinc-800/50">
@@ -189,35 +232,35 @@ export function TransactionsPage() {
                             </tbody>
                         </table>
                     </div>
-
-                    {/* Pagination Controls */}
-                    {filteredTransactions.length > 0 && (
-                        <div className="px-8 py-4 flex items-center justify-between border-t border-zinc-200/50 dark:border-zinc-800/50">
-                            <div className="text-xs text-zinc-500 font-bold uppercase tracking-widest">
-                                Mostrando {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, filteredTransactions.length)} de {filteredTransactions.length}
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                    disabled={currentPage === 1}
-                                    className="px-4 py-2 border border-zinc-200/50 dark:border-zinc-800/50 rounded-xl text-xs font-bold text-zinc-500 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    Anterior
-                                </button>
-                                <span className="text-xs font-medium text-zinc-400 px-2">
-                                    Página {currentPage} de {totalPages}
-                                </span>
-                                <button
-                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                    disabled={currentPage === totalPages}
-                                    className="px-4 py-2 border border-zinc-200/50 dark:border-zinc-800/50 rounded-xl text-xs font-bold text-zinc-500 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    Siguiente
-                                </button>
-                            </div>
-                        </div>
-                    )}
                 </Card>
+
+                {/* Pagination Controls */}
+                {filteredTransactions.length > 0 && (
+                    <div className="px-2 md:px-8 py-4 flex items-center justify-between">
+                        <div className="text-xs text-zinc-500 font-bold uppercase tracking-widest">
+                            {((currentPage - 1) * itemsPerPage) + 1}–{Math.min(currentPage * itemsPerPage, filteredTransactions.length)} de {filteredTransactions.length}
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                disabled={currentPage === 1}
+                                className="px-4 py-2 border border-zinc-200/50 dark:border-zinc-800/50 rounded-xl text-xs font-bold text-zinc-500 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Anterior
+                            </button>
+                            <span className="text-xs font-medium text-zinc-400 px-2">
+                                {currentPage} / {totalPages}
+                            </span>
+                            <button
+                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                disabled={currentPage === totalPages}
+                                className="px-4 py-2 border border-zinc-200/50 dark:border-zinc-800/50 rounded-xl text-xs font-bold text-zinc-500 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Siguiente
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 {/* MODAL TRANSACCIÓN */}
                 <Modal

@@ -79,7 +79,7 @@ export function CardsPage() {
                             </div>
                             <h2 className="text-sm font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Billetera</h2>
                         </div>
-                        <h1 className="text-4xl font-black text-zinc-900 dark:text-white tracking-tight">Cuentas y Tarjetas</h1>
+                        <h1 className="text-3xl md:text-4xl font-black text-zinc-900 dark:text-white tracking-tight">Cuentas y Tarjetas</h1>
                     </div>
                     <button
                         onClick={() => setIsModalOpen(true)}

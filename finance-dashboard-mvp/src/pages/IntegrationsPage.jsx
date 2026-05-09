@@ -144,7 +144,7 @@ export function IntegrationsPage() {
                         </div>
                         <h2 className="text-sm font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Conexiones</h2>
                     </div>
-                    <h1 className="text-4xl font-black text-zinc-900 dark:text-white tracking-tight">Integraciones</h1>
+                    <h1 className="text-3xl md:text-4xl font-black text-zinc-900 dark:text-white tracking-tight">Integraciones</h1>
                     <p className="text-zinc-500 dark:text-zinc-400 font-medium mt-2">
                         Conectá tus servicios financieros para importar transacciones automáticamente.
                     </p>

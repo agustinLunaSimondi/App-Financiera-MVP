@@ -58,7 +58,7 @@ export function RecurringPage() {
                             </div>
                             <h2 className="text-sm font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Automatización</h2>
                         </div>
-                        <h1 className="text-4xl font-black text-zinc-900 dark:text-white tracking-tight">Recurrentes</h1>
+                        <h1 className="text-3xl md:text-4xl font-black text-zinc-900 dark:text-white tracking-tight">Recurrentes</h1>
                     </div>
                     <button
                         onClick={() => handleOpenModal()}

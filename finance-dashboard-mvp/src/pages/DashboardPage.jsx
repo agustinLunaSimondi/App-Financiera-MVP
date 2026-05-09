@@ -173,7 +173,7 @@ export function DashboardPage() {
                 {/* Hero Section */}
                 <div className="relative group">
                     <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 to-blue-600 rounded-3xl blur opacity-10 group-hover:opacity-20 transition duration-1000 group-hover:duration-200"></div>
-                    <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-6 p-8 glass-card rounded-3xl">
+                    <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-6 p-6 md:p-8 glass-card rounded-3xl">
                         <div className="space-y-2">
                              <motion.div 
                                 initial={{ opacity: 0, x: -20 }}
@@ -182,22 +182,22 @@ export function DashboardPage() {
                             >
                                 <Zap className="w-3 h-3 fill-current" /> {t('dashboard.online')}
                             </motion.div>
-                            <h1 className="text-4xl font-black text-zinc-900 dark:text-zinc-100 tracking-tighter">
+                            <h1 className="text-3xl md:text-4xl font-black text-zinc-900 dark:text-zinc-100 tracking-tighter">
                                 {t('dashboard.title')} <span className="premium-gradient-text">FinanzApp</span>
                             </h1>
                             <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400 max-w-md">
                                 {t('dashboard.subtitle')}
                             </p>
                         </div>
-                        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-                            <button 
-                                onClick={downloadReport} 
-                                className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-2.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-xl text-xs font-black hover:scale-105 active:scale-95 transition-all shadow-xl shadow-zinc-900/10 dark:shadow-zinc-100/5"
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
+                            <button
+                                onClick={downloadReport}
+                                className="flex items-center justify-center gap-2 px-5 py-2.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-xl text-xs font-black hover:scale-105 active:scale-95 transition-all shadow-xl shadow-zinc-900/10 dark:shadow-zinc-100/5"
                             >
                                 <Download className="w-4 h-4" />
                                 {t('dashboard.download')}
                             </button>
-                            <div className="flex bg-zinc-100 dark:bg-zinc-800/50 p-1 rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50">
+                            <div className="flex bg-zinc-100 dark:bg-zinc-800/50 p-1 rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50 overflow-x-auto scrollbar-hide">
                                 {[
                                     { id: 'thisMonth', label: t('dashboard.thisMonth') },
                                     { id: 'last7Days', label: t('dashboard.last7Days') },
@@ -208,7 +208,7 @@ export function DashboardPage() {
                                         key={item.id}
                                         onClick={() => handleQuickFilter(item.id)}
                                         className={cn(
-                                            "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all",
+                                            "px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap shrink-0",
                                             quickFilter === item.id
                                                 ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm"
                                                 : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300"
@@ -296,7 +296,28 @@ export function DashboardPage() {
 
                 {/* Recent Transactions */}
                 <Card title="Transacciones Recientes" subtitle="Tu última actividad financiera" delay={0.8}>
-                    <div className="overflow-x-auto">
+                    {/* Mobile: lista compacta */}
+                    <div className="md:hidden space-y-2">
+                        {recentTransactions.map((tx) => (
+                            <div key={tx.id} className="flex items-center gap-3 py-2 border-b border-zinc-100 dark:border-zinc-800 last:border-0">
+                                <div className="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-500 shrink-0">
+                                    <ArrowUpRight className="w-4 h-4" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100 truncate">{tx.description || tx.name}</p>
+                                    <div className="flex items-center gap-2 mt-0.5">
+                                        <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-500 font-medium">{tx.category}</span>
+                                        <span className="text-[10px] text-zinc-400">{new Date((tx.date || tx.transactionDate) + 'T00:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })}</span>
+                                    </div>
+                                </div>
+                                <span className={`text-sm font-black shrink-0 ${Number(tx.amount) > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-900 dark:text-zinc-100'}`}>
+                                    {formatCurrency(tx.amount)}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                    {/* Desktop: tabla */}
+                    <div className="hidden md:block overflow-x-auto">
                         <table className="w-full text-sm text-left">
                             <thead className="text-xs text-zinc-500 dark:text-zinc-400 uppercase bg-zinc-50 dark:bg-zinc-800/50">
                                 <tr>

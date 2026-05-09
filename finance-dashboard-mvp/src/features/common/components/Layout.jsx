@@ -225,7 +225,7 @@ export function Layout({ children }) {
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -10 }}
                             transition={{ duration: 0.3, ease: "easeOut" }}
-                            className="p-6 lg:p-10 max-w-[1400px] mx-auto w-full"
+                            className="p-4 md:p-6 lg:p-10 max-w-[1400px] mx-auto w-full"
                         >
                             {children}
                         </motion.div>

@@ -24,14 +24,18 @@ export function Modal({ isOpen, onClose, title, children }) {
 
     return (
         <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 transition-opacity"
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-0 sm:p-4 transition-opacity"
             onClick={handleBackdropClick}
         >
             <div
                 ref={modalRef}
-                className="bg-white dark:bg-zinc-800 rounded-xl shadow-xl w-full max-w-md transform transition-all animate-in fade-in zoom-in duration-200"
+                className="bg-white dark:bg-zinc-800 rounded-t-3xl sm:rounded-xl shadow-xl w-full sm:max-w-md max-h-[92dvh] flex flex-col transform transition-all animate-in fade-in zoom-in duration-200"
             >
-                <div className="flex items-center justify-between p-6 border-b border-zinc-100 dark:border-zinc-700">
+                {/* Drag handle en móvil */}
+                <div className="sm:hidden flex justify-center pt-3 pb-1">
+                    <div className="w-10 h-1 bg-zinc-300 dark:bg-zinc-600 rounded-full" />
+                </div>
+                <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100 dark:border-zinc-700 flex-shrink-0">
                     <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
                         {title}
                     </h3>
@@ -42,7 +46,7 @@ export function Modal({ isOpen, onClose, title, children }) {
                         <X className="w-5 h-5" />
                     </button>
                 </div>
-                <div className="p-6">
+                <div className="p-6 overflow-y-auto flex-1">
                     {children}
                 </div>
             </div>
