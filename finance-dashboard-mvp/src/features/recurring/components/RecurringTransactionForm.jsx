@@ -37,9 +37,11 @@ export function RecurringTransactionForm({ rt, onSubmit, onCancel }) {
 
     const handleSubmit = (e) => {
         e.preventDefault();
+        // endDate vacía rompe la validación Pydantic (Optional[date]); convertir a null
         onSubmit({
             ...formData,
-            amount: parseFloat(formData.amount)
+            amount: parseFloat(formData.amount),
+            endDate: formData.endDate ? formData.endDate : null
         });
     };
 
@@ -96,7 +98,11 @@ export function RecurringTransactionForm({ rt, onSubmit, onCancel }) {
                         className="w-full px-4 py-3.5 bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200/50 dark:border-zinc-800/50 rounded-2xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 outline-none transition-all font-medium"
                         value={formData.accountId}
                         onChange={e => setFormData({ ...formData, accountId: e.target.value })}
+                        disabled={accounts.length === 0}
                     >
+                        <option value="">
+                            {accounts.length === 0 ? 'Sin cuentas — creá una primero' : 'Seleccionar cuenta'}
+                        </option>
                         {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name}</option>)}
                     </select>
                 </div>
@@ -107,7 +113,11 @@ export function RecurringTransactionForm({ rt, onSubmit, onCancel }) {
                         className="w-full px-4 py-3.5 bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200/50 dark:border-zinc-800/50 rounded-2xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 outline-none transition-all font-medium"
                         value={formData.categoryId}
                         onChange={e => setFormData({ ...formData, categoryId: e.target.value })}
+                        disabled={categories.length === 0}
                     >
+                        <option value="">
+                            {categories.length === 0 ? 'Sin categorías' : 'Seleccionar categoría'}
+                        </option>
                         {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
                     </select>
                 </div>
@@ -145,7 +155,8 @@ export function RecurringTransactionForm({ rt, onSubmit, onCancel }) {
                 </button>
                 <button
                     type="submit"
-                    className="flex-1 px-6 py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-xl shadow-blue-600/20 transition-all hover:bg-blue-700 active:scale-95"
+                    disabled={accounts.length === 0 || categories.length === 0}
+                    className="flex-1 px-6 py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-xl shadow-blue-600/20 transition-all hover:bg-blue-700 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     {rt ? 'Actualizar Regla' : 'Crear Regla'}
                 </button>

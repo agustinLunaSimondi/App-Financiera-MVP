@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
 import client from '../services/client';
 
 const AuthContext = createContext();
@@ -6,6 +6,12 @@ const AuthContext = createContext();
 export function useAuth() {
     return useContext(AuthContext);
 }
+
+const LoadingShell = () => (
+    <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-zinc-950">
+        <div className="w-10 h-10 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin" aria-label="Cargando" />
+    </div>
+);
 
 export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
@@ -29,35 +35,35 @@ export function AuthProvider({ children }) {
         checkAuth();
     }, []);
 
-    const login = async (email, password) => {
+    const login = useCallback(async (email, password) => {
         const res = await client.post('/auth/login', { email, password });
         const { token, user } = res.data;
         localStorage.setItem('token', token);
         setUser(user);
         return user;
-    };
+    }, []);
 
     // Google Sign-In: sends the credential token to the backend for verification
-    const loginWithGoogle = async (credential) => {
+    const loginWithGoogle = useCallback(async (credential) => {
         const res = await client.post('/auth/google', { credential });
         const { token, user } = res.data;
         localStorage.setItem('token', token);
         setUser(user);
         return user;
-    };
+    }, []);
 
-    const register = async (name, email, password) => {
+    const register = useCallback(async (name, email, password) => {
         const res = await client.post('/auth/register', { name, email, password });
         const { token, user } = res.data;
         localStorage.setItem('token', token);
         setUser(user);
         return user;
-    };
+    }, []);
 
-    const logout = () => {
+    const logout = useCallback(() => {
         localStorage.removeItem('token');
         setUser(null);
-    };
+    }, []);
 
     const value = {
         user,
@@ -71,7 +77,8 @@ export function AuthProvider({ children }) {
 
     return (
         <AuthContext.Provider value={value}>
-            {!loading && children}
+            {loading ? <LoadingShell /> : children}
         </AuthContext.Provider>
     );
 }
+

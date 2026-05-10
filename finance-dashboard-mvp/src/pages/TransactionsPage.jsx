@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
 import { useFinance } from '../hooks/useFinance';
 
@@ -6,7 +6,6 @@ import { Card } from '../features/common/components/Card';
 import { Search, Filter, Plus, Edit2, Trash2, AlertTriangle } from 'lucide-react';
 import { Modal } from '../features/common/components/Modal';
 import { TransactionForm } from '../features/transactions/components/TransactionForm';
-import { cn } from '../lib/utils';
 
 import { formatCurrency } from '../utils/formatters';
 
@@ -21,6 +20,32 @@ export function TransactionsPage() {
     const [confirmDeleteId, setConfirmDeleteId] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
 
+    const itemsPerPage = 10;
+
+    // ── Hooks (siempre antes de cualquier return condicional) ──
+    const filteredTransactions = useMemo(() => transactions.filter(tx => {
+        const text = (tx.description || tx.name || '').toLowerCase();
+        const matchesSearch = text.includes(searchQuery.toLowerCase());
+        const matchesCategory = categoryFilter === 'all' || tx.category === categoryFilter;
+        return matchesSearch && matchesCategory;
+    }), [transactions, searchQuery, categoryFilter]);
+
+    const totalPages = Math.max(1, Math.ceil(filteredTransactions.length / itemsPerPage));
+    const paginatedTransactions = filteredTransactions.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
+
+    // Reset pagination cuando cambia el filtro
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery, categoryFilter]);
+
+    // Si la página actual quedó fuera de rango (ej. al borrar), corregir
+    useEffect(() => {
+        if (currentPage > totalPages) setCurrentPage(totalPages);
+    }, [currentPage, totalPages]);
+
     const handleEdit = (tx) => {
         setEditingTransaction(tx);
         setIsModalOpen(true);
@@ -32,8 +57,9 @@ export function TransactionsPage() {
         try {
             await deleteTransaction(confirmDeleteId);
             toast.success('Transacción eliminada');
-        } catch {
-            toast.error('Error al eliminar la transacción');
+        } catch (err) {
+            const detail = err?.response?.data?.detail;
+            toast.error(typeof detail === 'string' ? detail : 'Error al eliminar la transacción');
         } finally {
             setConfirmDeleteId(null);
         }
@@ -46,37 +72,25 @@ export function TransactionsPage() {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-64">
-                <div className="text-zinc-500">Cargando transacciones...</div>
+            <div className="space-y-6">
+                <div className="h-12 w-64 glass-card rounded-2xl animate-pulse" />
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                    <div className="lg:col-span-3 h-14 glass-card rounded-2xl animate-pulse" />
+                    <div className="h-14 glass-card rounded-2xl animate-pulse" />
+                </div>
+                <div className="space-y-3">
+                    {[1, 2, 3, 4, 5].map(n => (
+                        <div key={n} className="h-20 glass-card rounded-2xl animate-pulse" />
+                    ))}
+                </div>
             </div>
         );
     }
 
-    // Filtrar transacciones
-    const filteredTransactions = transactions.filter(tx => {
-        const matchesSearch = (tx.description || tx.name || '').toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesCategory = categoryFilter === 'all' || tx.category === categoryFilter;
-        return matchesSearch && matchesCategory;
-    });
-
-    // Pagination logic
-    const itemsPerPage = 10;
-    const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
-    const paginatedTransactions = filteredTransactions.slice(
-        (currentPage - 1) * itemsPerPage,
-        currentPage * itemsPerPage
-    );
-
-    // Reset pagination when filter changes
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [searchQuery, categoryFilter]);
-
     return (
         <div className="space-y-10">
                 {/* Header */}
-                <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 md:gap-6">
                     <div>
                         <div className="flex items-center gap-3 mb-2">
                             <div className="p-2 bg-emerald-500/10 rounded-lg">
@@ -88,7 +102,7 @@ export function TransactionsPage() {
                     </div>
                     <button
                         onClick={() => setIsModalOpen(true)}
-                        className="flex items-center gap-2 px-6 py-3.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-2xl font-bold shadow-xl transition-all active:scale-95 group"
+                        className="flex items-center justify-center gap-2 w-full md:w-auto px-6 py-3.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-2xl font-bold shadow-xl transition-all active:scale-95 group"
                     >
                         <Plus className="w-5 h-5 transition-transform group-hover:rotate-90" />
                         Nueva Transacción
@@ -96,12 +110,13 @@ export function TransactionsPage() {
                 </header>
 
                 {/* Filters & Search */}
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 md:gap-4">
                     <div className="lg:col-span-3 relative group">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400 group-focus-within:text-emerald-500 transition-colors" />
                         <input
                             type="text"
                             placeholder="Buscar por descripción..."
+                            aria-label="Buscar transacciones"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="w-full pl-12 pr-4 py-4 glass border-zinc-200/50 dark:border-zinc-800/50 rounded-2xl text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/50 transition-all font-medium"
@@ -109,13 +124,14 @@ export function TransactionsPage() {
                     </div>
 
                     <div className="relative group">
-                        <Filter className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400 group-focus-within:text-emerald-500 transition-colors" />
+                        <Filter className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400 group-focus-within:text-emerald-500 transition-colors pointer-events-none" />
                         <select
                             value={categoryFilter}
                             onChange={(e) => setCategoryFilter(e.target.value)}
+                            aria-label="Filtrar por categoría"
                             className="w-full pl-12 pr-8 py-4 glass border-zinc-200/50 dark:border-zinc-800/50 rounded-2xl text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/50 transition-all font-medium appearance-none"
                         >
-                            <option value="all">Categorías</option>
+                            <option value="all">Todas las categorías</option>
                             {categories.map(cat => (
                                 <option key={cat.id} value={cat.name}>{cat.name}</option>
                             ))}
@@ -127,7 +143,9 @@ export function TransactionsPage() {
                 <div className="md:hidden space-y-3">
                     {paginatedTransactions.length === 0 ? (
                         <div className="py-16 text-center text-zinc-400 font-medium">
-                            No se encontraron transacciones
+                            {filteredTransactions.length === 0 && transactions.length > 0
+                                ? 'Ningún resultado para los filtros aplicados'
+                                : 'No hay transacciones todavía'}
                         </div>
                     ) : paginatedTransactions.map((tx) => (
                         <div key={tx.id} className="bg-white/60 dark:bg-zinc-900/60 backdrop-blur-xl border border-zinc-200/50 dark:border-zinc-800/50 rounded-2xl px-4 py-4 flex items-center gap-3">
@@ -137,30 +155,34 @@ export function TransactionsPage() {
                                     {tx.externalId && <span className="text-[10px] text-sky-500 font-black shrink-0">MP</span>}
                                 </div>
                                 <div className="flex items-center gap-2 mt-1">
-                                    <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400">
+                                    <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 truncate max-w-[10rem]">
                                         {tx.category}
                                     </span>
-                                    <span className="text-[10px] text-zinc-400 font-medium">
+                                    <span className="text-[10px] text-zinc-400 font-medium shrink-0">
                                         {new Date((tx.transactionDate || tx.date) + 'T00:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })}
                                     </span>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-1 shrink-0">
-                                <span className={`text-sm font-black mr-2 ${Number(tx.amount) > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-900 dark:text-white'}`}>
+                            <div className="flex flex-col items-end gap-1 shrink-0">
+                                <span className={`text-sm font-black ${Number(tx.amount) > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-900 dark:text-white'}`}>
                                     {formatCurrency(tx.amount)}
                                 </span>
-                                <button
-                                    onClick={() => handleEdit(tx)}
-                                    className="p-2 text-zinc-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-500/10 rounded-xl transition-all"
-                                >
-                                    <Edit2 className="w-4 h-4" />
-                                </button>
-                                <button
-                                    onClick={() => handleDelete(tx.id)}
-                                    className="p-2 text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-500/10 rounded-xl transition-all"
-                                >
-                                    <Trash2 className="w-4 h-4" />
-                                </button>
+                                <div className="flex items-center gap-0.5">
+                                    <button
+                                        onClick={() => handleEdit(tx)}
+                                        aria-label="Editar transacción"
+                                        className="p-1.5 text-zinc-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-all"
+                                    >
+                                        <Edit2 className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                        onClick={() => handleDelete(tx.id)}
+                                        aria-label="Eliminar transacción"
+                                        className="p-1.5 text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all"
+                                    >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     ))}
@@ -183,7 +205,9 @@ export function TransactionsPage() {
                                 {paginatedTransactions.length === 0 ? (
                                     <tr>
                                         <td colSpan="5" className="px-8 py-20 text-center text-zinc-400 font-medium">
-                                            No se encontraron transacciones
+                                            {filteredTransactions.length === 0 && transactions.length > 0
+                                                ? 'Ningún resultado para los filtros aplicados'
+                                                : 'No hay transacciones todavía'}
                                         </td>
                                     </tr>
                                 ) : (
@@ -214,15 +238,17 @@ export function TransactionsPage() {
                                                 {formatCurrency(tx.amount)}
                                             </td>
                                             <td className="px-8 py-5 text-right">
-                                                <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <div className="flex items-center justify-end gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
                                                     <button
                                                         onClick={() => handleEdit(tx)}
+                                                        aria-label="Editar transacción"
                                                         className="p-2 text-zinc-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-500/10 rounded-xl transition-all"
                                                     >
                                                         <Edit2 className="w-4 h-4" />
                                                     </button>
                                                     <button
                                                         onClick={() => handleDelete(tx.id)}
+                                                        aria-label="Eliminar transacción"
                                                         className="p-2 text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-500/10 rounded-xl transition-all"
                                                     >
                                                         <Trash2 className="w-4 h-4" />
@@ -239,25 +265,25 @@ export function TransactionsPage() {
 
                 {/* Pagination Controls */}
                 {filteredTransactions.length > 0 && (
-                    <div className="px-2 md:px-8 py-4 flex items-center justify-between">
-                        <div className="text-xs text-zinc-500 font-bold uppercase tracking-widest">
+                    <div className="px-2 md:px-8 py-4 flex items-center justify-between gap-2">
+                        <div className="text-[10px] md:text-xs text-zinc-500 font-bold uppercase tracking-widest">
                             {((currentPage - 1) * itemsPerPage) + 1}–{Math.min(currentPage * itemsPerPage, filteredTransactions.length)} de {filteredTransactions.length}
                         </div>
                         <div className="flex items-center gap-2">
                             <button
                                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                                 disabled={currentPage === 1}
-                                className="px-4 py-2 border border-zinc-200/50 dark:border-zinc-800/50 rounded-xl text-xs font-bold text-zinc-500 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="px-3 md:px-4 py-2 border border-zinc-200/50 dark:border-zinc-800/50 rounded-xl text-xs font-bold text-zinc-500 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 Anterior
                             </button>
-                            <span className="text-xs font-medium text-zinc-400 px-2">
+                            <span className="text-xs font-medium text-zinc-400 px-2 whitespace-nowrap">
                                 {currentPage} / {totalPages}
                             </span>
                             <button
                                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                                 disabled={currentPage === totalPages}
-                                className="px-4 py-2 border border-zinc-200/50 dark:border-zinc-800/50 rounded-xl text-xs font-bold text-zinc-500 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="px-3 md:px-4 py-2 border border-zinc-200/50 dark:border-zinc-800/50 rounded-xl text-xs font-bold text-zinc-500 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 Siguiente
                             </button>

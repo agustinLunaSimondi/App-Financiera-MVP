@@ -1,10 +1,18 @@
 import React, { useState } from 'react';
+import { toast } from 'sonner';
 import { useFinance } from '../hooks/useFinance';
 
 import { Modal } from '../features/common/components/Modal';
 import { Plus, Clock, AlertTriangle } from 'lucide-react';
 import { RecurringTransactionForm } from '../features/recurring/components/RecurringTransactionForm';
 import { RecurringTransactionCard } from '../features/recurring/components/RecurringTransactionCard';
+
+const apiErrorMessage = (error, fallback) => {
+    const detail = error?.response?.data?.detail;
+    if (typeof detail === 'string') return detail;
+    if (Array.isArray(detail)) return detail.map(d => d.msg || d).join(', ');
+    return fallback;
+};
 
 export function RecurringPage() {
     const { recurringTransactions, loading, addRecurring, updateRecurring, deleteRecurring } = useFinance();
@@ -20,8 +28,10 @@ export function RecurringPage() {
     const handleToggleActive = async (rt) => {
         try {
             await updateRecurring(rt.id, { isActive: !rt.isActive });
+            toast.success(rt.isActive ? 'Regla pausada' : 'Regla activada');
         } catch (error) {
             console.error('Error toggling status:', error);
+            toast.error(apiErrorMessage(error, 'Error al cambiar estado'));
         }
     };
 
@@ -30,8 +40,10 @@ export function RecurringPage() {
     const handleConfirmDelete = async () => {
         try {
             await deleteRecurring(confirmDeleteId);
+            toast.success('Regla eliminada');
         } catch (error) {
             console.error('Error deleting:', error);
+            toast.error(apiErrorMessage(error, 'Error al eliminar la regla'));
         } finally {
             setConfirmDeleteId(null);
         }
@@ -41,19 +53,22 @@ export function RecurringPage() {
         try {
             if (editingRT) {
                 await updateRecurring(editingRT.id, formData);
+                toast.success('Regla actualizada correctamente');
             } else {
                 await addRecurring(formData);
+                toast.success('Regla creada correctamente');
             }
             setIsModalOpen(false);
             setEditingRT(null);
         } catch (error) {
             console.error('Error saving recurring transaction:', error);
+            toast.error(apiErrorMessage(error, 'Error al guardar la regla'));
         }
     };
 
     return (
         <div className="space-y-10">
-                <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 md:gap-6">
                     <div>
                         <div className="flex items-center gap-3 mb-2">
                             <div className="p-2 bg-blue-500/10 rounded-lg">
@@ -65,7 +80,7 @@ export function RecurringPage() {
                     </div>
                     <button
                         onClick={() => handleOpenModal()}
-                        className="flex items-center gap-2 px-6 py-3.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-2xl font-bold shadow-xl transition-all active:scale-95 group"
+                        className="flex items-center justify-center gap-2 w-full md:w-auto px-6 py-3.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-2xl font-bold shadow-xl transition-all active:scale-95 group"
                     >
                         <Plus className="w-5 h-5 transition-transform group-hover:rotate-90" />
                         Nueva Automatización

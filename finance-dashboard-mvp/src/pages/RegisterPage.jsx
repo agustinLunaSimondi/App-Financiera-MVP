@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import { UserPlus, ArrowRight, Loader2, Sparkles, ShieldCheck } from 'lucide-react';
+import { UserPlus, ArrowRight, Loader2, Sparkles, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';
 import { motion } from 'framer-motion';
 
@@ -9,6 +9,7 @@ export function RegisterPage() {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const { register, loginWithGoogle } = useAuth();
@@ -17,12 +18,20 @@ export function RegisterPage() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
+
+        if (password.length < 6) {
+            setError('La contraseña debe tener al menos 6 caracteres.');
+            return;
+        }
+
         setIsLoading(true);
         try {
-            await register(name, email, password);
+            await register(name.trim(), email.trim().toLowerCase(), password);
             navigate('/');
         } catch (err) {
-            setError(err.response?.data?.error || 'Error al registrarse');
+            const detail = err?.response?.data?.detail;
+            const msg = typeof detail === 'string' ? detail : 'Error al registrarse';
+            setError(msg);
         } finally {
             setIsLoading(false);
         }
@@ -35,7 +44,9 @@ export function RegisterPage() {
             await loginWithGoogle(credentialResponse.credential);
             navigate('/');
         } catch (err) {
-            setError(err.response?.data?.error || 'Error al continuar con Google');
+            const detail = err?.response?.data?.detail;
+            const msg = typeof detail === 'string' ? detail : 'Error al continuar con Google';
+            setError(msg);
         } finally {
             setIsLoading(false);
         }
@@ -49,10 +60,10 @@ export function RegisterPage() {
                 <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-emerald-500/10 dark:bg-emerald-500/5 blur-[120px] rounded-full" />
             </div>
 
-            <motion.div 
+            <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="max-w-md w-full space-y-8 glass-card p-10 rounded-[2.5rem]"
+                className="max-w-md w-full space-y-6 sm:space-y-8 glass-card p-6 sm:p-10 rounded-3xl sm:rounded-[2.5rem]"
             >
                 <div className="text-center space-y-2">
                     <div className="mx-auto h-16 w-16 bg-gradient-to-br from-blue-400 to-emerald-600 rounded-2xl flex items-center justify-center mb-6 shadow-2xl shadow-blue-500/20 -rotate-3 transition-transform hover:rotate-0 duration-500">
@@ -93,22 +104,27 @@ export function RegisterPage() {
                     </div>
                 </div>
 
-                <form className="space-y-4" onSubmit={handleSubmit}>
+                <form className="space-y-4" onSubmit={handleSubmit} noValidate>
                     {error && (
-                        <motion.div 
+                        <motion.div
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
+                            role="alert"
                             className="bg-rose-500/10 text-rose-600 dark:text-rose-400 p-4 rounded-2xl text-xs font-bold border border-rose-500/20"
                         >
                             {error}
                         </motion.div>
                     )}
-                    
+
                     <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 ml-4">Nombre</label>
+                        <label htmlFor="register-name" className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 ml-4 block">Nombre</label>
                         <input
+                            id="register-name"
+                            name="name"
                             type="text"
+                            autoComplete="name"
                             required
+                            maxLength={50}
                             className="w-full px-6 py-4 bg-zinc-100 dark:bg-zinc-800/50 border-none rounded-2xl text-zinc-900 dark:text-white placeholder-zinc-400 text-sm focus:ring-2 focus:ring-blue-500/50 transition-all outline-none"
                             placeholder="Tu nombre completo"
                             value={name}
@@ -117,9 +133,14 @@ export function RegisterPage() {
                     </div>
 
                     <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 ml-4">Email</label>
+                        <label htmlFor="register-email" className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 ml-4 block">Email</label>
                         <input
+                            id="register-email"
+                            name="email"
                             type="email"
+                            autoComplete="email"
+                            inputMode="email"
+                            spellCheck={false}
                             required
                             className="w-full px-6 py-4 bg-zinc-100 dark:bg-zinc-800/50 border-none rounded-2xl text-zinc-900 dark:text-white placeholder-zinc-400 text-sm focus:ring-2 focus:ring-blue-500/50 transition-all outline-none"
                             placeholder="tu@email.com"
@@ -129,15 +150,30 @@ export function RegisterPage() {
                     </div>
 
                     <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 ml-4">Contraseña</label>
-                        <input
-                            type="password"
-                            required
-                            className="w-full px-6 py-4 bg-zinc-100 dark:bg-zinc-800/50 border-none rounded-2xl text-zinc-900 dark:text-white placeholder-zinc-400 text-sm focus:ring-2 focus:ring-blue-500/50 transition-all outline-none"
-                            placeholder="Mínimo 6 caracteres"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                        />
+                        <label htmlFor="register-password" className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 ml-4 block">Contraseña</label>
+                        <div className="relative">
+                            <input
+                                id="register-password"
+                                name="password"
+                                type={showPassword ? 'text' : 'password'}
+                                autoComplete="new-password"
+                                required
+                                minLength={6}
+                                className="w-full px-6 py-4 pr-12 bg-zinc-100 dark:bg-zinc-800/50 border-none rounded-2xl text-zinc-900 dark:text-white placeholder-zinc-400 text-sm focus:ring-2 focus:ring-blue-500/50 transition-all outline-none"
+                                placeholder="Mínimo 6 caracteres"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(s => !s)}
+                                aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                                className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors p-1"
+                                tabIndex={-1}
+                            >
+                                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
+                        </div>
                     </div>
 
                     <div className="flex items-center gap-2 px-2 py-2">

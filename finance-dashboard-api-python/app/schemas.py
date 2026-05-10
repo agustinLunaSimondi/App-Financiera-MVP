@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field, ConfigDict
+from pydantic import BaseModel, EmailStr, Field, ConfigDict, field_validator
 from pydantic.alias_generators import to_camel
 from typing import List, Optional
 from datetime import datetime, date
@@ -12,6 +12,17 @@ class CamelModel(BaseModel):
         populate_by_name=True,
         from_attributes=True
     )
+
+
+def _empty_str_to_none(value):
+    """Helper para convertir strings vacíos enviados desde el frontend a None.
+
+    Evita errores 422 cuando un campo Optional[date] / Optional[str] recibe ""
+    en vez de null (típico de inputs HTML <input type="date" />).
+    """
+    if isinstance(value, str) and value.strip() == "":
+        return None
+    return value
 
 # Base Schemas
 class UserBase(CamelModel):
@@ -155,6 +166,11 @@ class SavingGoalBase(CamelModel):
     icon: Optional[str] = None
     color: Optional[str] = "#10B981"
 
+    @field_validator("deadline", mode="before")
+    @classmethod
+    def _empty_deadline_to_none(cls, v):
+        return _empty_str_to_none(v)
+
 class SavingGoalCreate(SavingGoalBase):
     pass
 
@@ -165,6 +181,11 @@ class SavingGoalUpdate(CamelModel):
     deadline: Optional[date] = None
     icon: Optional[str] = None
     color: Optional[str] = None
+
+    @field_validator("deadline", mode="before")
+    @classmethod
+    def _empty_deadline_to_none(cls, v):
+        return _empty_str_to_none(v)
 
 class SavingGoal(SavingGoalBase):
     id: str
@@ -184,6 +205,11 @@ class RecurringTransactionBase(CamelModel):
     end_date: Optional[date] = None
     is_active: bool = True
 
+    @field_validator("end_date", mode="before")
+    @classmethod
+    def _empty_end_date_to_none(cls, v):
+        return _empty_str_to_none(v)
+
 class RecurringTransactionCreate(RecurringTransactionBase):
     pass
 
@@ -196,6 +222,11 @@ class RecurringTransactionUpdate(CamelModel):
     start_date: Optional[date] = None
     end_date: Optional[date] = None
     is_active: Optional[bool] = None
+
+    @field_validator("end_date", "start_date", mode="before")
+    @classmethod
+    def _empty_dates_to_none(cls, v):
+        return _empty_str_to_none(v)
 
 class RecurringTransaction(RecurringTransactionBase):
     id: str

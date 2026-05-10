@@ -1,10 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { Plus, X, Tag } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import { useFinance } from '../../../hooks/useFinance';
 
 const INPUT_CLS = "w-full px-4 py-2.5 border border-zinc-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-emerald-500 focus:outline-none transition-colors text-sm";
 const LABEL_CLS = "block text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5";
+
+const apiErrorMessage = (err, fallback) => {
+    const detail = err?.response?.data?.detail;
+    if (typeof detail === 'string') return detail;
+    if (Array.isArray(detail)) return detail.map(d => d.msg || JSON.stringify(d)).join(', ');
+    return err?.message || fallback;
+};
 
 // ─── Inline New Category Panel ─────────────────────────────
 function NewCategoryPanel({ onCreated, onCancel, transactionType }) {
@@ -24,7 +31,7 @@ function NewCategoryPanel({ onCreated, onCancel, transactionType }) {
             toast.success(`Categoría "${name.trim()}" creada`);
             onCreated(newCat);
         } catch (err) {
-            toast.error('Error al crear la categoría');
+            toast.error(apiErrorMessage(err, 'Error al crear la categoría'));
         } finally {
             setSaving(false);
         }
@@ -44,8 +51,14 @@ function NewCategoryPanel({ onCreated, onCancel, transactionType }) {
                 placeholder="Nombre de la categoría"
                 value={name}
                 onChange={e => setName(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleSave()}
+                onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleSave();
+                    }
+                }}
                 className={INPUT_CLS}
+                maxLength={30}
             />
             <div>
                 <p className="text-xs text-zinc-400 mb-2">Color</p>
@@ -57,6 +70,7 @@ function NewCategoryPanel({ onCreated, onCancel, transactionType }) {
                             onClick={() => setColor(c)}
                             className="w-7 h-7 rounded-full transition-transform hover:scale-110"
                             style={{ backgroundColor: c, outline: color === c ? `2px solid ${c}` : 'none', outlineOffset: 2 }}
+                            aria-label={`Color ${c}`}
                         />
                     ))}
                 </div>
@@ -84,8 +98,8 @@ function NewCategoryPanel({ onCreated, onCancel, transactionType }) {
 
 // ─── Main Form ────────────────────────────────────────────
 export function TransactionForm({ onClose, transactionToEdit = null }) {
-    const { addTransaction, updateTransaction, accounts, categories } = useFinance();
-    const [loading, setLoading] = useState(false);
+    const { addTransaction, updateTransaction, accounts, categories, loading } = useFinance();
+    const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
     const [showNewCategory, setShowNewCategory] = useState(false);
 
@@ -102,16 +116,25 @@ export function TransactionForm({ onClose, transactionToEdit = null }) {
         if (transactionToEdit) {
             const txDate = transactionToEdit.transactionDate || transactionToEdit.date;
             setFormData({
-                description: transactionToEdit.description,
+                description: transactionToEdit.description || '',
                 amount: Math.abs(transactionToEdit.amount).toString(),
                 type: transactionToEdit.amount > 0 ? 'INCOME' : 'EXPENSE',
-                categoryId: transactionToEdit.categoryId,
-                accountId: transactionToEdit.accountId,
+                categoryId: transactionToEdit.categoryId || '',
+                accountId: transactionToEdit.accountId || '',
                 date: txDate ? txDate.split('T')[0] : new Date().toISOString().split('T')[0]
             });
         } else {
-            if (accounts.length > 0) setFormData(prev => ({ ...prev, accountId: accounts[0].id }));
-            if (categories.length > 0) setFormData(prev => ({ ...prev, categoryId: categories[0].id }));
+            // Set defaults from existing accounts/categories — only if not set yet
+            setFormData(prev => {
+                const next = { ...prev };
+                if (!next.accountId && accounts.length > 0) next.accountId = accounts[0].id;
+                if (!next.categoryId) {
+                    const matching = categories.filter(c => (c.type || '').toString().toUpperCase() === next.type);
+                    if (matching.length > 0) next.categoryId = matching[0].id;
+                    else if (categories.length > 0) next.categoryId = categories[0].id;
+                }
+                return next;
+            });
         }
     }, [transactionToEdit, accounts, categories]);
 
@@ -128,7 +151,7 @@ export function TransactionForm({ onClose, transactionToEdit = null }) {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
-        setLoading(true);
+        setSubmitting(true);
 
         try {
             if (!formData.accountId) throw new Error('Debes seleccionar una cuenta');
@@ -138,7 +161,7 @@ export function TransactionForm({ onClose, transactionToEdit = null }) {
             const finalAmount = parseFloat(formData.amount) * (formData.type === 'EXPENSE' ? -1 : 1);
 
             const payload = {
-                description: formData.description,
+                description: formData.description.trim(),
                 amount: finalAmount,
                 categoryId: formData.categoryId,
                 accountId: formData.accountId,
@@ -155,10 +178,11 @@ export function TransactionForm({ onClose, transactionToEdit = null }) {
 
             onClose();
         } catch (err) {
-            setError(err.message || 'Ocurrió un error al guardar');
-            toast.error(err.message || 'Error al guardar la transacción');
+            const msg = apiErrorMessage(err, 'Ocurrió un error al guardar');
+            setError(msg);
+            toast.error(msg);
         } finally {
-            setLoading(false);
+            setSubmitting(false);
         }
     };
 
@@ -169,6 +193,8 @@ export function TransactionForm({ onClose, transactionToEdit = null }) {
     });
     // Fallback: if the filter yields nothing, show all categories
     const categoryOptions = filteredCategories.length > 0 ? filteredCategories : categories;
+    const categoriesEmpty = categories.length === 0;
+    const accountsEmpty = accounts.length === 0;
 
     return (
         <form onSubmit={handleSubmit} className="space-y-5">
@@ -182,7 +208,7 @@ export function TransactionForm({ onClose, transactionToEdit = null }) {
             <div className="flex gap-2 p-1 bg-zinc-100 dark:bg-zinc-800 rounded-xl">
                 <button
                     type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, type: 'EXPENSE' }))}
+                    onClick={() => setFormData(prev => ({ ...prev, type: 'EXPENSE', categoryId: '' }))}
                     className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${formData.type === 'EXPENSE'
                         ? 'bg-white dark:bg-zinc-700 text-red-600 dark:text-red-400 shadow-sm'
                         : 'text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300'
@@ -192,7 +218,7 @@ export function TransactionForm({ onClose, transactionToEdit = null }) {
                 </button>
                 <button
                     type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, type: 'INCOME' }))}
+                    onClick={() => setFormData(prev => ({ ...prev, type: 'INCOME', categoryId: '' }))}
                     className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${formData.type === 'INCOME'
                         ? 'bg-white dark:bg-zinc-700 text-emerald-600 dark:text-emerald-400 shadow-sm'
                         : 'text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300'
@@ -209,8 +235,10 @@ export function TransactionForm({ onClose, transactionToEdit = null }) {
                     <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400 font-bold">$</span>
                     <input
                         type="number"
+                        inputMode="decimal"
                         name="amount"
                         step="0.01"
+                        min="0"
                         placeholder="0.00"
                         required
                         className={`${INPUT_CLS} pl-8`}
@@ -228,6 +256,7 @@ export function TransactionForm({ onClose, transactionToEdit = null }) {
                     name="description"
                     placeholder="Ej. Compra supermercado"
                     required
+                    maxLength={100}
                     className={INPUT_CLS}
                     value={formData.description}
                     onChange={handleChange}
@@ -254,9 +283,14 @@ export function TransactionForm({ onClose, transactionToEdit = null }) {
                     className={INPUT_CLS}
                     value={formData.categoryId}
                     onChange={handleChange}
+                    disabled={loading && categoriesEmpty}
                 >
                     <option value="">
-                        {categories.length === 0 ? 'Cargando categorías...' : 'Seleccionar categoría'}
+                        {loading && categoriesEmpty
+                            ? 'Cargando categorías…'
+                            : categoriesEmpty
+                                ? 'Sin categorías — creá una con el botón "Nueva"'
+                                : 'Seleccionar categoría'}
                     </option>
                     {categoryOptions.map(cat => (
                         <option key={cat.id} value={cat.id}>{cat.name}</option>
@@ -280,8 +314,15 @@ export function TransactionForm({ onClose, transactionToEdit = null }) {
                     className={INPUT_CLS}
                     value={formData.accountId}
                     onChange={handleChange}
+                    disabled={loading && accountsEmpty}
                 >
-                    <option value="">Seleccionar cuenta</option>
+                    <option value="">
+                        {loading && accountsEmpty
+                            ? 'Cargando cuentas…'
+                            : accountsEmpty
+                                ? 'Sin cuentas — creá una en "Cuentas y Tarjetas"'
+                                : 'Seleccionar cuenta'}
+                    </option>
                     {accounts.map(acc => (
                         <option key={acc.id} value={acc.id}>{acc.name}</option>
                     ))}
@@ -312,10 +353,10 @@ export function TransactionForm({ onClose, transactionToEdit = null }) {
                 </button>
                 <button
                     type="submit"
-                    disabled={loading}
-                    className="flex-1 px-4 py-2.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-xl hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors disabled:opacity-50 font-bold text-sm"
+                    disabled={submitting || accountsEmpty}
+                    className="flex-1 px-4 py-2.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-xl hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-bold text-sm"
                 >
-                    {loading ? 'Guardando...' : (transactionToEdit ? 'Actualizar' : 'Guardar')}
+                    {submitting ? 'Guardando...' : (transactionToEdit ? 'Actualizar' : 'Guardar')}
                 </button>
             </div>
         </form>

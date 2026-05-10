@@ -17,7 +17,7 @@ export function SettingsPage() {
         transactions, budgets, accounts, // For export
         deleteUserAccount // For delete account
     } = useFinance();
-    const { setLanguage } = useLanguage();
+    const { language, setLanguage } = useLanguage();
     const { logout } = useAuth();
 
     // State for Category Management
@@ -29,7 +29,26 @@ export function SettingsPage() {
     const [deleteAccountInput, setDeleteAccountInput] = useState('');
 
     const handleToggleDarkMode = async () => {
-        await updateSettings({ darkMode: !settings.darkMode });
+        const next = !settings.darkMode;
+        // Aplicar inmediatamente para UX, sincronizar con backend en paralelo
+        document.documentElement.classList.toggle('dark', next);
+        localStorage.setItem('darkMode', String(next));
+        try {
+            await updateSettings({ darkMode: next });
+        } catch (err) {
+            const detail = err?.response?.data?.detail;
+            toast.error(typeof detail === 'string' ? detail : 'No se pudo guardar la preferencia');
+        }
+    };
+
+    const handleCurrencyChange = async (currency) => {
+        try {
+            await updateSettings({ currency });
+            toast.success('Moneda actualizada');
+        } catch (err) {
+            const detail = err?.response?.data?.detail;
+            toast.error(typeof detail === 'string' ? detail : 'Error al actualizar moneda');
+        }
     };
 
     // ============= CATEGORY MANAGEMENT =============
@@ -49,8 +68,10 @@ export function SettingsPage() {
     const handleConfirmDeleteCategory = async () => {
         try {
             await deleteCategory(confirmDeleteCategoryId);
+            toast.success('Categoría eliminada');
         } catch (error) {
-            toast.error(error.message || 'Error al eliminar la categoría');
+            const detail = error?.response?.data?.detail;
+            toast.error(typeof detail === 'string' ? detail : (error?.message || 'Error al eliminar la categoría'));
         } finally {
             setConfirmDeleteCategoryId(null);
         }
@@ -60,13 +81,20 @@ export function SettingsPage() {
         try {
             if (editingCategory) {
                 await updateCategory(editingCategory.id, formData);
+                toast.success('Categoría actualizada');
             } else {
                 await addCategory(formData);
+                toast.success('Categoría creada');
             }
             setIsCategoryFormOpen(false);
             setEditingCategory(null);
         } catch (error) {
             console.error(error);
+            const detail = error?.response?.data?.detail;
+            const msg = typeof detail === 'string' ? detail
+                : Array.isArray(detail) ? detail.map(d => d.msg || d).join(', ')
+                : (error?.message || 'Error al guardar la categoría');
+            toast.error(msg);
         }
     };
 
@@ -168,12 +196,9 @@ export function SettingsPage() {
                                     Idioma
                                 </label>
                                 <select
-                                    value={settings.language || 'es'}
-                                    onChange={async (e) => {
-                                        const newLang = e.target.value;
-                                        await updateSettings({ language: newLang });
-                                        setLanguage(newLang);
-                                    }}
+                                    value={language}
+                                    onChange={(e) => setLanguage(e.target.value)}
+                                    aria-label="Idioma de la interfaz"
                                     className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                 >
                                     <option value="es">Español</option>
@@ -188,7 +213,8 @@ export function SettingsPage() {
                                 </label>
                                 <select
                                     value={settings.currency || 'USD'}
-                                    onChange={(e) => updateSettings({ currency: e.target.value })}
+                                    onChange={(e) => handleCurrencyChange(e.target.value)}
+                                    aria-label="Moneda predeterminada"
                                     className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                 >
                                     <option value="USD">USD - Dólar Estadounidense</option>

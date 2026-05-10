@@ -1,7 +1,8 @@
 import React from 'react';
 import { Card } from '../../common/components/Card';
-import { Trash2, Edit2, Calendar, Clock } from 'lucide-react';
+import { Trash2, Edit2, Calendar } from 'lucide-react';
 import { cn } from '../../../lib/utils';
+import { formatCurrency } from '../../../utils/formatters';
 
 export function RecurringTransactionCard({ rt, onEdit, onDelete, onToggle, delay = 0 }) {
     const frequencyLabels = {
@@ -28,15 +29,17 @@ export function RecurringTransactionCard({ rt, onEdit, onDelete, onToggle, delay
                         </div>
                         <p className="text-lg font-black text-zinc-900 dark:text-white line-clamp-1">{rt.description}</p>
                     </div>
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex gap-1 opacity-60 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                         <button
                             onClick={() => onEdit(rt)}
+                            aria-label="Editar regla"
                             className="p-2 text-zinc-400 hover:text-blue-500 hover:bg-blue-500/10 rounded-xl transition-colors"
                         >
                             <Edit2 className="w-4 h-4" />
                         </button>
                         <button
                             onClick={() => onDelete(rt.id)}
+                            aria-label="Eliminar regla"
                             className="p-2 text-zinc-400 hover:text-rose-500 hover:bg-rose-500/10 rounded-xl transition-colors"
                         >
                             <Trash2 className="w-4 h-4" />
@@ -44,23 +47,23 @@ export function RecurringTransactionCard({ rt, onEdit, onDelete, onToggle, delay
                     </div>
                 </div>
 
-                <div className="flex items-baseline gap-1">
+                <div className="flex items-baseline gap-1 flex-wrap">
                     <span className={cn(
                         "text-2xl font-black",
                         rt.amount > 0 ? "text-emerald-500" : "text-zinc-900 dark:text-white"
                     )}>
-                        {rt.amount > 0 ? '+' : ''}{Number(rt.amount).toLocaleString('es-AR', { style: 'currency', currency: 'USD' })}
+                        {rt.amount > 0 ? '+' : ''}{formatCurrency(rt.amount)}
                     </span>
-                    <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest ml-1">
+                    <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest ml-1 truncate">
                         {rt.account?.name || rt.account}
                     </span>
                 </div>
 
                 <div className="pt-4 border-t border-zinc-200/50 dark:border-zinc-800/50 space-y-3">
-                    <div className="flex items-center justify-between text-[10px] font-bold text-zinc-500 uppercase tracking-tight">
-                        <div className="flex items-center gap-1.5">
-                            <Calendar className="w-3.5 h-3.5" />
-                            <span>Próximo: {new Date(rt.nextDate + 'T00:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })}</span>
+                    <div className="flex items-center justify-between gap-2 text-[10px] font-bold text-zinc-500 uppercase tracking-tight">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                            <Calendar className="w-3.5 h-3.5 shrink-0" />
+                            <span className="truncate">Próximo: {rt.nextDate ? new Date(rt.nextDate + 'T00:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: 'short' }) : '—'}</span>
                         </div>
                         <button
                             onClick={() => onToggle(rt)}

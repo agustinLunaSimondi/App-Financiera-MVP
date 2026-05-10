@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { toast } from 'sonner';
 import { useFinance } from '../hooks/useFinance';
-import { formatCurrency, formatCompactCurrency } from '../utils/formatters';
+import { formatCompactCurrency } from '../utils/formatters';
 
 import { Card } from '../features/common/components/Card';
 import { Modal } from '../features/common/components/Modal';
@@ -71,7 +71,11 @@ export function BudgetPage() {
             handleCloseModal();
         } catch (error) {
             console.error("Error saving budget:", error);
-            toast.error('Error al guardar el presupuesto');
+            const detail = error?.response?.data?.detail;
+            const msg = typeof detail === 'string' ? detail
+                : Array.isArray(detail) ? detail.map(d => d.msg || d).join(', ')
+                : 'Error al guardar el presupuesto';
+            toast.error(msg);
         }
     };
 
@@ -91,7 +95,7 @@ export function BudgetPage() {
     return (
         <div className="space-y-10">
                 {/* Header */}
-                <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 md:gap-6">
                     <div>
                         <div className="flex items-center gap-3 mb-2">
                             <div className="p-2 bg-indigo-500/10 rounded-lg">
@@ -103,7 +107,7 @@ export function BudgetPage() {
                     </div>
                     <button
                         onClick={handleOpenCreate}
-                        className="flex items-center gap-2 px-6 py-3.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-2xl font-bold shadow-xl transition-all active:scale-95 group"
+                        className="flex items-center justify-center gap-2 w-full md:w-auto px-6 py-3.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-2xl font-bold shadow-xl transition-all active:scale-95 group"
                     >
                         <Plus className="w-5 h-5 transition-transform group-hover:rotate-90" />
                         Nuevo Presupuesto
@@ -136,10 +140,18 @@ export function BudgetPage() {
                                             </div>
                                         </div>
                                         <div className="flex gap-1">
-                                            <button onClick={() => handleOpenEdit(budget)} className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors text-zinc-400 hover:text-emerald-500">
+                                            <button
+                                                onClick={() => handleOpenEdit(budget)}
+                                                aria-label="Editar presupuesto"
+                                                className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors text-zinc-400 hover:text-emerald-500"
+                                            >
                                                 <Edit2 className="w-4 h-4" />
                                             </button>
-                                            <button onClick={() => handleDelete(budget.id)} className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors text-zinc-400 hover:text-rose-500">
+                                            <button
+                                                onClick={() => handleDelete(budget.id)}
+                                                aria-label="Eliminar presupuesto"
+                                                className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors text-zinc-400 hover:text-rose-500"
+                                            >
                                                 <Trash2 className="w-4 h-4" />
                                             </button>
                                         </div>

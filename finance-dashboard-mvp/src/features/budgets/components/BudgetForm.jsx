@@ -77,7 +77,9 @@ export function BudgetForm({ onSubmit, onCancel, initialData = null, categories 
                     className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none transition-colors"
                 >
                     <option value="">
-                        {categories.length === 0 ? 'Cargando categorías...' : 'Selecciona una categoría'}
+                        {categories.length === 0
+                            ? 'Sin categorías de gasto — creá una en Configuración'
+                            : 'Selecciona una categoría'}
                     </option>
                     {categoryOptions.map(cat => (
                         <option key={cat.id} value={cat.id}>

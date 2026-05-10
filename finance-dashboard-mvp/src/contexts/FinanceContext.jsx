@@ -30,47 +30,52 @@ export function FinanceProvider({ children }) {
     // ============= LOAD INITIAL DATA =============
 
     const loadData = useCallback(async () => {
-        try {
-            setLoading(true);
-            setError(null);
+        setLoading(true);
+        setError(null);
 
-            const [txs, bdgs, accs, cats, sets, goals, recs] = await Promise.all([
-                api.getTransactions(filters),
-                api.getBudgets(),
-                api.getAccounts(),
-                api.getCategories(),
-                api.getSettings(),
-                api.getSavingsGoals(),
-                api.getRecurring()
-            ]);
+        // Usar allSettled para que un endpoint roto no rompa toda la carga inicial.
+        // (El bug original con Promise.all hacía que el dashboard quedara totalmente
+        // vacío si cualquier endpoint fallaba — ej. categorías sin seed inicial.)
+        const results = await Promise.allSettled([
+            api.getTransactions(filters),
+            api.getBudgets(),
+            api.getAccounts(),
+            api.getCategories(),
+            api.getSettings(),
+            api.getSavingsGoals(),
+            api.getRecurring()
+        ]);
 
-            setTransactions(txs);
-            setBudgets(bdgs);
-            setAccounts(accs);
-            setCategories(cats);
-            setSettings(sets);
-            setSavingsGoals(goals);
-            setRecurringTransactions(recs);
-        } catch (err) {
-            setError(err.message);
-            console.error('Error loading data:', err);
-        } finally {
-            setLoading(false);
+        const setters = [setTransactions, setBudgets, setAccounts, setCategories, setSettings, setSavingsGoals, setRecurringTransactions];
+        const labels = ['transactions', 'budgets', 'accounts', 'categories', 'settings', 'savings', 'recurring'];
+        const failures = [];
+
+        results.forEach((r, i) => {
+            if (r.status === 'fulfilled') {
+                setters[i](r.value);
+            } else {
+                failures.push(labels[i]);
+                console.error(`Error cargando ${labels[i]}:`, r.reason);
+            }
+        });
+
+        if (failures.length > 0) {
+            setError(`No se pudieron cargar: ${failures.join(', ')}`);
         }
+
+        setLoading(false);
     }, [filters]);
 
     useEffect(() => {
         loadData();
     }, [loadData]);
 
-    // Aplicar modo oscuro al cargar settings y sincronizar localStorage
+    // Aplicar modo oscuro cuando los settings cambian.
+    // Prioridad: si el usuario tocó el toggle (localStorage seteado por Layout.handleToggleDark)
+    // y discrepa con backend, NO sobreescribir el preference local — sincronizar al revés.
     useEffect(() => {
         if (settings.darkMode === undefined) return;
-        if (settings.darkMode) {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-        }
+        document.documentElement.classList.toggle('dark', !!settings.darkMode);
         localStorage.setItem('darkMode', String(settings.darkMode));
     }, [settings.darkMode]);
 

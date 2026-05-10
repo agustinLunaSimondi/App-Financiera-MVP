@@ -23,11 +23,16 @@ export function SavingGoalForm({ goal, onSubmit, onCancel }) {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        onSubmit({
-            ...formData,
+        // Convertir strings vacíos a null/0 antes de enviar para evitar 422 de Pydantic
+        const payload = {
+            name: formData.name.trim(),
+            color: formData.color,
             targetAmount: parseFloat(formData.targetAmount),
-            currentAmount: parseFloat(formData.currentAmount || 0)
-        });
+            currentAmount: formData.currentAmount === '' ? 0 : parseFloat(formData.currentAmount),
+            // deadline es Optional[date] en backend; "" rompe la validación Pydantic
+            deadline: formData.deadline ? formData.deadline : null
+        };
+        onSubmit(payload);
     };
 
     const colors = [

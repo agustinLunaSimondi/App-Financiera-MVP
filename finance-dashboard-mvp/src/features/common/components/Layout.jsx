@@ -73,7 +73,7 @@ const NavItemLink = ({ item, onClick }) => {
 };
 
 // ─── Sidebar Content ──────────────────────────────────────────
-function SidebarContent({ onMobileNavClick, isDark, onToggleDark }) {
+function SidebarContent({ onMobileNavClick }) {
     const { user, logout } = useAuth();
     const { t } = useLanguage();
     const navigate = useNavigate();
@@ -88,14 +88,14 @@ function SidebarContent({ onMobileNavClick, isDark, onToggleDark }) {
         { icon: Wallet, label: t('sidebar.transactions'), path: '/transactions' },
         { icon: PieChart, label: t('sidebar.budgets'), path: '/budget' },
         { icon: PiggyBank, label: t('sidebar.savings'), path: '/savings' },
-        { icon: Clock, label: t('sidebar.recurring') || 'Recurrentes', path: '/recurring' },
+        { icon: Clock, label: t('sidebar.recurring'), path: '/recurring' },
         { icon: CreditCard, label: t('sidebar.accounts'), path: '/cards' },
     ];
 
     const supportNav = [
         { icon: GraduationCap, label: t('sidebar.academy'), path: '/academy' },
-        { icon: Link2, label: t('sidebar.integrations') || 'Integraciones', path: '/integrations' },
-        { icon: HelpCircle, label: t('sidebar.help') || 'Ayuda', path: '/help' },
+        { icon: Link2, label: t('sidebar.integrations'), path: '/integrations' },
+        { icon: HelpCircle, label: t('sidebar.help'), path: '/help' },
         { icon: Settings, label: t('sidebar.settings'), path: '/settings' },
     ];
 
@@ -126,7 +126,7 @@ function SidebarContent({ onMobileNavClick, isDark, onToggleDark }) {
                     </div>
                 </div>
                 <div>
-                    <span className="px-4 text-[10px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">Recursos</span>
+                    <span className="px-4 text-[10px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">{t('sidebar.resources')}</span>
                     <div className="mt-4 space-y-1">
                         {supportNav.map(item => <NavItemLink key={item.path} item={item} onClick={onMobileNavClick} />)}
                     </div>
@@ -198,7 +198,7 @@ export function Layout({ children }) {
         <div className="min-h-screen bg-transparent flex text-zinc-900 dark:text-zinc-100 font-sans overflow-hidden">
             {/* Desktop Sidebar */}
             <aside className="hidden lg:flex flex-col w-72 glass-sidebar sticky top-0 h-screen border-r border-zinc-200/50 dark:border-zinc-800/50">
-                <SidebarContent isDark={isDark} onToggleDark={handleToggleDark} />
+                <SidebarContent />
             </aside>
 
             {/* Main Content Area */}
@@ -265,10 +265,8 @@ export function Layout({ children }) {
                             >
                                 <X className="w-6 h-6" />
                             </button>
-                            <SidebarContent 
+                            <SidebarContent
                                 onMobileNavClick={() => setIsMobileMenuOpen(false)}
-                                isDark={isDark}
-                                onToggleDark={handleToggleDark}
                             />
                         </motion.div>
                     </>

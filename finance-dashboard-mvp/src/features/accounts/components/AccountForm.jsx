@@ -16,10 +16,10 @@ export function AccountForm({ onClose, accountToEdit = null }) {
     useEffect(() => {
         if (accountToEdit) {
             setFormData({
-                name: accountToEdit.name,
-                type: accountToEdit.type,
-                balance: accountToEdit.balance.toString(),
-                currency: accountToEdit.currency
+                name: accountToEdit.name || '',
+                type: accountToEdit.type || 'CHECKING',
+                balance: accountToEdit.balance != null ? accountToEdit.balance.toString() : '0',
+                currency: accountToEdit.currency || 'USD'
             });
         }
     }, [accountToEdit]);
@@ -35,11 +35,13 @@ export function AccountForm({ onClose, accountToEdit = null }) {
         setLoading(true);
 
         try {
-            if (!formData.name) throw new Error('El nombre es obligatorio');
-            if (formData.balance === '') throw new Error('El balance inicial es obligatorio');
+            if (!formData.name.trim()) throw new Error('El nombre es obligatorio');
+            if (formData.balance === '' || isNaN(parseFloat(formData.balance))) {
+                throw new Error('El balance inicial es obligatorio');
+            }
 
             const payload = {
-                name: formData.name,
+                name: formData.name.trim(),
                 type: formData.type,
                 balance: parseFloat(formData.balance),
                 currency: formData.currency
@@ -53,7 +55,11 @@ export function AccountForm({ onClose, accountToEdit = null }) {
 
             onClose();
         } catch (err) {
-            setError(err.message || 'Error al guardar la cuenta');
+            const detail = err?.response?.data?.detail;
+            const msg = typeof detail === 'string' ? detail
+                : Array.isArray(detail) ? detail.map(d => d.msg || d).join(', ')
+                : (err.message || 'Error al guardar la cuenta');
+            setError(msg);
         } finally {
             setLoading(false);
         }

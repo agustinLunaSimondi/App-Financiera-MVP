@@ -17,8 +17,7 @@ import {
     calculateNetSavings,
     calculateTotalBalance,
     generateIncomeVsExpensesChartData,
-    groupTransactionsByCategory,
-    calculatePercentageChange
+    groupTransactionsByCategory
 } from '../utils/calculations';
 import { formatCurrency, formatCompactCurrency } from '../utils/formatters';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -61,17 +60,26 @@ export function DashboardPage() {
     const downloadReport = () => {
         if (!transactions.length) return;
 
+        // Escape para CSV: envolver en comillas y duplicar comillas internas si hace falta
+        const csvCell = (val) => {
+            const str = (val ?? '').toString();
+            if (/[",\n;]/.test(str)) return `"${str.replace(/"/g, '""')}"`;
+            return str;
+        };
+
         const headers = ["Fecha", "Descripción", "Categoría", "Cuenta", "Monto"];
         const rows = transactions.map(tx => [
-            new Date(tx.date || tx.transactionDate).toLocaleDateString(),
+            // Forzar interpretación local sin offset UTC para evitar saltos de día
+            new Date((tx.date || tx.transactionDate) + 'T00:00:00').toLocaleDateString('es-AR'),
             tx.description || tx.name,
             tx.category,
             tx.account,
             tx.amount
         ]);
 
-        const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const csvContent = [headers, ...rows].map(row => row.map(csvCell).join(',')).join('\r\n');
+        // BOM UTF-8 para Excel
+        const blob = new Blob(['﻿' + csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         const url = URL.createObjectURL(blob);
         link.setAttribute("href", url);
@@ -80,6 +88,7 @@ export function DashboardPage() {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        URL.revokeObjectURL(url);
     };
 
     if (loading) {

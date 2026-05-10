@@ -14,9 +14,11 @@ export function SavingGoalCard({ goal, onEdit, onDelete, onContribute, delay = 0
 
     const handleConfirmDeposit = () => {
         const parsed = parseFloat(depositAmount);
-        if (!isNaN(parsed) && parsed > 0) {
-            onContribute(goal.id, parsed);
+        if (isNaN(parsed) || parsed <= 0) {
+            // No cerramos el panel si el monto es inválido — damos feedback visual
+            return;
         }
+        onContribute(goal.id, parsed);
         setDepositMode(false);
         setDepositAmount('');
     };
@@ -24,6 +26,15 @@ export function SavingGoalCard({ goal, onEdit, onDelete, onContribute, delay = 0
     const handleCancelDeposit = () => {
         setDepositMode(false);
         setDepositAmount('');
+    };
+
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            handleConfirmDeposit();
+        } else if (e.key === 'Escape') {
+            handleCancelDeposit();
+        }
     };
 
     return (
@@ -92,21 +103,29 @@ export function SavingGoalCard({ goal, onEdit, onDelete, onContribute, delay = 0
                         <input
                             type="number"
                             inputMode="decimal"
-                            min="0"
+                            min="0.01"
+                            step="0.01"
                             placeholder="Monto a depositar"
                             value={depositAmount}
                             onChange={(e) => setDepositAmount(e.target.value)}
+                            onKeyDown={handleKeyDown}
                             autoFocus
-                            className="flex-1 px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-sm font-bold text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                            aria-label="Monto a depositar"
+                            className="flex-1 min-w-0 px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-sm font-bold text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
                         />
                         <button
+                            type="button"
                             onClick={handleConfirmDeposit}
-                            className="p-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl transition-colors"
+                            disabled={!depositAmount || parseFloat(depositAmount) <= 0}
+                            aria-label="Confirmar depósito"
+                            className="p-2 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl transition-colors"
                         >
                             <Check className="w-4 h-4" />
                         </button>
                         <button
+                            type="button"
                             onClick={handleCancelDeposit}
+                            aria-label="Cancelar depósito"
                             className="p-2 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-500 rounded-xl transition-colors"
                         >
                             <X className="w-4 h-4" />

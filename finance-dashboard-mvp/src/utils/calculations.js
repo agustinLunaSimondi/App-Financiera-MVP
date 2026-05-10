@@ -164,16 +164,6 @@ export const generateIncomeVsExpensesChartData = (transactions, months = 6) => {
 };
 
 /**
- * Formatea un número como moneda
- */
-export const formatCurrency = (amount, currency = 'USD') => {
-    return new Intl.NumberFormat('es-AR', {
-        style: 'currency',
-        currency: currency
-    }).format(amount);
-};
-
-/**
  * Calcula el cambio porcentual entre dos valores
  */
 export const calculatePercentageChange = (current, previous) => {

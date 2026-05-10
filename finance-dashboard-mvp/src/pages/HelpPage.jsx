@@ -248,17 +248,33 @@ export default function HelpPage() {
             {/* Quick Links */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {[
-                    { label: 'Dashboard', icon: LayoutDashboard, path: '/', color: 'emerald' },
-                    { label: 'Transacciones', icon: Zap, path: '/transactions', color: 'blue' },
-                    { label: 'Presupuestos', icon: Shield, path: '/budget', color: 'purple' },
-                    { label: 'Academia', icon: BookOpen, path: '/academy', color: 'amber' },
-                ].map(({ label, icon: Icon, path, color }) => (
+                    {
+                        label: 'Dashboard', icon: LayoutDashboard, path: '/',
+                        btn: 'hover:bg-emerald-500/5 hover:border-emerald-500/30',
+                        iconBg: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                    },
+                    {
+                        label: 'Transacciones', icon: Zap, path: '/transactions',
+                        btn: 'hover:bg-blue-500/5 hover:border-blue-500/30',
+                        iconBg: 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
+                    },
+                    {
+                        label: 'Presupuestos', icon: Shield, path: '/budget',
+                        btn: 'hover:bg-purple-500/5 hover:border-purple-500/30',
+                        iconBg: 'bg-purple-500/10 text-purple-600 dark:text-purple-400'
+                    },
+                    {
+                        label: 'Academia', icon: BookOpen, path: '/academy',
+                        btn: 'hover:bg-amber-500/5 hover:border-amber-500/30',
+                        iconBg: 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                    },
+                ].map(({ label, icon: Icon, path, btn, iconBg }) => (
                     <button
                         key={path}
                         onClick={() => navigate(path)}
-                        className={`flex flex-col items-center gap-2 p-4 rounded-2xl border border-zinc-200/50 dark:border-zinc-800/50 hover:bg-${color}-500/5 hover:border-${color}-500/30 transition-all group`}
+                        className={`flex flex-col items-center gap-2 p-4 rounded-2xl border border-zinc-200/50 dark:border-zinc-800/50 transition-all group ${btn}`}
                     >
-                        <div className={`p-2 rounded-xl bg-${color}-500/10 text-${color}-600 dark:text-${color}-400 group-hover:scale-110 transition-transform`}>
+                        <div className={`p-2 rounded-xl group-hover:scale-110 transition-transform ${iconBg}`}>
                             <Icon size={20} />
                         </div>
                         <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">{label}</span>

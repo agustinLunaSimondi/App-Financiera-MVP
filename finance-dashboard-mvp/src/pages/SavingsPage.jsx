@@ -6,7 +6,7 @@ import { SavingGoalForm } from '../features/savings/components/SavingGoalForm';
 import { Modal } from '../features/common/components/Modal';
 
 import { useFinance } from '../hooks/useFinance';
-import { formatCurrency, formatCompactCurrency } from '../utils/formatters';
+import { formatCompactCurrency } from '../utils/formatters';
 
 export function SavingsPage() {
     const { savingsGoals, loading, addSavingGoal, updateSavingGoal, deleteSavingGoal } = useFinance();
@@ -32,7 +32,11 @@ export function SavingsPage() {
             setEditingGoal(null);
         } catch (error) {
             console.error('Error saving goal:', error);
-            toast.error('Error al guardar la meta');
+            const detail = error?.response?.data?.detail;
+            const msg = typeof detail === 'string' ? detail
+                : Array.isArray(detail) ? detail.map(d => d.msg).join(', ')
+                : 'Error al guardar la meta';
+            toast.error(msg);
         }
     };
 
@@ -43,10 +47,12 @@ export function SavingsPage() {
         try {
             const updatedAmount = Number(goal.currentAmount) + Number(amount);
             await updateSavingGoal(goalId, { currentAmount: updatedAmount });
-            toast.success('Contribución registrada correctamente');
+            toast.success(`Depósito de ${new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(amount)} registrado`);
         } catch (error) {
             console.error('Error contributing to goal:', error);
-            toast.error('Error al registrar la contribución');
+            const detail = error?.response?.data?.detail;
+            const msg = typeof detail === 'string' ? detail : 'Error al registrar la contribución';
+            toast.error(msg);
         }
     };
 
@@ -69,7 +75,7 @@ export function SavingsPage() {
 
     return (
         <div className="space-y-10">
-                <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 md:gap-6">
                     <div>
                         <div className="flex items-center gap-3 mb-2">
                             <div className="p-2 bg-emerald-500/10 rounded-lg">
@@ -81,7 +87,7 @@ export function SavingsPage() {
                     </div>
                     <button
                         onClick={() => handleOpenModal()}
-                        className="flex items-center gap-2 px-6 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-bold shadow-lg shadow-emerald-600/20 transition-all active:scale-95 group"
+                        className="flex items-center justify-center gap-2 w-full md:w-auto px-6 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-bold shadow-lg shadow-emerald-600/20 transition-all active:scale-95 group"
                     >
                         <Plus className="w-5 h-5 transition-transform group-hover:rotate-90" />
                         Nueva Meta
@@ -89,7 +95,7 @@ export function SavingsPage() {
                 </header>
 
                 {/* Resumen General */}
-                <div className="glass p-8 rounded-[2rem] relative overflow-hidden group">
+                <div className="glass p-6 md:p-8 rounded-[2rem] relative overflow-hidden group">
                     <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                         <div className="space-y-4 max-w-md">
                             <h3 className="text-2xl font-black text-zinc-900 dark:text-white">Tu Progreso Global</h3>

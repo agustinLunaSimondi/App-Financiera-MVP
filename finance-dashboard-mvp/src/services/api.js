@@ -71,16 +71,11 @@ export const deleteTransaction = async (id) => {
 // ============= BUDGETS =============
 
 export const getBudgets = async () => {
-    try {
-        const response = await client.get('/budgets');
-        return response.data.map(b => ({
-            ...b,
-            amount: Number(b.amount)
-        }));
-    } catch (e) {
-        console.warn('Budgets endpoint not ready', e);
-        return [];
-    }
+    const response = await client.get('/budgets');
+    return response.data.map(b => ({
+        ...b,
+        amount: Number(b.amount)
+    }));
 };
 
 export const addBudget = async (budget) => {
@@ -107,15 +102,11 @@ export const deleteBudget = async (id) => {
 // ============= ACCOUNTS =============
 
 export const getAccounts = async () => {
-    try {
-        const response = await client.get('/accounts');
-        return response.data.map(acc => ({
-            ...acc,
-            balance: Number(acc.balance)
-        }));
-    } catch (e) {
-        return [];
-    }
+    const response = await client.get('/accounts');
+    return response.data.map(acc => ({
+        ...acc,
+        balance: Number(acc.balance)
+    }));
 };
 
 export const addAccount = async (account) => {
@@ -145,12 +136,10 @@ export const getCategories = async () => {
     const response = await client.get('/categories');
     // Normalize: ensure 'type' is always an uppercase string regardless of how
     // Pydantic/the backend serializes the enum (e.g. 'EXPENSE', 'expense', or an object)
-    const normalized = response.data.map(cat => ({
+    return response.data.map(cat => ({
         ...cat,
         type: (cat.type || cat.categoryType || '').toString().toUpperCase()
     }));
-    console.debug('[API] categories loaded:', normalized.map(c => ({ id: c.id, name: c.name, type: c.type })));
-    return normalized;
 };
 
 export const addCategory = async (category) => {

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { toast } from 'sonner';
 import { useFinance } from '../hooks/useFinance';
 
 import { Card } from '../features/common/components/Card';
@@ -26,6 +27,10 @@ export function CardsPage() {
     const handleConfirmDelete = async () => {
         try {
             await deleteAccount(confirmDeleteId);
+            toast.success('Cuenta eliminada');
+        } catch (err) {
+            const detail = err?.response?.data?.detail;
+            toast.error(typeof detail === 'string' ? detail : 'No se pudo eliminar la cuenta');
         } finally {
             setConfirmDeleteId(null);
         }
@@ -76,7 +81,7 @@ export function CardsPage() {
     return (
         <div className="space-y-10">
                 {/* Header */}
-                <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 md:gap-6">
                     <div>
                         <div className="flex items-center gap-3 mb-2">
                             <div className="p-2 bg-blue-500/10 rounded-lg">
@@ -88,12 +93,30 @@ export function CardsPage() {
                     </div>
                     <button
                         onClick={() => setIsModalOpen(true)}
-                        className="flex items-center gap-2 px-6 py-3.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-2xl font-bold shadow-xl transition-all active:scale-95 group"
+                        className="flex items-center justify-center gap-2 w-full md:w-auto px-6 py-3.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-2xl font-bold shadow-xl transition-all active:scale-95 group"
                     >
                         <Plus className="w-5 h-5 transition-transform group-hover:rotate-90" />
                         Nueva Cuenta
                     </button>
                 </header>
+
+                {accounts.length === 0 && (
+                    <div className="glass p-12 md:p-20 rounded-[2rem] md:rounded-[3rem] text-center space-y-6">
+                        <div className="w-20 h-20 md:w-24 md:h-24 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto">
+                            <Wallet className="w-10 h-10 md:w-12 md:h-12 text-blue-600 dark:text-blue-400" />
+                        </div>
+                        <div className="max-w-xs mx-auto">
+                            <h3 className="text-xl md:text-2xl font-black text-zinc-900 dark:text-white">Sin cuentas todavía</h3>
+                            <p className="text-zinc-500 dark:text-zinc-400 mt-2 font-medium text-sm md:text-base">Creá tu primera cuenta para empezar a registrar movimientos.</p>
+                        </div>
+                        <button
+                            onClick={() => setIsModalOpen(true)}
+                            className="px-6 md:px-8 py-3.5 md:py-4 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-2xl font-black transition-all active:scale-95 shadow-xl shadow-zinc-900/10 dark:shadow-none"
+                        >
+                            Crear Primera Cuenta
+                        </button>
+                    </div>
+                )}
 
                 {/* Accounts Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">

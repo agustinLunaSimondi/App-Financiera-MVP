@@ -41,22 +41,18 @@ def process_recurring_transactions():
                 transaction_date=rt.next_date
             )
             db.add(new_tx)
-            
-            # Actualizar balance de cuenta
-            account = rt.account
-            category = rt.category
-            if category.type == models.CategoryType.INCOME:
-                account.balance += rt.amount
-            else:
-                account.balance -= rt.amount
-            
+
+            # El monto en `rt.amount` está firmado (negativo = gasto, positivo = ingreso),
+            # consistente con transaction_routes.create_transaction. Sumar el signo es correcto.
+            rt.account.balance += rt.amount
+
             # Actualizar next_date de la recurrente
             rt.next_date = get_next_date(rt.next_date, rt.frequency)
-            
+
             # Si pasamos la fecha fin, desactivar
             if rt.end_date and rt.next_date > rt.end_date:
                 rt.is_active = False
-                
+
         db.commit()
     except Exception as e:
         print(f"Error procesando recurrentes: {e}")
