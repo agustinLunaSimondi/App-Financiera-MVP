@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, useCallback } from 'react';
 import * as api from '../services/api';
+import { useAuth } from './AuthContext';
 
 // Crear el contexto
 export const FinanceContext = createContext();
@@ -9,6 +10,8 @@ export const FinanceContext = createContext();
  * Maneja todo el estado de la aplicación: transacciones, presupuestos, cuentas, etc.
  */
 export function FinanceProvider({ children }) {
+    const { isAuthenticated } = useAuth();
+
     // Estados
     const [transactions, setTransactions] = useState([]);
     const [budgets, setBudgets] = useState([]);
@@ -33,9 +36,6 @@ export function FinanceProvider({ children }) {
         setLoading(true);
         setError(null);
 
-        // Usar allSettled para que un endpoint roto no rompa toda la carga inicial.
-        // (El bug original con Promise.all hacía que el dashboard quedara totalmente
-        // vacío si cualquier endpoint fallaba — ej. categorías sin seed inicial.)
         const results = await Promise.allSettled([
             api.getTransactions(filters),
             api.getBudgets(),
@@ -66,9 +66,24 @@ export function FinanceProvider({ children }) {
         setLoading(false);
     }, [filters]);
 
+    // Sólo cargar datos cuando el usuario está autenticado. Si no, limpiar
+    // todo el estado para que después de un login fresco no aparezcan datos
+    // del usuario anterior (ni queden cachés stale tras un logout).
     useEffect(() => {
-        loadData();
-    }, [loadData]);
+        if (isAuthenticated) {
+            loadData();
+        } else {
+            setTransactions([]);
+            setBudgets([]);
+            setAccounts([]);
+            setCategories([]);
+            setSavingsGoals([]);
+            setRecurringTransactions([]);
+            setSettings({});
+            setLoading(false);
+            setError(null);
+        }
+    }, [isAuthenticated, loadData]);
 
     // Aplicar modo oscuro cuando los settings cambian.
     // Prioridad: si el usuario tocó el toggle (localStorage seteado por Layout.handleToggleDark)

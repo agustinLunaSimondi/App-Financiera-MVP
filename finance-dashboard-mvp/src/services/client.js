@@ -41,22 +41,39 @@ client.interceptors.request.use(
 );
 
 // Interceptor para manejar errores (ej. token expirado)
+//
+// Sólo redirige al login si el 401 viene de un endpoint de auth o de un
+// recurso "core" (transacciones, cuentas, categorías). Endpoints opcionales
+// como /mercadopago/* pueden fallar transitoriamente (cold start, MP API caída)
+// y no deberían botar la sesión del usuario.
+//
+// Para forzar opt-out por request: pasar `{ __skipAuthRedirect: true }` en la config.
+const AUTH_REDIRECT_BLOCKLIST = [
+    /\/mercadopago\//i,
+    /\/integrations\//i,
+];
+
 client.interceptors.response.use(
     (response) => response,
     (error) => {
-        if (error.response && error.response.status === 401) {
-            // Token expirado o inválido → limpiar sesión
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            // Redirigir a login si no estamos ya ahí (evita loops y mejora UX)
-            if (typeof window !== 'undefined' &&
-                !['/login', '/register'].includes(window.location.pathname)) {
-                // Pequeño retraso para dejar pasar este ciclo de error
-                setTimeout(() => {
-                    if (!['/login', '/register'].includes(window.location.pathname)) {
-                        window.location.href = '/login';
-                    }
-                }, 50);
+        const status = error?.response?.status;
+        if (status === 401) {
+            const reqUrl = (error?.config?.url || '').toString();
+            const skipPerRequest = !!error?.config?.__skipAuthRedirect;
+            const skipByPath = AUTH_REDIRECT_BLOCKLIST.some(rx => rx.test(reqUrl));
+
+            if (!skipPerRequest && !skipByPath) {
+                // Token expirado o inválido → limpiar sesión
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                if (typeof window !== 'undefined' &&
+                    !['/login', '/register'].includes(window.location.pathname)) {
+                    setTimeout(() => {
+                        if (!['/login', '/register'].includes(window.location.pathname)) {
+                            window.location.href = '/login';
+                        }
+                    }, 50);
+                }
             }
         }
         return Promise.reject(error);

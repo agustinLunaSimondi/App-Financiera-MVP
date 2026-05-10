@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { Wallet, ArrowRight, Loader2, Sparkles, Eye, EyeOff } from 'lucide-react';
@@ -11,8 +11,21 @@ export function LoginPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const { login, loginWithGoogle } = useAuth();
+    const { login, loginWithGoogle, isAuthenticated } = useAuth();
     const navigate = useNavigate();
+
+    // Navegar via useEffect cuando isAuthenticated cambia.
+    // Evita race condition (en iOS Safari el setState + navigate síncrono
+    // dejaba el spinner congelado hasta que el usuario tocaba la pantalla).
+    useEffect(() => {
+        if (isAuthenticated) {
+            // Cerrar el teclado virtual blureando el input activo antes de navegar
+            if (typeof document !== 'undefined' && document.activeElement?.blur) {
+                document.activeElement.blur();
+            }
+            navigate('/', { replace: true });
+        }
+    }, [isAuthenticated, navigate]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -20,7 +33,7 @@ export function LoginPage() {
         setIsLoading(true);
         try {
             await login(email.trim().toLowerCase(), password);
-            navigate('/');
+            // navigate ocurre en useEffect cuando isAuthenticated → true
         } catch (err) {
             // FastAPI envía errores en `detail`, no en `error`
             const detail = err?.response?.data?.detail;
@@ -28,7 +41,6 @@ export function LoginPage() {
                 : err?.response?.status === 401 ? 'Email o contraseña incorrectos'
                 : 'Error al iniciar sesión';
             setError(msg);
-        } finally {
             setIsLoading(false);
         }
     };
@@ -38,12 +50,11 @@ export function LoginPage() {
         setIsLoading(true);
         try {
             await loginWithGoogle(credentialResponse.credential);
-            navigate('/');
+            // navigate ocurre en useEffect
         } catch (err) {
             const detail = err?.response?.data?.detail;
             const msg = typeof detail === 'string' ? detail : 'Error al iniciar con Google';
             setError(msg);
-        } finally {
             setIsLoading(false);
         }
     };

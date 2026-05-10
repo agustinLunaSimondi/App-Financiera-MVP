@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { UserPlus, ArrowRight, Loader2, Sparkles, ShieldCheck, Eye, EyeOff } from 'lucide-react';
@@ -12,8 +12,19 @@ export function RegisterPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const { register, loginWithGoogle } = useAuth();
+    const { register, loginWithGoogle, isAuthenticated } = useAuth();
     const navigate = useNavigate();
+
+    // Navegar via useEffect cuando isAuthenticated cambia (evita el freeze
+    // del spinner en iOS Safari cuando setState + navigate corren síncronos).
+    useEffect(() => {
+        if (isAuthenticated) {
+            if (typeof document !== 'undefined' && document.activeElement?.blur) {
+                document.activeElement.blur();
+            }
+            navigate('/', { replace: true });
+        }
+    }, [isAuthenticated, navigate]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -27,12 +38,11 @@ export function RegisterPage() {
         setIsLoading(true);
         try {
             await register(name.trim(), email.trim().toLowerCase(), password);
-            navigate('/');
+            // navigate ocurre en useEffect
         } catch (err) {
             const detail = err?.response?.data?.detail;
             const msg = typeof detail === 'string' ? detail : 'Error al registrarse';
             setError(msg);
-        } finally {
             setIsLoading(false);
         }
     };
@@ -42,12 +52,11 @@ export function RegisterPage() {
         setIsLoading(true);
         try {
             await loginWithGoogle(credentialResponse.credential);
-            navigate('/');
+            // navigate ocurre en useEffect
         } catch (err) {
             const detail = err?.response?.data?.detail;
             const msg = typeof detail === 'string' ? detail : 'Error al continuar con Google';
             setError(msg);
-        } finally {
             setIsLoading(false);
         }
     };
