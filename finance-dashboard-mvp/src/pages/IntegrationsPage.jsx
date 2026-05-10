@@ -6,7 +6,7 @@ import { cn } from '../lib/utils';
 import {
     Link2, Unlink, RefreshCw, Check, AlertCircle, Clock,
     CreditCard, ArrowRight, Loader2, ExternalLink, Zap,
-    TrendingUp, TrendingDown, Wallet, ArrowUpRight, ArrowDownRight
+    TrendingUp, TrendingDown, Wallet, ArrowUpRight, ArrowDownRight, AlertTriangle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as api from '../services/api';
@@ -31,6 +31,7 @@ export function IntegrationsPage() {
     const [syncResult, setSyncResult] = useState(null);
     const [error, setError] = useState(null);
     const [successMessage, setSuccessMessage] = useState(null);
+    const [confirmDisconnect, setConfirmDisconnect] = useState(false);
 
     const loadBalance = useCallback(async () => {
         setLoadingBalance(true);
@@ -119,8 +120,10 @@ export function IntegrationsPage() {
         }
     };
 
-    const handleDisconnect = async () => {
-        if (!window.confirm('¿Estás seguro de desconectar tu cuenta de Mercado Pago? Las transacciones ya importadas se mantienen.')) return;
+    const handleDisconnect = () => setConfirmDisconnect(true);
+
+    const handleConfirmDisconnect = async () => {
+        setConfirmDisconnect(false);
         setError(null);
         try {
             await api.disconnectMercadoPago();
@@ -376,6 +379,28 @@ export function IntegrationsPage() {
                     </div>
                 </Card>
             </div>
+
+            {confirmDisconnect && (
+                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 w-full max-w-sm">
+                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-2xl shadow-2xl shadow-zinc-900/20 p-4 flex items-center gap-4">
+                        <div className="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-500/15 flex items-center justify-center shrink-0">
+                            <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-sm font-bold text-zinc-900 dark:text-white">¿Desconectar Mercado Pago?</p>
+                            <p className="text-xs text-zinc-500">Las transacciones importadas se mantienen.</p>
+                        </div>
+                        <div className="flex gap-2 shrink-0">
+                            <button onClick={() => setConfirmDisconnect(false)} className="px-3 py-1.5 text-xs font-bold border border-zinc-200 dark:border-zinc-700 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors text-zinc-600 dark:text-zinc-400">
+                                Cancelar
+                            </button>
+                            <button onClick={handleConfirmDisconnect} className="px-3 py-1.5 text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white rounded-xl transition-colors">
+                                Desconectar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

@@ -19,6 +19,7 @@ export function TransactionsPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState(null);
     const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+    const [currentPage, setCurrentPage] = useState(1);
 
     const handleEdit = (tx) => {
         setEditingTransaction(tx);
@@ -59,7 +60,6 @@ export function TransactionsPage() {
     });
 
     // Pagination logic
-    const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
     const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
     const paginatedTransactions = filteredTransactions.slice(

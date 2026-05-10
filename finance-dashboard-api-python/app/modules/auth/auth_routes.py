@@ -200,6 +200,13 @@ def delete_my_account(
     current_user: models.User = Depends(get_current_user)
 ):
     """Eliminar la cuenta del usuario autenticado y todos sus datos."""
+    # Delete transactions first: category_id FK has no ondelete=CASCADE,
+    # so deleting categories before transactions would throw a FK violation.
+    account_ids = [acc.id for acc in current_user.accounts]
+    if account_ids:
+        db.query(models.Transaction).filter(
+            models.Transaction.account_id.in_(account_ids)
+        ).delete(synchronize_session='fetch')
     db.delete(current_user)
     db.commit()
     return {"message": "Cuenta eliminada correctamente"}

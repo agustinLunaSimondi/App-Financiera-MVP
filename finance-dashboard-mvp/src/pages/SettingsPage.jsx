@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useFinance } from '../hooks/useFinance';
+import { useAuth } from '../contexts/AuthContext';
 
 import { Card } from '../features/common/components/Card';
 import { Modal } from '../features/common/components/Modal';
@@ -17,6 +18,7 @@ export function SettingsPage() {
         deleteUserAccount // For delete account
     } = useFinance();
     const { setLanguage } = useLanguage();
+    const { logout } = useAuth();
 
     // State for Category Management
     const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
@@ -94,7 +96,7 @@ export function SettingsPage() {
     const handleDeleteAccountConfirmed = async () => {
         try {
             await deleteUserAccount();
-            window.location.reload();
+            logout();
         } catch (error) {
             toast.error('Error al eliminar cuenta: ' + error.message);
             setShowDeleteAccountModal(false);
