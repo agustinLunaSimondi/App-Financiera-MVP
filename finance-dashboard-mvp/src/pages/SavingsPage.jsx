@@ -83,7 +83,7 @@ export function SavingsPage() {
                             </div>
                             <h2 className="text-sm font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Mis Metas</h2>
                         </div>
-                        <h1 className="text-3xl md:text-4xl font-black text-zinc-900 dark:text-white tracking-tight">Metas de Ahorro</h1>
+                        <h1 className="text-2xl md:text-4xl font-black text-zinc-900 dark:text-white tracking-tight">Metas de Ahorro</h1>
                     </div>
                     <button
                         onClick={() => handleOpenModal()}
@@ -181,7 +181,7 @@ export function SavingsPage() {
                 </Modal>
 
                 {confirmDeleteId && (
-                    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 w-full max-w-sm">
+                    <div className="fixed bottom-24 lg:bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 w-full max-w-sm">
                         <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-2xl shadow-2xl shadow-zinc-900/20 p-4 flex items-center gap-4">
                             <div className="w-9 h-9 rounded-xl bg-rose-100 dark:bg-rose-500/15 flex items-center justify-center shrink-0">
                                 <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400" />

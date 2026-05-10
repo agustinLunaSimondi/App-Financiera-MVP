@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { Plus, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Plus, X, ArrowRight } from 'lucide-react';
 import { useFinance } from '../../../hooks/useFinance';
 
 const INPUT_CLS = "w-full px-4 py-2.5 border border-zinc-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-emerald-500 focus:outline-none transition-colors text-sm";
@@ -27,7 +28,7 @@ function NewCategoryPanel({ onCreated, onCancel, transactionType }) {
         setSaving(true);
         try {
             const type = transactionType === 'INCOME' ? 'INCOME' : 'EXPENSE';
-            const newCat = await addCategory({ name: name.trim(), color, type, isDefault: false });
+            const newCat = await addCategory({ name: name.trim(), color, type });
             toast.success(`Categoría "${name.trim()}" creada`);
             onCreated(newCat);
         } catch (err) {
@@ -99,9 +100,15 @@ function NewCategoryPanel({ onCreated, onCancel, transactionType }) {
 // ─── Main Form ────────────────────────────────────────────
 export function TransactionForm({ onClose, transactionToEdit = null }) {
     const { addTransaction, updateTransaction, accounts, categories, loading } = useFinance();
+    const navigate = useNavigate();
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
     const [showNewCategory, setShowNewCategory] = useState(false);
+
+    const handleGoToAccounts = () => {
+        onClose?.();
+        navigate('/cards');
+    };
 
     const [formData, setFormData] = useState({
         description: '',
@@ -195,6 +202,39 @@ export function TransactionForm({ onClose, transactionToEdit = null }) {
     const categoryOptions = filteredCategories.length > 0 ? filteredCategories : categories;
     const categoriesEmpty = categories.length === 0;
     const accountsEmpty = accounts.length === 0;
+
+    if (!loading && accountsEmpty) {
+        return (
+            <div className="text-center space-y-5 py-4">
+                <div className="w-16 h-16 mx-auto rounded-full bg-amber-500/10 flex items-center justify-center">
+                    <Plus className="w-7 h-7 text-amber-500" />
+                </div>
+                <div>
+                    <h3 className="text-lg font-black text-zinc-900 dark:text-white">Necesitás una cuenta primero</h3>
+                    <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1.5 max-w-xs mx-auto">
+                        Las transacciones se asocian a una cuenta o tarjeta. Creá una para empezar.
+                    </p>
+                </div>
+                <div className="flex gap-3 pt-2">
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="flex-1 px-4 py-2.5 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors font-medium text-sm"
+                    >
+                        Cerrar
+                    </button>
+                    <button
+                        type="button"
+                        onClick={handleGoToAccounts}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm transition-colors group"
+                    >
+                        Crear cuenta
+                        <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <form onSubmit={handleSubmit} className="space-y-5">

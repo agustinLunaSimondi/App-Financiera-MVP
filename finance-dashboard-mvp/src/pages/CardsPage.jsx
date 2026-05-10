@@ -43,8 +43,19 @@ export function CardsPage() {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-64">
-                <div className="text-zinc-500">Cargando cuentas...</div>
+            <div className="space-y-10">
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                    <div className="space-y-3">
+                        <div className="h-4 w-24 bg-zinc-200/60 dark:bg-zinc-800/60 rounded-md animate-pulse" />
+                        <div className="h-9 w-56 bg-zinc-200/60 dark:bg-zinc-800/60 rounded-xl animate-pulse" />
+                    </div>
+                    <div className="h-14 w-full md:w-44 bg-zinc-200/60 dark:bg-zinc-800/60 rounded-2xl animate-pulse" />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {[1, 2, 3].map(n => (
+                        <div key={n} className="h-56 bg-zinc-100 dark:bg-zinc-800/50 rounded-3xl animate-pulse" />
+                    ))}
+                </div>
             </div>
         );
     }
@@ -89,7 +100,7 @@ export function CardsPage() {
                             </div>
                             <h2 className="text-sm font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Billetera</h2>
                         </div>
-                        <h1 className="text-3xl md:text-4xl font-black text-zinc-900 dark:text-white tracking-tight">Cuentas y Tarjetas</h1>
+                        <h1 className="text-2xl md:text-4xl font-black text-zinc-900 dark:text-white tracking-tight">Cuentas y Tarjetas</h1>
                     </div>
                     <button
                         onClick={() => setIsModalOpen(true)}
@@ -214,7 +225,7 @@ export function CardsPage() {
                 </Modal>
 
                 {confirmDeleteId && (
-                    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 w-full max-w-sm">
+                    <div className="fixed bottom-24 lg:bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 w-full max-w-sm">
                         <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-2xl shadow-2xl shadow-zinc-900/20 p-4 flex items-center gap-4">
                             <div className="w-9 h-9 rounded-xl bg-rose-100 dark:bg-rose-500/15 flex items-center justify-center shrink-0">
                                 <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400" />

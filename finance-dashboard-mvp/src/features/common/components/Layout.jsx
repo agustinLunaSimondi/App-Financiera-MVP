@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
     LayoutDashboard, Wallet, CreditCard, PieChart, Settings,
-    LogOut, Menu, PiggyBank, Clock, Zap, GraduationCap,
+    LogOut, Menu, PiggyBank, Clock, GraduationCap,
     Link2, HelpCircle, X, Sun, Moon
 } from 'lucide-react';
 import { cn } from '../../../lib/utils';
@@ -11,6 +11,9 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { useFinance } from '../../../hooks/useFinance';
 import { OnboardingTour } from './OnboardingTour';
+import { BottomNav } from './BottomNav';
+import { Modal } from './Modal';
+import { TransactionForm } from '../../transactions/components/TransactionForm';
 
 // ─── Dark Mode Toggle Button ───────────────────────────────────
 function DarkModeToggle({ isDark, onToggle, compact = false }) {
@@ -161,6 +164,7 @@ function SidebarContent({ onMobileNavClick }) {
 // ─── Layout ───────────────────────────────────────────────────
 export function Layout({ children }) {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
     const { settings, updateSettings } = useFinance();
     const location = useLocation();
 
@@ -233,13 +237,25 @@ export function Layout({ children }) {
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -10 }}
                             transition={{ duration: 0.3, ease: "easeOut" }}
-                            className="p-4 md:p-6 lg:p-10 max-w-[1400px] mx-auto w-full"
+                            className="p-4 md:p-6 lg:p-10 pb-28 lg:pb-10 max-w-[1400px] mx-auto w-full"
                         >
                             {children}
                         </motion.div>
                     </AnimatePresence>
                 </div>
             </main>
+
+            {/* Bottom navigation – mobile only, con FAB de "nueva transacción" */}
+            <BottomNav onQuickAdd={() => setIsQuickAddOpen(true)} />
+
+            {/* Quick Add modal – disparado por el FAB */}
+            <Modal
+                isOpen={isQuickAddOpen}
+                onClose={() => setIsQuickAddOpen(false)}
+                title="Nueva Transacción"
+            >
+                <TransactionForm onClose={() => setIsQuickAddOpen(false)} />
+            </Modal>
 
             {/* Mobile Sidebar Overlay */}
             <AnimatePresence>

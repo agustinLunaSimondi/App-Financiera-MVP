@@ -27,7 +27,13 @@ export function CategoryForm({ onSubmit, onCancel, initialData = null }) {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        onSubmit(formData);
+        const payload = {
+            name: formData.name.trim(),
+            type: formData.type,
+            color: formData.color,
+        };
+        if (formData.icon && formData.icon.trim()) payload.icon = formData.icon.trim();
+        onSubmit(payload);
     };
 
     const colors = [

@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 import { useFinance } from '../hooks/useFinance';
 
 import { Card } from '../features/common/components/Card';
-import { Search, Filter, Plus, Edit2, Trash2, AlertTriangle } from 'lucide-react';
+import { Search, Filter, Plus, Edit2, Trash2, AlertTriangle, Wallet } from 'lucide-react';
 import { Modal } from '../features/common/components/Modal';
 import { TransactionForm } from '../features/transactions/components/TransactionForm';
 
@@ -98,7 +98,7 @@ export function TransactionsPage() {
                             </div>
                             <h2 className="text-sm font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Historial</h2>
                         </div>
-                        <h1 className="text-3xl md:text-4xl font-black text-zinc-900 dark:text-white tracking-tight">Transacciones</h1>
+                        <h1 className="text-2xl md:text-4xl font-black text-zinc-900 dark:text-white tracking-tight">Transacciones</h1>
                     </div>
                     <button
                         onClick={() => setIsModalOpen(true)}
@@ -142,10 +142,26 @@ export function TransactionsPage() {
                 {/* Mobile: Cards view */}
                 <div className="md:hidden space-y-3">
                     {paginatedTransactions.length === 0 ? (
-                        <div className="py-16 text-center text-zinc-400 font-medium">
-                            {filteredTransactions.length === 0 && transactions.length > 0
-                                ? 'Ningún resultado para los filtros aplicados'
-                                : 'No hay transacciones todavía'}
+                        <div className="glass p-10 rounded-3xl text-center space-y-4">
+                            <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto">
+                                <Wallet className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
+                            </div>
+                            {filteredTransactions.length === 0 && transactions.length > 0 ? (
+                                <p className="text-zinc-500 font-medium text-sm">Ningún resultado para los filtros aplicados.</p>
+                            ) : (
+                                <>
+                                    <div>
+                                        <h3 className="text-lg font-black text-zinc-900 dark:text-white">Tu primera transacción</h3>
+                                        <p className="text-zinc-500 dark:text-zinc-400 text-sm mt-1 font-medium">Tocá el botón <span className="inline-flex w-5 h-5 bg-emerald-500 rounded-full items-center justify-center align-middle"><Plus className="w-3 h-3 text-white" strokeWidth={3} /></span> abajo para empezar.</p>
+                                    </div>
+                                    <button
+                                        onClick={() => setIsModalOpen(true)}
+                                        className="px-6 py-3 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-xl font-bold text-sm transition-transform active:scale-95"
+                                    >
+                                        Crear ahora
+                                    </button>
+                                </>
+                            )}
                         </div>
                     ) : paginatedTransactions.map((tx) => (
                         <div key={tx.id} className="bg-white/60 dark:bg-zinc-900/60 backdrop-blur-xl border border-zinc-200/50 dark:border-zinc-800/50 rounded-2xl px-4 py-4 flex items-center gap-3">
@@ -305,7 +321,7 @@ export function TransactionsPage() {
 
                 {/* Confirm delete banner */}
                 {confirmDeleteId && (
-                    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 w-full max-w-sm">
+                    <div className="fixed bottom-24 lg:bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 w-full max-w-sm">
                         <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-2xl shadow-2xl shadow-zinc-900/20 p-4 flex items-center gap-4">
                             <div className="w-9 h-9 rounded-xl bg-rose-100 dark:bg-rose-500/15 flex items-center justify-center shrink-0">
                                 <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400" />

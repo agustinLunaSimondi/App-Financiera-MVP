@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import or_
+from sqlalchemy.exc import IntegrityError
 from typing import List
 from app.database import models
 from app.database.database import get_db
@@ -14,9 +14,6 @@ def get_categories(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
-    # Only return categories belonging to this user (default categories are created
-    # per-user at registration, so there's no need for the global is_default OR clause
-    # which was causing duplicate categories across all users)
     return db.query(models.Category).filter(
         models.Category.user_id == current_user.id
     ).all()
@@ -27,15 +24,42 @@ def create_category(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
-    new_category = models.Category(
-        **category_in.model_dump(),
-        user_id=current_user.id,
-        is_default=False
-    )
-    db.add(new_category)
-    db.commit()
-    db.refresh(new_category)
-    return new_category
+    name_clean = (category_in.name or "").strip()
+    if not name_clean:
+        raise HTTPException(status_code=400, detail="El nombre de la categoría no puede estar vacío")
+
+    existing = db.query(models.Category).filter(
+        models.Category.user_id == current_user.id,
+        models.Category.name == name_clean,
+    ).first()
+    if existing:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Ya tenés una categoría llamada '{name_clean}'. Probá con otro nombre."
+        )
+
+    payload = category_in.model_dump()
+    payload["name"] = name_clean
+    icon = payload.get("icon")
+    if isinstance(icon, str) and not icon.strip():
+        payload["icon"] = None
+
+    try:
+        new_category = models.Category(
+            **payload,
+            user_id=current_user.id,
+            is_default=False,
+        )
+        db.add(new_category)
+        db.commit()
+        db.refresh(new_category)
+        return new_category
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail="Ya existe una categoría con ese nombre."
+        )
 
 @router.put("/{category_id}", response_model=schemas.Category)
 def update_category(

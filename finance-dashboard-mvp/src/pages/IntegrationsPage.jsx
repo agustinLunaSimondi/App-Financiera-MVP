@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import { Card } from '../features/common/components/Card';
@@ -20,7 +20,8 @@ function formatARS(value) {
 }
 
 export function IntegrationsPage() {
-    const [searchParams] = useSearchParams();
+    const [searchParams, setSearchParams] = useSearchParams();
+    const oauthHandledRef = useRef(false);
 
     const [mpStatus, setMpStatus] = useState(null);
     const [mpBalance, setMpBalance] = useState(null);
@@ -61,26 +62,13 @@ export function IntegrationsPage() {
         }
     }, [loadBalance]);
 
-    // Manejo del callback de OAuth
-    useEffect(() => {
-        const code = searchParams.get('code');
-        if (code) {
-            handleOAuthCallback(code);
-        }
-    }, [searchParams]);
-
-    useEffect(() => {
-        loadStatus();
-    }, [loadStatus]);
-
-    const handleOAuthCallback = async (code) => {
+    const handleOAuthCallback = useCallback(async (code) => {
         setConnecting(true);
         setError(null);
         try {
             const result = await api.handleMercadoPagoCallback(code);
             setMpStatus(result);
             setSuccessMessage('¡Cuenta de Mercado Pago conectada! Sincronizando tus últimos 90 días de movimientos...');
-            window.history.replaceState({}, '', '/integrations');
             // Cargar balance después de conectar
             setTimeout(async () => {
                 await loadBalance();
@@ -88,19 +76,51 @@ export function IntegrationsPage() {
                 setTimeout(() => setSuccessMessage(null), 5000);
             }, 2000);
         } catch (err) {
-            setError(err.response?.data?.detail || 'Error al conectar con Mercado Pago');
+            const detail = err?.response?.data?.detail;
+            const status = err?.response?.status;
+            if (status === 400) {
+                setError('El código de autorización ya fue usado o expiró. Por favor, hacé click en "Conectar Mercado Pago" nuevamente.');
+            } else {
+                setError(typeof detail === 'string' ? detail : 'Error al conectar con Mercado Pago. Reintentá en unos segundos.');
+            }
+            // Permitir reintentar (limpiar el guard) tras error
+            oauthHandledRef.current = false;
         } finally {
             setConnecting(false);
         }
-    };
+    }, [loadBalance]);
+
+    // Manejo del callback de OAuth (con guard para evitar doble-fire en StrictMode)
+    useEffect(() => {
+        const code = searchParams.get('code');
+        if (code && !oauthHandledRef.current) {
+            oauthHandledRef.current = true;
+            // Limpiar el code de la URL ANTES de procesarlo, así react-router no
+            // lo vuelve a leer si el componente re-renderiza
+            const next = new URLSearchParams(searchParams);
+            next.delete('code');
+            next.delete('state');
+            setSearchParams(next, { replace: true });
+            handleOAuthCallback(code);
+        }
+    }, [searchParams, setSearchParams, handleOAuthCallback]);
+
+    useEffect(() => {
+        loadStatus();
+    }, [loadStatus]);
 
     const handleConnect = async () => {
         setError(null);
+        // Reset OAuth guard, por si quedó en true tras intento previo
+        oauthHandledRef.current = false;
         try {
             const authUrl = await api.getMercadoPagoAuthUrl();
             window.location.href = authUrl;
         } catch (err) {
-            setError(err.response?.data?.detail || 'Error al obtener URL de autorización.');
+            const detail = err?.response?.data?.detail;
+            setError(typeof detail === 'string'
+                ? detail
+                : 'No se pudo iniciar el flujo de Mercado Pago. Verificá tu conexión y reintentá.');
         }
     };
 
@@ -147,7 +167,7 @@ export function IntegrationsPage() {
                         </div>
                         <h2 className="text-sm font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Conexiones</h2>
                     </div>
-                    <h1 className="text-3xl md:text-4xl font-black text-zinc-900 dark:text-white tracking-tight">Integraciones</h1>
+                    <h1 className="text-2xl md:text-4xl font-black text-zinc-900 dark:text-white tracking-tight">Integraciones</h1>
                     <p className="text-zinc-500 dark:text-zinc-400 font-medium mt-2">
                         Conectá tus servicios financieros para importar transacciones automáticamente.
                     </p>
@@ -381,7 +401,7 @@ export function IntegrationsPage() {
             </div>
 
             {confirmDisconnect && (
-                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 w-full max-w-sm">
+                <div className="fixed bottom-24 lg:bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 w-full max-w-sm">
                     <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-2xl shadow-2xl shadow-zinc-900/20 p-4 flex items-center gap-4">
                         <div className="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-500/15 flex items-center justify-center shrink-0">
                             <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
