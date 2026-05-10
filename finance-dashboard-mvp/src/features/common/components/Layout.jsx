@@ -88,14 +88,14 @@ function SidebarContent({ onMobileNavClick, isDark, onToggleDark }) {
         { icon: Wallet, label: t('sidebar.transactions'), path: '/transactions' },
         { icon: PieChart, label: t('sidebar.budgets'), path: '/budget' },
         { icon: PiggyBank, label: t('sidebar.savings'), path: '/savings' },
-        { icon: Clock, label: t('Recurrentes'), path: '/recurring' },
+        { icon: Clock, label: t('sidebar.recurring') || 'Recurrentes', path: '/recurring' },
         { icon: CreditCard, label: t('sidebar.accounts'), path: '/cards' },
     ];
 
     const supportNav = [
         { icon: GraduationCap, label: t('sidebar.academy'), path: '/academy' },
-        { icon: Link2, label: t('Integraciones'), path: '/integrations' },
-        { icon: HelpCircle, label: t('Ayuda / Tutorial'), path: '/help' },
+        { icon: Link2, label: t('sidebar.integrations') || 'Integraciones', path: '/integrations' },
+        { icon: HelpCircle, label: t('sidebar.help') || 'Ayuda', path: '/help' },
         { icon: Settings, label: t('sidebar.settings'), path: '/settings' },
     ];
 

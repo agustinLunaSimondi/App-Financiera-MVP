@@ -7,7 +7,7 @@ import { IncomeExpenseChart } from '../features/dashboard/components/charts/Inco
 import { ExpenseBreakdownChart } from '../features/dashboard/components/charts/ExpenseBreakdownChart';
 import { BudgetComparisonChart } from '../features/dashboard/components/charts/BudgetComparisonChart';
 import { CashFlowWaterfallChart } from '../features/dashboard/components/charts/CashFlowWaterfallChart';
-import { ArrowUpRight, TrendingUp, TrendingDown, Wallet, PiggyBank, Calendar, Link2, GraduationCap, CheckCircle, AlertCircle, Download, Zap } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, TrendingUp, TrendingDown, Wallet, PiggyBank, Link2, GraduationCap, Download, Zap } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { cn } from '../lib/utils';
@@ -84,8 +84,17 @@ export function DashboardPage() {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-64">
-                <div className="text-zinc-500">Cargando datos...</div>
+            <div className="space-y-10">
+                <div className="h-32 glass-card rounded-3xl animate-pulse" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {[...Array(4)].map((_, i) => (
+                        <div key={i} className="h-36 glass-card rounded-2xl animate-pulse" style={{ animationDelay: `${i * 0.1}s` }} />
+                    ))}
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="lg:col-span-2 h-80 glass-card rounded-2xl animate-pulse" />
+                    <div className="h-80 glass-card rounded-2xl animate-pulse" />
+                </div>
             </div>
         );
     }
@@ -105,30 +114,30 @@ export function DashboardPage() {
             label: t('balance'),
             value: formatCompactCurrency(totalBalance),
             change: hasAccounts ? (totalBalance >= 0 ? t('onTrack') : '↓ Negativo') : '--',
-            type: hasAccounts ? (totalBalance >= 0 ? 'positive' : 'negative') : 'neutral',
-            icon: Wallet
+            icon: Wallet,
+            scheme: 'blue',
         },
         {
             label: t('income'),
             value: formatCompactCurrency(totalIncome),
             change: hasData ? t('onTrack') : '--',
-            type: 'neutral',
-            icon: TrendingUp
+            icon: TrendingUp,
+            scheme: 'emerald',
         },
         {
             label: t('expenses'),
             value: formatCompactCurrency(totalExpenses),
-            change: hasData ? (totalExpenses > 0 ? t('onTrack') : '--') : '--',
-            type: hasData && totalExpenses > 0 ? 'neutral' : 'neutral',
-            icon: TrendingDown
+            change: hasData && totalExpenses > 0 ? '↓ Este mes' : '--',
+            icon: TrendingDown,
+            scheme: 'rose',
         },
         {
             label: t('netSavings'),
             value: formatCompactCurrency(netSavings),
             change: hasData ? (netSavings >= 0 ? t('onTrack') : '↓ Déficit') : '--',
-            type: hasData ? (netSavings >= 0 ? 'positive' : 'negative') : 'neutral',
-            icon: PiggyBank
-        }
+            icon: PiggyBank,
+            scheme: 'violet',
+        },
     ];
 
     // Generar datos para gráficos
@@ -298,10 +307,15 @@ export function DashboardPage() {
                 <Card title="Transacciones Recientes" subtitle="Tu última actividad financiera" delay={0.8}>
                     {/* Mobile: lista compacta */}
                     <div className="md:hidden space-y-2">
-                        {recentTransactions.map((tx) => (
+                        {recentTransactions.map((tx) => {
+                            const isIncome = Number(tx.amount) > 0;
+                            return (
                             <div key={tx.id} className="flex items-center gap-3 py-2 border-b border-zinc-100 dark:border-zinc-800 last:border-0">
-                                <div className="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-500 shrink-0">
-                                    <ArrowUpRight className="w-4 h-4" />
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${isIncome ? 'bg-emerald-100 dark:bg-emerald-500/15' : 'bg-zinc-100 dark:bg-zinc-800'}`}>
+                                    {isIncome
+                                        ? <ArrowUpRight className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                                        : <ArrowDownLeft className="w-4 h-4 text-zinc-500 dark:text-zinc-400" />
+                                    }
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100 truncate">{tx.description || tx.name}</p>
@@ -314,7 +328,7 @@ export function DashboardPage() {
                                     {formatCurrency(tx.amount)}
                                 </span>
                             </div>
-                        ))}
+                        );})}
                     </div>
                     {/* Desktop: tabla */}
                     <div className="hidden md:block overflow-x-auto">
@@ -328,11 +342,16 @@ export function DashboardPage() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {recentTransactions.map((tx) => (
+                                {recentTransactions.map((tx) => {
+                                    const isIncome = Number(tx.amount) > 0;
+                                    return (
                                     <tr key={tx.id} className="bg-white dark:bg-zinc-900 border-b dark:border-zinc-800 last:border-0 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
                                         <td className="px-6 py-4 font-medium text-zinc-900 dark:text-zinc-100 flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-500">
-                                                <ArrowUpRight className="w-4 h-4" />
+                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isIncome ? 'bg-emerald-100 dark:bg-emerald-500/15' : 'bg-zinc-100 dark:bg-zinc-800'}`}>
+                                                {isIncome
+                                                    ? <ArrowUpRight className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                                                    : <ArrowDownLeft className="w-4 h-4 text-zinc-500 dark:text-zinc-400" />
+                                                }
                                             </div>
                                             {tx.description || tx.name}
                                         </td>
@@ -348,7 +367,7 @@ export function DashboardPage() {
                                             {formatCurrency(tx.amount)}
                                         </td>
                                     </tr>
-                                ))}
+                                );})}
                             </tbody>
                         </table>
                     </div>

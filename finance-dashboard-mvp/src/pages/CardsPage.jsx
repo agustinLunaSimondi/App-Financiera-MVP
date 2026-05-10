@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useFinance } from '../hooks/useFinance';
 
 import { Card } from '../features/common/components/Card';
-import { Plus, CreditCard as CreditCardIcon, Wallet as WalletIcon, Edit2, Trash2, Wallet, CreditCard } from 'lucide-react';
+import { Plus, Edit2, Trash2, Wallet, CreditCard, AlertTriangle } from 'lucide-react';
 import { Modal } from '../features/common/components/Modal';
 import { AccountForm } from '../features/accounts/components/AccountForm';
 import { cn } from '../lib/utils';
@@ -14,15 +14,20 @@ export function CardsPage() {
     // Modal state
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingAccount, setEditingAccount] = useState(null);
+    const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
     const handleEdit = (account) => {
         setEditingAccount(account);
         setIsModalOpen(true);
     };
 
-    const handleDelete = async (id) => {
-        if (window.confirm('¿Estás seguro de eliminar esta cuenta? Se perderán todas las transacciones asociadas.')) {
-            await deleteAccount(id);
+    const handleDelete = (id) => setConfirmDeleteId(id);
+
+    const handleConfirmDelete = async () => {
+        try {
+            await deleteAccount(confirmDeleteId);
+        } finally {
+            setConfirmDeleteId(null);
         }
     };
 
@@ -184,6 +189,28 @@ export function CardsPage() {
                         accountToEdit={editingAccount}
                     />
                 </Modal>
+
+                {confirmDeleteId && (
+                    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 w-full max-w-sm">
+                        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-2xl shadow-2xl shadow-zinc-900/20 p-4 flex items-center gap-4">
+                            <div className="w-9 h-9 rounded-xl bg-rose-100 dark:bg-rose-500/15 flex items-center justify-center shrink-0">
+                                <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm font-bold text-zinc-900 dark:text-white">¿Eliminar esta cuenta?</p>
+                                <p className="text-xs text-zinc-500">Se perderán las transacciones asociadas.</p>
+                            </div>
+                            <div className="flex gap-2 shrink-0">
+                                <button onClick={() => setConfirmDeleteId(null)} className="px-3 py-1.5 text-xs font-bold border border-zinc-200 dark:border-zinc-700 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors text-zinc-600 dark:text-zinc-400">
+                                    Cancelar
+                                </button>
+                                <button onClick={handleConfirmDelete} className="px-3 py-1.5 text-xs font-bold bg-rose-500 hover:bg-rose-600 text-white rounded-xl transition-colors">
+                                    Eliminar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
     );
 }

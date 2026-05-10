@@ -4,7 +4,7 @@ import { useFinance } from '../hooks/useFinance';
 import { Card } from '../features/common/components/Card';
 import { Modal } from '../features/common/components/Modal';
 import { CategoryForm } from '../features/categories/components/CategoryForm';
-import { Moon, Sun, Globe, DollarSign, Palette, Download, Trash2, Edit2, Plus, X, PlayCircle } from 'lucide-react';
+import { Moon, Sun, Globe, DollarSign, Palette, Download, Trash2, Edit2, Plus, X, PlayCircle, AlertTriangle } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { resetOnboarding } from '../features/common/components/OnboardingTour';
 import { toast } from 'sonner';
@@ -22,6 +22,9 @@ export function SettingsPage() {
     const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
     const [isCategoryFormOpen, setIsCategoryFormOpen] = useState(false);
     const [editingCategory, setEditingCategory] = useState(null);
+    const [confirmDeleteCategoryId, setConfirmDeleteCategoryId] = useState(null);
+    const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
+    const [deleteAccountInput, setDeleteAccountInput] = useState('');
 
     const handleToggleDarkMode = async () => {
         await updateSettings({ darkMode: !settings.darkMode });
@@ -39,13 +42,15 @@ export function SettingsPage() {
         setIsCategoryFormOpen(true);
     };
 
-    const handleDeleteCategory = async (id) => {
-        if (window.confirm('¿Estás seguro de eliminar esta categoría?')) {
-            try {
-                await deleteCategory(id);
-            } catch (error) {
-                alert(error.message); // Show error (e.g. has transactions)
-            }
+    const handleDeleteCategory = (id) => setConfirmDeleteCategoryId(id);
+
+    const handleConfirmDeleteCategory = async () => {
+        try {
+            await deleteCategory(confirmDeleteCategoryId);
+        } catch (error) {
+            toast.error(error.message || 'Error al eliminar la categoría');
+        } finally {
+            setConfirmDeleteCategoryId(null);
         }
     };
 
@@ -86,15 +91,13 @@ export function SettingsPage() {
     };
 
     // ============= DELETE ACCOUNT =============
-    const handleDeleteAccount = async () => {
-        const confirmation = window.prompt("Esta acción es IRREVERSIBLE. Se eliminarán TODOS tus datos.\n\nEscribe 'ELIMINAR' para confirmar:");
-        if (confirmation === 'ELIMINAR') {
-            try {
-                await deleteUserAccount();
-                window.location.reload(); // Force reload to trigger logout/login screen
-            } catch (error) {
-                alert("Error al eliminar cuenta: " + error.message);
-            }
+    const handleDeleteAccountConfirmed = async () => {
+        try {
+            await deleteUserAccount();
+            window.location.reload();
+        } catch (error) {
+            toast.error('Error al eliminar cuenta: ' + error.message);
+            setShowDeleteAccountModal(false);
         }
     };
 
@@ -253,7 +256,7 @@ export function SettingsPage() {
                             </button>
 
                             <button
-                                onClick={handleDeleteAccount}
+                                onClick={() => { setShowDeleteAccountModal(true); setDeleteAccountInput(''); }}
                                 className="w-full px-4 py-2 text-left border border-red-200 dark:border-red-900/30 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors text-red-600 dark:text-red-400 flex items-center justify-between"
                             >
                                 <div>
@@ -270,6 +273,46 @@ export function SettingsPage() {
                     </div>
                 </Card>
             </div>
+
+            {/* Delete Account Confirmation Modal */}
+            <Modal isOpen={showDeleteAccountModal} onClose={() => setShowDeleteAccountModal(false)} title="Eliminar Cuenta">
+                <div className="space-y-5">
+                    <div className="flex items-start gap-3 p-4 bg-rose-50 dark:bg-rose-500/10 rounded-xl border border-rose-200/50 dark:border-rose-500/20">
+                        <AlertTriangle className="w-5 h-5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+                        <div>
+                            <p className="text-sm font-bold text-rose-700 dark:text-rose-300">Esta acción es irreversible</p>
+                            <p className="text-xs text-rose-600 dark:text-rose-400 mt-1">Se eliminarán permanentemente tu cuenta, transacciones, presupuestos, metas y todos los datos asociados.</p>
+                        </div>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+                            Escribí <span className="font-black text-zinc-900 dark:text-white">ELIMINAR</span> para confirmar:
+                        </label>
+                        <input
+                            type="text"
+                            value={deleteAccountInput}
+                            onChange={(e) => setDeleteAccountInput(e.target.value)}
+                            placeholder="ELIMINAR"
+                            className="w-full px-3 py-2.5 border border-zinc-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-rose-500/30 focus:border-rose-500/50 transition-all font-mono"
+                        />
+                    </div>
+                    <div className="flex gap-3">
+                        <button
+                            onClick={() => setShowDeleteAccountModal(false)}
+                            className="flex-1 px-4 py-2.5 border border-zinc-200 dark:border-zinc-700 rounded-xl text-sm font-bold text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            onClick={handleDeleteAccountConfirmed}
+                            disabled={deleteAccountInput !== 'ELIMINAR'}
+                            className="flex-1 px-4 py-2.5 bg-rose-500 hover:bg-rose-600 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl text-sm font-bold transition-colors"
+                        >
+                            Eliminar mi cuenta
+                        </button>
+                    </div>
+                </div>
+            </Modal>
 
             {/* Category Management Modal */}
             <Modal
@@ -309,18 +352,27 @@ export function SettingsPage() {
                                             </span>
                                         </div>
                                         <div className="flex items-center gap-1 shrink-0 ml-2">
-                                            <button
-                                                onClick={() => handleEditCategory(category)}
-                                                className="p-2 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg text-zinc-500 dark:text-zinc-400 transition-colors"
-                                            >
-                                                <Edit2 className="w-4 h-4" />
-                                            </button>
-                                            <button
-                                                onClick={() => handleDeleteCategory(category.id)}
-                                                className="p-2 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg text-red-500 dark:text-red-400 transition-colors"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
+                                            {confirmDeleteCategoryId === category.id ? (
+                                                <>
+                                                    <button onClick={() => setConfirmDeleteCategoryId(null)} className="px-2 py-1 text-xs font-bold text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors">No</button>
+                                                    <button onClick={handleConfirmDeleteCategory} className="px-2 py-1 text-xs font-bold bg-rose-500 text-white rounded-lg hover:bg-rose-600 transition-colors">Sí</button>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <button
+                                                        onClick={() => handleEditCategory(category)}
+                                                        className="p-2 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg text-zinc-500 dark:text-zinc-400 transition-colors"
+                                                    >
+                                                        <Edit2 className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteCategory(category.id)}
+                                                        className="p-2 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg text-red-500 dark:text-red-400 transition-colors"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </>
+                                            )}
                                         </div>
                                     </div>
                                 ))}

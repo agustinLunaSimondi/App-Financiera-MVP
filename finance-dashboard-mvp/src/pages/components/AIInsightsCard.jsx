@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Lightbulb, TrendingUp, AlertTriangle } from 'lucide-react';
+import { Lightbulb, TrendingUp, AlertTriangle, Sparkles } from 'lucide-react';
 import { useFinance } from '../../hooks/useFinance';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { formatCurrency } from '../../utils/formatters';
@@ -88,7 +88,20 @@ export function AIInsightsCard() {
         setInsights(newInsights);
     }, [transactions, accounts, budgets]);
 
-    if (!insights.length) return null;
+    if (!insights.length) {
+        if (!transactions.length) return null;
+        return (
+            <div className="bg-gradient-to-br from-indigo-500/5 via-purple-500/5 to-pink-500/5 border border-purple-200/30 dark:border-purple-500/10 rounded-2xl p-6 flex items-center gap-4">
+                <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center shrink-0">
+                    <Sparkles className="w-5 h-5 text-purple-500 dark:text-purple-400" />
+                </div>
+                <div>
+                    <p className="text-sm font-bold text-zinc-700 dark:text-zinc-300">{t('insights.title')}</p>
+                    <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">Seguí registrando movimientos para recibir sugerencias personalizadas.</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="bg-gradient-to-br from-indigo-500/10 via-purple-500/10 to-pink-500/10 border border-purple-200/50 dark:border-purple-500/20 rounded-2xl p-6">
