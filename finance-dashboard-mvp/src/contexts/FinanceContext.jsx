@@ -1,5 +1,6 @@
-import React, { createContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useState, useEffect, useCallback, useRef } from 'react';
 import * as api from '../services/api';
+import { getToken } from '../services/tokenStore';
 import { useAuth } from './AuthContext';
 
 // Crear el contexto
@@ -29,15 +30,24 @@ export function FinanceProvider({ children }) {
         endDate: null,
         category: null
     });
+    // Ref para que loadData no recree su referencia en cada cambio de filtro.
+    const filtersRef = useRef(filters);
+    filtersRef.current = filters;
 
     // ============= LOAD INITIAL DATA =============
 
     const loadData = useCallback(async () => {
+        // Abortar si no hay token: evita 401s en masa durante la race condition de checkAuth.
+        if (!getToken()) {
+            console.warn('[FinanceContext] loadData abortado: no hay token disponible');
+            setLoading(false);
+            return;
+        }
         setLoading(true);
         setError(null);
 
         const results = await Promise.allSettled([
-            api.getTransactions(filters),
+            api.getTransactions(filtersRef.current),
             api.getBudgets(),
             api.getAccounts(),
             api.getCategories(),
@@ -64,11 +74,12 @@ export function FinanceProvider({ children }) {
         }
 
         setLoading(false);
-    }, [filters]);
+    }, []);
 
     // Sólo cargar datos cuando el usuario está autenticado. Si no, limpiar
     // todo el estado para que después de un login fresco no aparezcan datos
     // del usuario anterior (ni queden cachés stale tras un logout).
+    // `filters` en el array dispara loadData cuando cambia, usando filtersRef.current.
     useEffect(() => {
         if (isAuthenticated) {
             loadData();
@@ -83,7 +94,7 @@ export function FinanceProvider({ children }) {
             setLoading(false);
             setError(null);
         }
-    }, [isAuthenticated, loadData]);
+    }, [isAuthenticated, loadData, filters]);
 
     // Aplicar modo oscuro cuando los settings cambian.
     // Prioridad: si el usuario tocó el toggle (localStorage seteado por Layout.handleToggleDark)

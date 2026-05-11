@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
+import React, { createContext, useState, useEffect, useContext, useCallback, useRef } from 'react';
 import client from '../services/client';
 import { getToken, setToken, clearToken, AUTH_INVALID_EVENT } from '../services/tokenStore';
 
@@ -23,33 +23,41 @@ export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [slowConnection, setSlowConnection] = useState(false);
+    // Previene que el catch de checkAuth pise el estado seteado por login() activo.
+    const checkAuthCancelledRef = useRef(false);
 
     useEffect(() => {
-        // Mostrar el mensaje "despertando servidor" si la verificación tarda >5s
-        // (típico del cold start de Render free tier).
+        checkAuthCancelledRef.current = false;
         const slowTimer = setTimeout(() => setSlowConnection(true), 5000);
 
         const checkAuth = async () => {
             const token = getToken();
             if (token) {
                 try {
-                    // No queremos que un 401 acá dispare un hard redirect global —
-                    // simplemente limpiamos la sesión y dejamos al usuario en /login.
                     const res = await client.get('/auth/me', { __skipAuthRedirect: true });
-                    setUser(res.data);
+                    if (!checkAuthCancelledRef.current) {
+                        setUser(res.data);
+                    }
                 } catch (error) {
                     console.warn("Sesión inválida o expirada:", error?.response?.status);
-                    clearToken();
-                    setUser(null);
+                    if (!checkAuthCancelledRef.current) {
+                        clearToken();
+                        setUser(null);
+                    }
                 }
             }
             clearTimeout(slowTimer);
             setSlowConnection(false);
-            setLoading(false);
+            if (!checkAuthCancelledRef.current) {
+                setLoading(false);
+            }
         };
         checkAuth();
 
-        return () => clearTimeout(slowTimer);
+        return () => {
+            checkAuthCancelledRef.current = true;
+            clearTimeout(slowTimer);
+        };
     }, []);
 
     // Cuando el interceptor emite 'auth:invalid' (porque algún endpoint
@@ -65,26 +73,32 @@ export function AuthProvider({ children }) {
     }, []);
 
     const login = useCallback(async (email, password) => {
+        checkAuthCancelledRef.current = true;
         const res = await client.post('/auth/login', { email, password });
         const { token, user } = res.data;
         setToken(token);
         setUser(user);
+        setLoading(false);
         return user;
     }, []);
 
     const loginWithGoogle = useCallback(async (credential) => {
+        checkAuthCancelledRef.current = true;
         const res = await client.post('/auth/google', { credential });
         const { token, user } = res.data;
         setToken(token);
         setUser(user);
+        setLoading(false);
         return user;
     }, []);
 
     const register = useCallback(async (name, email, password) => {
+        checkAuthCancelledRef.current = true;
         const res = await client.post('/auth/register', { name, email, password });
         const { token, user } = res.data;
         setToken(token);
         setUser(user);
+        setLoading(false);
         return user;
     }, []);
 
