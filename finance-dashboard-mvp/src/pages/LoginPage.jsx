@@ -11,8 +11,19 @@ export function LoginPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [slowHint, setSlowHint] = useState(false);
     const { login, loginWithGoogle, isAuthenticated } = useAuth();
     const navigate = useNavigate();
+
+    // Cuando isLoading dura más de 3s, mostrar hint sobre cold start del backend
+    useEffect(() => {
+        if (!isLoading) {
+            setSlowHint(false);
+            return;
+        }
+        const t = setTimeout(() => setSlowHint(true), 3000);
+        return () => clearTimeout(t);
+    }, [isLoading]);
 
     // Navegar via useEffect cuando isAuthenticated cambia.
     // Evita race condition (en iOS Safari el setState + navigate síncrono
@@ -171,7 +182,10 @@ export function LoginPage() {
                         className="w-full group flex items-center justify-center gap-2 py-4 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-2xl font-black text-sm shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
                     >
                         {isLoading ? (
-                            <Loader2 className="w-5 h-5 animate-spin" />
+                            <>
+                                <Loader2 className="w-5 h-5 animate-spin" />
+                                <span>{slowHint ? 'Despertando servidor…' : 'Conectando…'}</span>
+                            </>
                         ) : (
                             <>
                                 Entrar <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />

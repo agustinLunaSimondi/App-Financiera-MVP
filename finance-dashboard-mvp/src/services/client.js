@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getToken, clearToken, emitAuthInvalid } from './tokenStore';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://finance-api-9fe5.onrender.com/api/';
 
@@ -31,7 +32,9 @@ client.interceptors.request.use(
             }
         }
 
-        const token = localStorage.getItem('token');
+        // Fuente primaria: memoria (sobrevive a Safari ITP/private mode).
+        // Fallback: localStorage si la memoria está vacía (refresh de página).
+        const token = getToken();
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
@@ -63,17 +66,12 @@ client.interceptors.response.use(
             const skipByPath = AUTH_REDIRECT_BLOCKLIST.some(rx => rx.test(reqUrl));
 
             if (!skipPerRequest && !skipByPath) {
-                // Token expirado o inválido → limpiar sesión
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-                if (typeof window !== 'undefined' &&
-                    !['/login', '/register'].includes(window.location.pathname)) {
-                    setTimeout(() => {
-                        if (!['/login', '/register'].includes(window.location.pathname)) {
-                            window.location.href = '/login';
-                        }
-                    }, 50);
-                }
+                // Token expirado o inválido → emitir evento para que AuthContext
+                // limpie el estado vía React (en vez de window.location.href, que
+                // hacía hard reload y causaba el flash de "veo la app un seg y vuelvo
+                // al login" en iOS Safari).
+                clearToken();
+                emitAuthInvalid();
             }
         }
         return Promise.reject(error);
