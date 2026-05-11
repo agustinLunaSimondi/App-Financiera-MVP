@@ -10,25 +10,28 @@ const client = axios.create({
     }
 });
 
-// FastAPI con `redirect_slashes=True` redirige rutas con/sin trailing slash con 307.
-// Para evitar redirects (que pueden perder body/headers en algunos navegadores),
-// añadimos trailing slash sólo a URLs "limpias" (sin path parameters tipo UUID).
-// - `/transactions` → `/transactions/`
-// - `/transactions/{uuid}` → se deja como está (la ruta del backend no tiene barra final).
 const looksLikeId = (segment) => {
-    // UUID v4
     if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(segment)) return true;
-    // Numérico
     if (/^\d+$/.test(segment)) return true;
     return false;
 };
 
+// FastAPI redirige con 307 cuando el trailing slash no coincide con la definición de la ruta.
+// iOS Safari stripea el Authorization header en esos redirects — causa 401 silencioso.
+//
+// Regla: solo agregar slash a rutas de colección (un único segmento no-ID, ej. /transactions).
+// Rutas con dos segmentos no-ID (ej. /auth/me, /mercadopago/status) están definidas SIN
+// trailing slash en el backend — agregarla causaría el redirect que rompe el auth en iOS.
 client.interceptors.request.use(
     (config) => {
         if (config.url && !config.url.endsWith('/') && !config.url.includes('?')) {
-            const lastSegment = config.url.split('/').filter(Boolean).pop();
-            if (lastSegment && !looksLikeId(lastSegment)) {
-                config.url += '/';
+            const segments = config.url.split('/').filter(Boolean);
+            const lastSegment = segments[segments.length - 1];
+            if (!looksLikeId(lastSegment)) {
+                const nonIdSegments = segments.filter(s => !looksLikeId(s));
+                if (nonIdSegments.length <= 1) {
+                    config.url += '/';
+                }
             }
         }
 
