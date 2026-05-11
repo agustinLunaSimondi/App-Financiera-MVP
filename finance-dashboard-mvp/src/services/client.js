@@ -32,12 +32,11 @@ client.interceptors.request.use(
             }
         }
 
-        // Fuente primaria: memoria (sobrevive a Safari ITP/private mode).
-        // Fallback: localStorage si la memoria está vacía (refresh de página).
         const token = getToken();
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
+        console.log('[REQUEST]', config.method?.toUpperCase(), config.url, '| Auth:', token ? 'Bearer ✓' : 'MISSING ❌');
         return config;
     },
     (error) => Promise.reject(error)

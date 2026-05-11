@@ -166,7 +166,8 @@ export const deleteCategory = async (id) => {
 // ============= SETTINGS =============
 
 export const getSettings = async () => {
-    const response = await client.get('/auth/me'); // Usamos perfil de usuario como settings
+    // __skipAuthRedirect: un 401 acá no debe causar logout global — es datos opcionales.
+    const response = await client.get('/auth/me', { __skipAuthRedirect: true });
     return {
         currency: response.data.currency || 'USD',
         darkMode: response.data.darkMode
