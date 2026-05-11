@@ -66,10 +66,7 @@ client.interceptors.response.use(
             const skipByPath = AUTH_REDIRECT_BLOCKLIST.some(rx => rx.test(reqUrl));
 
             if (!skipPerRequest && !skipByPath) {
-                // Token expirado o inválido → emitir evento para que AuthContext
-                // limpie el estado vía React (en vez de window.location.href, que
-                // hacía hard reload y causaba el flash de "veo la app un seg y vuelvo
-                // al login" en iOS Safari).
+                console.warn('[CLIENT] 401 en', reqUrl, '— emitiendo auth:invalid');
                 clearToken();
                 emitAuthInvalid();
             }

@@ -32,14 +32,17 @@ export function AuthProvider({ children }) {
 
         const checkAuth = async () => {
             const token = getToken();
+            console.log('[AUTH] checkAuth start — token en memoria:', token ? token.slice(0, 20) + '…' : 'null');
             if (token) {
                 try {
+                    console.log('[AUTH] GET /auth/me enviado');
                     const res = await client.get('/auth/me', { __skipAuthRedirect: true });
+                    console.log('[AUTH] GET /auth/me OK — cancelled?', checkAuthCancelledRef.current);
                     if (!checkAuthCancelledRef.current) {
                         setUser(res.data);
                     }
                 } catch (error) {
-                    console.warn("Sesión inválida o expirada:", error?.response?.status);
+                    console.warn('[AUTH] GET /auth/me ERROR', error?.response?.status, '— cancelled?', checkAuthCancelledRef.current);
                     if (!checkAuthCancelledRef.current) {
                         clearToken();
                         setUser(null);
@@ -48,6 +51,7 @@ export function AuthProvider({ children }) {
             }
             clearTimeout(slowTimer);
             setSlowConnection(false);
+            console.log('[AUTH] checkAuth fin — cancelled?', checkAuthCancelledRef.current, '— setLoading(false)?', !checkAuthCancelledRef.current);
             if (!checkAuthCancelledRef.current) {
                 setLoading(false);
             }
@@ -65,6 +69,7 @@ export function AuthProvider({ children }) {
     // reload — para que el ProtectedLayout redirija a /login naturalmente.
     useEffect(() => {
         const onInvalid = () => {
+            console.warn('[AUTH] auth:invalid recibido — haciendo logout');
             clearToken();
             setUser(null);
         };
@@ -73,9 +78,11 @@ export function AuthProvider({ children }) {
     }, []);
 
     const login = useCallback(async (email, password) => {
+        console.log('[AUTH] login() iniciado — cancelando checkAuth');
         checkAuthCancelledRef.current = true;
         const res = await client.post('/auth/login', { email, password });
         const { token, user } = res.data;
+        console.log('[AUTH] login() OK — token recibido:', token ? token.slice(0, 20) + '…' : 'null');
         setToken(token);
         setUser(user);
         setLoading(false);

@@ -37,9 +37,10 @@ export function FinanceProvider({ children }) {
     // ============= LOAD INITIAL DATA =============
 
     const loadData = useCallback(async () => {
-        // Abortar si no hay token: evita 401s en masa durante la race condition de checkAuth.
-        if (!getToken()) {
-            console.warn('[FinanceContext] loadData abortado: no hay token disponible');
+        const tok = getToken();
+        console.log('[FINANCE] loadData llamado — token:', tok ? tok.slice(0, 20) + '…' : 'null');
+        if (!tok) {
+            console.warn('[FINANCE] loadData abortado: no hay token disponible');
             setLoading(false);
             return;
         }
