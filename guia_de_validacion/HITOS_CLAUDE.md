@@ -11,8 +11,8 @@ Antes de tocar cualquier código, Claude debe leer este archivo y verificar qué
 | Hito | Descripción | Estado | Gate |
 |---|---|---|---|
 | HITO 1 | Fix bugs críticos | **DONE** ⚠️ Google OAuth requiere config manual en Google Console | App funciona sin errores en prod |
-| HITO 2 | PostHog analytics | **ACTIVO** | Funnel visible en PostHog |
-| HITO 3 | Onboarding mejorado | Pendiente | < 3 min to first expense |
+| HITO 2 | PostHog analytics | **DONE** | Funnel visible en PostHog |
+| HITO 3 | Onboarding mejorado | **ACTIVO** | < 3 min to first expense |
 | HITO 4 | MercadoPago integration | Pendiente | Gate 1 (100 usuarios, 40% W1R) |
 | HITO 5 | AI Insights | Pendiente | Gate 2 (30-day retention > 20%) |
 | HITO 6 | Voice capture | Pendiente | Después de HITO 5 |

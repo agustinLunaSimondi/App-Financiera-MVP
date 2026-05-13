@@ -31,14 +31,24 @@ import { RecurringPage } from './pages/RecurringPage';
 import { IntegrationsPage } from './pages/IntegrationsPage';
 import { AcademyPage } from './pages/AcademyPage';
 import HelpPage from './pages/HelpPage';
+import { OnboardingPage } from './pages/OnboardingPage';
 
-// Layout wrapper for private routes – keeps Layout mounted across navigations
-// so the sidebar scroll position is preserved
-function PrivateLayout() {
+// Guard for unauthenticated users — redirects to /login
+function RequireAuth() {
   const { isAuthenticated } = useAuth();
+  return isAuthenticated ? <Outlet /> : <Navigate to="/login" replace />;
+}
 
-  if (!isAuthenticated) {
-    return <Navigate to="/login" />;
+// Layout wrapper for private routes — also redirects new users to onboarding
+function PrivateLayout() {
+  const { isAuthenticated, user } = useAuth();
+  const location = useLocation();
+
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+
+  // New users must complete onboarding before accessing the main app
+  if (user && user.onboardingCompleted === false && location.pathname !== '/onboarding') {
+    return <Navigate to="/onboarding" replace />;
   }
 
   return (
@@ -60,6 +70,11 @@ function App() {
                 {/* Public routes */}
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
+
+                {/* Onboarding — auth required, no sidebar */}
+                <Route element={<RequireAuth />}>
+                  <Route path="/onboarding" element={<OnboardingPage />} />
+                </Route>
 
                 {/* Private routes – all share the same persistent Layout */}
                 <Route element={<PrivateLayout />}>

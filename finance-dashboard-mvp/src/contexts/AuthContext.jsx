@@ -116,12 +116,17 @@ export function AuthProvider({ children }) {
         setUser(null);
     }, []);
 
+    const updateUser = useCallback((patch) => {
+        setUser(prev => prev ? { ...prev, ...patch } : prev);
+    }, []);
+
     const value = {
         user,
         login,
         loginWithGoogle,
         register,
         logout,
+        updateUser,
         isAuthenticated: !!user,
         loading
     };

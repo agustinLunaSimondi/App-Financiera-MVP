@@ -45,6 +45,7 @@ class User(Base):
     name = Column(String, nullable=False)
     currency = Column(String, default="USD")
     dark_mode = Column(Boolean, default=False)
+    onboarding_completed = Column(Boolean, default=False, nullable=False, server_default="false")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
 

@@ -280,6 +280,11 @@ export const syncMercadoPago = async () => {
     return response.data;
 };
 
+export const completeOnboarding = async () => {
+    const res = await client.post('/auth/onboarding-complete');
+    return res.data;
+};
+
 export const disconnectMercadoPago = async () => {
     await client.delete('/mercadopago/disconnect');
     return true;

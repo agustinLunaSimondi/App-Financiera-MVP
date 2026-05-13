@@ -30,6 +30,7 @@ class UserBase(CamelModel):
     name: str
     currency: str = "USD"
     dark_mode: bool = False
+    onboarding_completed: bool = False
 
 class UserCreate(UserBase):
     password: str

@@ -194,6 +194,18 @@ def update_me(
     db.refresh(current_user)
     return current_user
 
+@router.post("/onboarding-complete", response_model=schemas.User)
+def complete_onboarding(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Marca el onboarding como completado para el usuario autenticado."""
+    current_user.onboarding_completed = True
+    db.commit()
+    db.refresh(current_user)
+    return current_user
+
+
 @router.delete("/me")
 def delete_my_account(
     db: Session = Depends(get_db),
