@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect, useContext, useCallback, useRef } from 'react';
 import client from '../services/client';
 import { getToken, setToken, clearToken, AUTH_INVALID_EVENT } from '../services/tokenStore';
+import { identifyUser, resetUser, analytics } from '../services/analytics';
 
 const AuthContext = createContext();
 
@@ -37,6 +38,7 @@ export function AuthProvider({ children }) {
                     const res = await client.get('/auth/me', { __skipAuthRedirect: true });
                     if (!checkAuthCancelledRef.current) {
                         setUser(res.data);
+                        identifyUser(res.data.id, { email: res.data.email, name: res.data.name });
                     }
                 } catch (error) {
                     if (!checkAuthCancelledRef.current) {
@@ -78,6 +80,8 @@ export function AuthProvider({ children }) {
         setToken(token);
         setUser(user);
         setLoading(false);
+        identifyUser(user.id, { email: user.email, name: user.name });
+        analytics.userLoggedIn('email');
         return user;
     }, []);
 
@@ -88,6 +92,8 @@ export function AuthProvider({ children }) {
         setToken(token);
         setUser(user);
         setLoading(false);
+        identifyUser(user.id, { email: user.email, name: user.name });
+        analytics.userLoggedIn('google');
         return user;
     }, []);
 
@@ -98,10 +104,14 @@ export function AuthProvider({ children }) {
         setToken(token);
         setUser(user);
         setLoading(false);
+        identifyUser(user.id, { email: user.email, name: user.name });
+        analytics.userSignedUp('email');
         return user;
     }, []);
 
     const logout = useCallback(() => {
+        analytics.userLoggedOut();
+        resetUser();
         clearToken();
         setUser(null);
     }, []);

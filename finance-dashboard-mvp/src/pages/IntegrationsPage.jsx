@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { getToken, setToken } from '../services/tokenStore';
+import { analytics } from '../services/analytics';
 
 import { Card } from '../features/common/components/Card';
 import { cn } from '../lib/utils';
@@ -76,6 +77,7 @@ export function IntegrationsPage() {
         try {
             const result = await api.handleMercadoPagoCallback(code);
             setMpStatus(result);
+            analytics.mpConnected();
             setSuccessMessage('¡Cuenta de Mercado Pago conectada! Sincronizando tus últimos 90 días de movimientos...');
             // Cargar balance después de conectar
             setTimeout(async () => {
@@ -147,6 +149,8 @@ export function IntegrationsPage() {
             if (currentToken) sessionStorage.setItem('mp_oauth_token_backup', currentToken);
         } catch { /* noop */ }
 
+        analytics.mpConnectClicked();
+
         // Caso ideal: usar la URL pre-fetched para navegar sincrónicamente.
         // iOS Safari no bloquea window.location.href si está en el mismo tick del click.
         if (mpAuthUrl) {
@@ -173,6 +177,7 @@ export function IntegrationsPage() {
         try {
             const result = await api.syncMercadoPago();
             setSyncResult(result);
+            analytics.mpSynced(result?.transactions_imported ?? 0);
             await loadBalance(); // Refrescar balance post-sync
             setTimeout(() => setSyncResult(null), 8000);
         } catch (err) {

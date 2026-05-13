@@ -1,11 +1,22 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { FinanceProvider } from './contexts/FinanceContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ErrorBoundary } from './features/common/components/ErrorBoundary';
 import { Toaster } from 'sonner';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { Layout } from './features/common/components/Layout';
+import { analytics } from './services/analytics';
+
+// Trackea page_viewed en PostHog en cada cambio de ruta
+function PageTracker() {
+    const location = useLocation();
+    useEffect(() => {
+        const name = location.pathname === '/' ? 'dashboard' : location.pathname.replace('/', '');
+        analytics.pageViewed(name);
+    }, [location.pathname]);
+    return null;
+}
 
 // Pages
 import { DashboardPage } from './pages/DashboardPage';
@@ -42,6 +53,7 @@ function App() {
     <ErrorBoundary>
       <LanguageProvider>
         <Router>
+          <PageTracker />
           <AuthProvider>
             <FinanceProvider>
               <Routes>

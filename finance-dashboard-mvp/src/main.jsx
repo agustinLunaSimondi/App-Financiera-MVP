@@ -5,6 +5,9 @@ import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import './index.css'
 import App from './App.jsx'
+import { initAnalytics } from './services/analytics.js'
+
+initAnalytics();
 
 const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "TU_GOOGLE_CLIENT_ID.apps.googleusercontent.com";
 

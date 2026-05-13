@@ -2,6 +2,7 @@ import React, { createContext, useState, useEffect, useCallback, useRef } from '
 import * as api from '../services/api';
 import { getToken } from '../services/tokenStore';
 import { useAuth } from './AuthContext';
+import { analytics, amountRange } from '../services/analytics';
 
 // Crear el contexto
 export const FinanceContext = createContext();
@@ -105,6 +106,10 @@ export function FinanceProvider({ children }) {
         try {
             const newTx = await api.addTransaction(transaction);
             setTransactions(prev => [...prev, newTx]);
+            analytics.expenseAdded(
+                transaction.category || 'unknown',
+                amountRange(Math.abs(Number(transaction.amount || 0)))
+            );
             return newTx;
         } catch (err) {
             setError(err.message);
@@ -320,8 +325,8 @@ export function FinanceProvider({ children }) {
             try {
                 const updated = await api.updateSavingGoal(id, updates);
                 setSavingsGoals(prev => prev.map(g => g.id === id ? updated : g));
-                // Si hubo un cambio en currentAmount (depósito), recargar cuentas para ver balance actualizado
                 if (updates.currentAmount !== undefined) {
+                    analytics.savingsDepositMade(amountRange(Number(updates.currentAmount || 0)));
                     const accs = await api.getAccounts();
                     setAccounts(accs);
                 }
