@@ -75,7 +75,7 @@ async def handle_callback(
     try:
         since = datetime.now(timezone.utc) - timedelta(days=90)
         payments = await mp_service.fetch_payments(connection.access_token, since)
-        
+
         if payments:
             mp_service.sync_payments_to_transactions(
                 db=db,
@@ -84,6 +84,7 @@ async def handle_callback(
                 default_account_id=mp_account.id,
                 default_category_id=mp_categories["MP Pagos"].id,
                 income_category_id=mp_categories["MP Cobros"].id,
+                mp_user_id=connection.mp_user_id,
             )
         
         connection.last_sync_at = datetime.now(timezone.utc)
@@ -146,7 +147,9 @@ async def get_balance(
         except ValueError:
             raise HTTPException(status_code=401, detail="Token expirado. Reconectá tu cuenta de Mercado Pago.")
     
-    balance_data = await mp_service.fetch_account_balance(connection.access_token)
+    balance_data = await mp_service.fetch_account_balance(
+        connection.access_token, mp_user_id=connection.mp_user_id
+    )
     return balance_data
 
 
@@ -211,6 +214,7 @@ async def sync_transactions(
         default_account_id=mp_account.id,
         default_category_id=mp_categories["MP Pagos"].id,
         income_category_id=mp_categories["MP Cobros"].id,
+        mp_user_id=connection.mp_user_id,
     )
     
     # Actualizar última sincronización

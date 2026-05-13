@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useFinance } from '../hooks/useFinance';
 import { getToken, setToken } from '../services/tokenStore';
 import { analytics } from '../services/analytics';
 
@@ -24,6 +25,7 @@ function formatARS(value) {
 export function IntegrationsPage() {
     const [searchParams, setSearchParams] = useSearchParams();
     const oauthHandledRef = useRef(false);
+    const { refreshData } = useFinance();
 
     const [mpStatus, setMpStatus] = useState(null);
     const [mpBalance, setMpBalance] = useState(null);
@@ -79,9 +81,8 @@ export function IntegrationsPage() {
             setMpStatus(result);
             analytics.mpConnected();
             setSuccessMessage('¡Cuenta de Mercado Pago conectada! Sincronizando tus últimos 90 días de movimientos...');
-            // Cargar balance después de conectar
             setTimeout(async () => {
-                await loadBalance();
+                await Promise.all([loadBalance(), refreshData()]);
                 setSuccessMessage('¡Sincronización completada! Revisá tu dashboard.');
                 setTimeout(() => setSuccessMessage(null), 5000);
             }, 2000);
@@ -178,7 +179,8 @@ export function IntegrationsPage() {
             const result = await api.syncMercadoPago();
             setSyncResult(result);
             analytics.mpSynced(result?.transactions_imported ?? 0);
-            await loadBalance(); // Refrescar balance post-sync
+            // Refrescar balance Y todas las transacciones en el contexto
+            await Promise.all([loadBalance(), refreshData()]);
             setTimeout(() => setSyncResult(null), 8000);
         } catch (err) {
             setError(err.response?.data?.detail || 'Error al sincronizar');

@@ -97,32 +97,28 @@ async def refresh_access_token(connection: models.MercadoPagoConnection) -> dict
         }
 
 
-async def fetch_account_balance(access_token: str) -> dict:
+def _is_expense(payment: dict, mp_user_id: str) -> bool:
     """
-    Obtiene el saldo de la cuenta de Mercado Pago.
-    Retorna balance disponible, total de ingresos y egresos del mes actual.
+    Determina si un pago de MP es un egreso para el usuario.
+
+    Fuente de verdad: payer.id. Si el usuario es el pagador, es un egreso.
+    Fallback cuando payer.id no está: heurística por operation_type.
+    """
+    payer_id = str(payment.get("payer", {}).get("id", "") or "")
+    if payer_id and mp_user_id:
+        return payer_id == str(mp_user_id)
+    return payment.get("operation_type", "") in (
+        "regular_payment", "payment", "pos_payment", "off_platform_payment"
+    )
+
+
+async def fetch_account_balance(access_token: str, mp_user_id: str = None) -> dict:
+    """
+    Obtiene el saldo e ingresos/egresos del mes de la cuenta Mercado Pago.
+    Usa payer.id para distinguir correctamente egresos de ingresos.
     """
     try:
         async with httpx.AsyncClient(timeout=15.0) as client:
-            # Obtener info del usuario y saldo
-            me_response = await client.get(
-                f"{MP_API_BASE}/v1/account/bank_report/user/list",
-                headers={"Authorization": f"Bearer {access_token}"}
-            )
-
-            # Obtener el saldo disponible via el endpoint correcto
-            balance_response = await client.get(
-                f"{MP_API_BASE}/v1/account/settlement_report/user/list",
-                headers={"Authorization": f"Bearer {access_token}"}
-            )
-
-            # Endpoint de saldo de la billetera
-            wallet_response = await client.get(
-                f"{MP_API_BASE}/users/me",
-                headers={"Authorization": f"Bearer {access_token}"}
-            )
-
-            # Calcular ingresos y egresos del mes actual usando pagos
             now = datetime.now(timezone.utc)
             month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
@@ -144,25 +140,15 @@ async def fetch_account_balance(access_token: str) -> dict:
         total_transactions = 0
 
         if payments_response.status_code == 200:
-            payments_data = payments_response.json()
-            for payment in payments_data.get("results", []):
+            for payment in payments_response.json().get("results", []):
                 if payment.get("status") != "approved":
                     continue
                 amount = Decimal(str(payment.get("transaction_amount", 0)))
-                op_type = payment.get("operation_type", "")
-                if op_type in ("regular_payment", "payment"):
+                if _is_expense(payment, mp_user_id):
                     expenses_month += amount
                 else:
                     income_month += amount
                 total_transactions += 1
-
-        # Intentar obtener saldo real del usuario
-        available_balance = Decimal("0")
-        if wallet_response.status_code == 200:
-            user_data = wallet_response.json()
-            # El saldo no está directamente disponible en /users/me
-            # pero podemos calcularlo desde transacciones
-            pass
 
         return {
             "available_balance": float(income_month - expenses_month),
@@ -292,70 +278,64 @@ def sync_payments_to_transactions(
     default_account_id: str,
     default_category_id: str,
     income_category_id: str = None,
+    mp_user_id: str = None,
 ) -> dict:
     """
     Convierte pagos de MP en transacciones locales.
-    Evita duplicados comprobando external_id.
-    Usa categoría de ingreso para cobros y de gasto para pagos.
+    Usa payer.id vs mp_user_id para distinguir egresos de ingresos.
     """
     imported = 0
     skipped = 0
-    
+    net_balance_delta = Decimal("0")
+
     for payment in payments:
         mp_payment_id = str(payment.get("id", ""))
-        status = payment.get("status", "")
-        
-        # Solo importar pagos aprobados
-        if status != "approved":
+
+        if payment.get("status", "") != "approved":
             skipped += 1
             continue
-        
-        # Verificar duplicado
-        existing = db.query(models.Transaction).filter(
+
+        # Deduplicación
+        if db.query(models.Transaction).filter(
             models.Transaction.external_id == f"mp_{mp_payment_id}",
-        ).first()
-        
-        if existing:
+        ).first():
             skipped += 1
             continue
-        
-        # Determinar monto y descripción
-        amount = Decimal(str(payment.get("transaction_amount", 0)))
-        operation_type = payment.get("operation_type", "")
+
+        raw_amount = Decimal(str(payment.get("transaction_amount", 0)))
         description_parts = []
-        
-        # Determinar el tipo de operación y categoría
-        if operation_type in ("regular_payment", "payment"):
-            amount = -abs(amount)
+
+        expense = _is_expense(payment, mp_user_id)
+        if expense:
+            amount = -abs(raw_amount)
             description_parts.append("[MP Pago]")
-            category_id = default_category_id  # categoría de gasto
+            category_id = default_category_id
         else:
-            amount = abs(amount)
+            amount = abs(raw_amount)
             description_parts.append("[MP Cobro]")
-            category_id = income_category_id if income_category_id else default_category_id
-        
-        # Construir descripción
+            category_id = income_category_id or default_category_id
+
+        # Descripción legible
         mp_description = payment.get("description", "")
-        payer_email = payment.get("payer", {}).get("email", "")
-        
+        payer_info = payment.get("payer", {})
+        payer_email = payer_info.get("email", "")
         if mp_description:
             description_parts.append(mp_description)
-        elif payer_email:
+        elif not expense and payer_email:
+            # En cobros, mostrar quién pagó
             description_parts.append(f"De: {payer_email}")
         else:
             description_parts.append(f"Operación #{mp_payment_id}")
-        
+
         description = " ".join(description_parts)
-        
-        # Obtener fecha
+
         date_str = payment.get("date_approved") or payment.get("date_created", "")
         try:
             tx_date = datetime.fromisoformat(date_str.replace("Z", "+00:00")).date()
         except (ValueError, AttributeError):
             tx_date = date.today()
-        
-        # Crear transacción
-        new_tx = models.Transaction(
+
+        db.add(models.Transaction(
             account_id=default_account_id,
             category_id=category_id,
             amount=amount,
@@ -363,32 +343,21 @@ def sync_payments_to_transactions(
             transaction_date=tx_date,
             external_id=f"mp_{mp_payment_id}",
             source="mercadopago",
-        )
-        db.add(new_tx)
+        ))
+        net_balance_delta += amount
         imported += 1
-    
+
     if imported > 0:
-        # Actualizar balance de la cuenta MP con el neto importado
         try:
             account = db.query(models.Account).filter(
                 models.Account.id == default_account_id
             ).first()
             if account:
-                net = sum(
-                    Decimal(str(p.get("transaction_amount", 0))) * (
-                        -1 if p.get("operation_type") in ("regular_payment", "payment") else 1
-                    )
-                    for p in payments
-                    if p.get("status") == "approved" and str(p.get("id")) not in [
-                        # Excluir los ya existentes
-                    ]
-                )
-                account.balance = (account.balance or Decimal("0")) + net
+                account.balance = (account.balance or Decimal("0")) + net_balance_delta
         except Exception as e:
             logger.warning(f"No se pudo actualizar balance de cuenta: {e}")
-        
         db.commit()
-    
+
     return {
         "transactions_imported": imported,
         "transactions_skipped": skipped,
