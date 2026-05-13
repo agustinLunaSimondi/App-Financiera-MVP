@@ -11,21 +11,32 @@ export function SavingGoalCard({ goal, onEdit, onDelete, onContribute, delay = 0
 
     const [depositMode, setDepositMode] = useState(false);
     const [depositAmount, setDepositAmount] = useState('');
+    const [depositing, setDepositing] = useState(false);
+    const [amountError, setAmountError] = useState('');
 
-    const handleConfirmDeposit = () => {
+    const handleConfirmDeposit = async () => {
         const parsed = parseFloat(depositAmount);
         if (isNaN(parsed) || parsed <= 0) {
-            // No cerramos el panel si el monto es inválido — damos feedback visual
+            setAmountError('Ingresá un monto válido mayor a 0');
             return;
         }
-        onContribute(goal.id, parsed);
-        setDepositMode(false);
-        setDepositAmount('');
+        setAmountError('');
+        setDepositing(true);
+        try {
+            await onContribute(goal.id, parsed);
+            setDepositMode(false);
+            setDepositAmount('');
+        } catch {
+            // onContribute ya muestra el toast de error
+        } finally {
+            setDepositing(false);
+        }
     };
 
     const handleCancelDeposit = () => {
         setDepositMode(false);
         setDepositAmount('');
+        setAmountError('');
     };
 
     const handleKeyDown = (e) => {
@@ -99,37 +110,45 @@ export function SavingGoalCard({ goal, onEdit, onDelete, onContribute, delay = 0
                 </div>
 
                 {depositMode ? (
-                    <div className="pt-2 flex items-center gap-2">
-                        <input
-                            type="number"
-                            inputMode="decimal"
-                            min="0.01"
-                            step="0.01"
-                            placeholder="Monto a depositar"
-                            value={depositAmount}
-                            onChange={(e) => setDepositAmount(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            autoFocus
-                            aria-label="Monto a depositar"
-                            className="flex-1 min-w-0 px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-sm font-bold text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-                        />
-                        <button
-                            type="button"
-                            onClick={handleConfirmDeposit}
-                            disabled={!depositAmount || parseFloat(depositAmount) <= 0}
-                            aria-label="Confirmar depósito"
-                            className="p-2 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl transition-colors"
-                        >
-                            <Check className="w-4 h-4" />
-                        </button>
-                        <button
-                            type="button"
-                            onClick={handleCancelDeposit}
-                            aria-label="Cancelar depósito"
-                            className="p-2 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-500 rounded-xl transition-colors"
-                        >
-                            <X className="w-4 h-4" />
-                        </button>
+                    <div className="pt-2 space-y-2">
+                        <div className="flex items-center gap-2">
+                            <input
+                                type="number"
+                                inputMode="decimal"
+                                min="0.01"
+                                step="0.01"
+                                placeholder="Monto a depositar"
+                                value={depositAmount}
+                                onChange={(e) => { setDepositAmount(e.target.value); setAmountError(''); }}
+                                onKeyDown={handleKeyDown}
+                                aria-label="Monto a depositar"
+                                className="flex-1 min-w-0 px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-sm font-bold text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                            />
+                            <button
+                                type="button"
+                                onClick={handleConfirmDeposit}
+                                disabled={depositing || !depositAmount || parseFloat(depositAmount) <= 0}
+                                aria-label="Confirmar depósito"
+                                className="p-2 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl transition-colors"
+                            >
+                                {depositing
+                                    ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    : <Check className="w-4 h-4" />
+                                }
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleCancelDeposit}
+                                disabled={depositing}
+                                aria-label="Cancelar depósito"
+                                className="p-2 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-500 rounded-xl transition-colors"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+                        {amountError && (
+                            <p className="text-xs text-rose-500 font-medium px-1">{amountError}</p>
+                        )}
                     </div>
                 ) : (
                     <div className="pt-4 flex items-center justify-between gap-4">

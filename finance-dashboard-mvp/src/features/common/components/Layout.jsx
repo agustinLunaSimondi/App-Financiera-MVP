@@ -168,38 +168,50 @@ export function Layout({ children }) {
     const { settings, updateSettings } = useFinance();
     const location = useLocation();
 
-    // Inicializar desde localStorage mientras settings cargan
+    // Inicializar desde localStorage. Si no hay preferencia local, usar la del sistema.
     const [isDark, setIsDark] = useState(() => {
-        const stored = localStorage.getItem('darkMode');
-        return stored !== null ? stored === 'true' : false;
+        try {
+            const stored = localStorage.getItem('darkMode');
+            if (stored !== null) return stored === 'true';
+            return window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false;
+        } catch {
+            return false;
+        }
     });
 
-    // Sincronizar cuando settings.darkMode llega del backend
+    // Fuente de verdad única: isDark → clase en <html>
+    // Esto cubre tanto el toggle manual como la sincronización con backend.
     useEffect(() => {
-        if (settings.darkMode !== undefined) {
-            setIsDark(settings.darkMode);
-        }
+        document.documentElement.classList.toggle('dark', isDark);
+    }, [isDark]);
+
+    // Sincronizar con backend SOLO si el usuario no tiene una preferencia local explícita.
+    // Evita que Render (al despertarse con valor desactualizado) sobreescriba la preferencia local.
+    useEffect(() => {
+        if (settings.darkMode === undefined) return;
+        try {
+            const stored = localStorage.getItem('darkMode');
+            if (stored === null) {
+                setIsDark(settings.darkMode);
+            }
+        } catch { /* noop */ }
     }, [settings.darkMode]);
 
     const handleToggleDark = async () => {
         const next = !isDark;
-        setIsDark(next);
-        // Aplicar inmediatamente sin esperar al backend
-        if (next) {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-        }
-        localStorage.setItem('darkMode', String(next));
+        setIsDark(next); // el useEffect([isDark]) aplica la clase
+        try {
+            localStorage.setItem('darkMode', String(next));
+        } catch { /* noop */ }
         try {
             await updateSettings({ darkMode: next });
         } catch {
-            // no-op: la clase ya está aplicada y localStorage actualizado
+            // no-op: clase y localStorage ya actualizados
         }
     };
 
     return (
-        <div className="min-h-screen bg-transparent flex text-zinc-900 dark:text-zinc-100 font-sans overflow-hidden">
+        <div className="min-h-screen bg-transparent flex text-zinc-900 dark:text-zinc-100 font-sans overflow-x-hidden">
             {/* Desktop Sidebar */}
             <aside className="hidden lg:flex flex-col w-72 glass-sidebar sticky top-0 h-screen border-r border-zinc-200/50 dark:border-zinc-800/50">
                 <SidebarContent />

@@ -39,7 +39,6 @@ client.interceptors.request.use(
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
-        console.log('[REQUEST]', config.method?.toUpperCase(), config.url, '| Auth:', token ? 'Bearer ✓' : 'MISSING ❌');
         return config;
     },
     (error) => Promise.reject(error)
@@ -68,7 +67,6 @@ client.interceptors.response.use(
             const skipByPath = AUTH_REDIRECT_BLOCKLIST.some(rx => rx.test(reqUrl));
 
             if (!skipPerRequest && !skipByPath) {
-                console.warn('[CLIENT] 401 en', reqUrl, '— emitiendo auth:invalid');
                 clearToken();
                 emitAuthInvalid();
             }

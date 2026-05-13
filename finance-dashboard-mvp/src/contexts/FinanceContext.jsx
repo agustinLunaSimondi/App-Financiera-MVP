@@ -38,9 +38,7 @@ export function FinanceProvider({ children }) {
 
     const loadData = useCallback(async () => {
         const tok = getToken();
-        console.log('[FINANCE] loadData llamado — token:', tok ? tok.slice(0, 20) + '…' : 'null');
         if (!tok) {
-            console.warn('[FINANCE] loadData abortado: no hay token disponible');
             setLoading(false);
             return;
         }
@@ -97,14 +95,9 @@ export function FinanceProvider({ children }) {
         }
     }, [isAuthenticated, loadData, filters]);
 
-    // Aplicar modo oscuro cuando los settings cambian.
-    // Prioridad: si el usuario tocó el toggle (localStorage seteado por Layout.handleToggleDark)
-    // y discrepa con backend, NO sobreescribir el preference local — sincronizar al revés.
-    useEffect(() => {
-        if (settings.darkMode === undefined) return;
-        document.documentElement.classList.toggle('dark', !!settings.darkMode);
-        localStorage.setItem('darkMode', String(settings.darkMode));
-    }, [settings.darkMode]);
+    // Dark mode: aplicado exclusivamente por Layout.jsx (useEffect en isDark).
+    // FinanceContext NO toca el DOM ni localStorage para dark mode —
+    // evita que una respuesta lenta del backend sobreescriba la preferencia local.
 
     // ============= TRANSACTIONS =============
 

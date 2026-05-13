@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { getToken, setToken } from '../services/tokenStore';
 
 import { Card } from '../features/common/components/Card';
 import { cn } from '../lib/utils';
@@ -33,6 +34,13 @@ export function IntegrationsPage() {
     const [error, setError] = useState(null);
     const [successMessage, setSuccessMessage] = useState(null);
     const [confirmDisconnect, setConfirmDisconnect] = useState(false);
+
+    // Pre-fetch de la URL de autorización de MP.
+    // iOS Safari bloquea window.location.href cuando se ejecuta después de un await
+    // con latencia alta (ej: cold start de Render). Pre-fetching al montar el componente
+    // garantiza que el click del usuario navega sincrónicamente, sin await en medio.
+    const [mpAuthUrl, setMpAuthUrl] = useState(null);
+    const prefetchingRef = useRef(false);
 
     const loadBalance = useCallback(async () => {
         setLoadingBalance(true);
@@ -90,13 +98,32 @@ export function IntegrationsPage() {
         }
     }, [loadBalance]);
 
+    // Pre-fetch de la URL de autorización de MP cuando el usuario no está conectado.
+    // Se ejecuta ANTES de que el usuario haga clic, evitando el await en el handler.
+    useEffect(() => {
+        if (mpStatus?.connected || prefetchingRef.current) return;
+        if (mpStatus === null) return; // Esperar a que loadStatus() termine
+        prefetchingRef.current = true;
+        api.getMercadoPagoAuthUrl()
+            .then(url => setMpAuthUrl(url))
+            .catch(() => { prefetchingRef.current = false; });
+    }, [mpStatus]);
+
     // Manejo del callback de OAuth (con guard para evitar doble-fire en StrictMode)
     useEffect(() => {
         const code = searchParams.get('code');
         if (code && !oauthHandledRef.current) {
             oauthHandledRef.current = true;
-            // Limpiar el code de la URL ANTES de procesarlo, así react-router no
-            // lo vuelve a leer si el componente re-renderiza
+            // Restaurar el token desde sessionStorage si iOS lo perdió durante la navegación a MP.
+            try {
+                const backup = sessionStorage.getItem('mp_oauth_token_backup');
+                if (backup && !getToken()) {
+                    setToken(backup);
+                }
+                sessionStorage.removeItem('mp_oauth_token_backup');
+            } catch { /* noop */ }
+
+            // Limpiar el code de la URL ANTES de procesarlo
             const next = new URLSearchParams(searchParams);
             next.delete('code');
             next.delete('state');
@@ -111,8 +138,23 @@ export function IntegrationsPage() {
 
     const handleConnect = async () => {
         setError(null);
-        // Reset OAuth guard, por si quedó en true tras intento previo
         oauthHandledRef.current = false;
+
+        // Guardar el token en sessionStorage como respaldo para el caso en que
+        // iOS Safari lo pierda durante la navegación cross-origin a mercadopago.com
+        try {
+            const currentToken = getToken();
+            if (currentToken) sessionStorage.setItem('mp_oauth_token_backup', currentToken);
+        } catch { /* noop */ }
+
+        // Caso ideal: usar la URL pre-fetched para navegar sincrónicamente.
+        // iOS Safari no bloquea window.location.href si está en el mismo tick del click.
+        if (mpAuthUrl) {
+            window.location.href = mpAuthUrl;
+            return;
+        }
+
+        // Fallback: fetchear la URL (puede ser bloqueada en iOS con cold start de Render)
         try {
             const authUrl = await api.getMercadoPagoAuthUrl();
             window.location.href = authUrl;
@@ -363,9 +405,13 @@ export function IntegrationsPage() {
                                 </div>
                                 <button
                                     onClick={handleConnect}
-                                    className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-[#00AAFF] hover:bg-[#0099EE] text-white rounded-2xl font-black text-sm shadow-xl shadow-[#00AAFF]/20 transition-all active:scale-95 group"
+                                    disabled={loading}
+                                    className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-[#00AAFF] hover:bg-[#0099EE] disabled:opacity-60 text-white rounded-2xl font-black text-sm shadow-xl shadow-[#00AAFF]/20 transition-all active:scale-95 group"
                                 >
-                                    <Link2 className="w-5 h-5" />
+                                    {!mpAuthUrl && !loading
+                                        ? <Loader2 className="w-5 h-5 animate-spin" />
+                                        : <Link2 className="w-5 h-5" />
+                                    }
                                     Conectar Mercado Pago
                                     <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
                                 </button>
