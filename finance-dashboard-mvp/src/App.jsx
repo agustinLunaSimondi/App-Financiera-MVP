@@ -32,6 +32,7 @@ import { IntegrationsPage } from './pages/IntegrationsPage';
 import { AcademyPage } from './pages/AcademyPage';
 import HelpPage from './pages/HelpPage';
 import { OnboardingPage } from './pages/OnboardingPage';
+import { LandingPage } from './pages/LandingPage';
 
 // Guard for unauthenticated users — redirects to /login
 function RequireAuth() {
@@ -39,14 +40,20 @@ function RequireAuth() {
   return isAuthenticated ? <Outlet /> : <Navigate to="/login" replace />;
 }
 
-// Layout wrapper for private routes — also redirects new users to onboarding
+// Layout wrapper for private routes — also redirects new users to onboarding.
+// Special case: at "/" (root), unauthenticated users see the public LandingPage
+// instead of being redirected to /login, since the root acts as both marketing
+// surface (for visitors) and dashboard (for users).
 function PrivateLayout() {
   const { isAuthenticated, user } = useAuth();
   const location = useLocation();
 
+  if (!isAuthenticated && location.pathname === '/') {
+    return <LandingPage />;
+  }
+
   if (!isAuthenticated) return <Navigate to="/login" replace />;
 
-  // New users must complete onboarding before accessing the main app
   if (user && user.onboardingCompleted === false && location.pathname !== '/onboarding') {
     return <Navigate to="/onboarding" replace />;
   }

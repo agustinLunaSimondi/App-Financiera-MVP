@@ -81,6 +81,16 @@ export const analytics = {
 
     mpSynced: (transactionsImported) =>
         capture('mp_synced', { transactions_imported: transactionsImported }),
+
+    // Landing
+    landingViewed: () =>
+        capture('landing_viewed'),
+
+    waitlistSignup: (source) =>
+        capture('waitlist_signup', { source }),
+
+    landingCtaClicked: (cta) =>
+        capture('landing_cta_clicked', { cta }),
 };
 
 // Util: rangos de monto para no enviar valores exactos

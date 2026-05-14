@@ -16,6 +16,7 @@ from app.modules.savings import saving_routes
 from app.modules.recurring import recurring_routes
 from app.modules.analytics import analytics_routes
 from app.modules.mercadopago import mp_routes
+from app.modules.waitlist import waitlist_routes
 from app.modules.recurring.recurring_processor import process_recurring_transactions
 
 load_dotenv()
@@ -68,6 +69,7 @@ app.include_router(saving_routes.router, prefix="/api")
 app.include_router(recurring_routes.router, prefix="/api")
 app.include_router(analytics_routes.router, prefix="/api")
 app.include_router(mp_routes.router, prefix="/api")
+app.include_router(waitlist_routes.router, prefix="/api")
 
 @app.get("/")
 def read_root():

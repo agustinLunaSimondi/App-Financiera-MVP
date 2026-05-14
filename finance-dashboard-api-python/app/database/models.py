@@ -177,3 +177,13 @@ class MercadoPagoConnection(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
 
     user = relationship("User", back_populates="mercadopago_connection")
+
+
+class WaitlistEmail(Base):
+    __tablename__ = "waitlist_emails"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    email = Column(String, unique=True, nullable=False, index=True)
+    source = Column(String, nullable=True)  # ej: 'landing', 'hero', 'pricing'
+    referrer = Column(String, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())

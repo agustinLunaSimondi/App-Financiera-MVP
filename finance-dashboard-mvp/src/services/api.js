@@ -285,6 +285,16 @@ export const completeOnboarding = async () => {
     return res.data;
 };
 
+export const joinWaitlist = async (email, source = 'landing') => {
+    const res = await client.post('/waitlist', { email, source }, { __skipAuthRedirect: true });
+    return res.data;
+};
+
+export const getWaitlistCount = async () => {
+    const res = await client.get('/waitlist/count', { __skipAuthRedirect: true });
+    return res.data;
+};
+
 export const disconnectMercadoPago = async () => {
     await client.delete('/mercadopago/disconnect');
     return true;
