@@ -75,5 +75,9 @@ app.include_router(waitlist_routes.router, prefix="/api")
 def read_root():
     return {"message": "Finance Dashboard API Python is running!"}
 
+@app.get("/health")
+def health_check():
+    return {"status": "ok"}
+
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=int(os.getenv("PORT", 8000)), reload=True)
