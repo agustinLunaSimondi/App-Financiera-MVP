@@ -9,6 +9,7 @@ from app.database.database import get_db
 from app.core import security
 from app.core.deps import get_current_user
 from app import schemas
+from app.core import posthog_client
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -74,7 +75,10 @@ def register(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
     
     db.commit()
     db.refresh(new_user)
-    
+
+    posthog_client.identify(new_user.id, {"email": new_user.email, "name": new_user.name, "currency": new_user.currency})
+    posthog_client.capture(new_user.id, "user_signed_up", {"method": "email"})
+
     access_token = security.create_access_token(
         data={"userId": new_user.id, "email": new_user.email}
     )
@@ -94,6 +98,7 @@ def login(user_in: schemas.UserLogin, db: Session = Depends(get_db)):
         )
     
     logger.info(f"Login exitoso para {email_clean}")
+    posthog_client.capture(user.id, "user_logged_in", {"method": "email"})
     access_token = security.create_access_token(
         data={"userId": user.id, "email": user.email}
     )
@@ -158,8 +163,11 @@ def google_login(payload: GoogleAuthRequest, db: Session = Depends(get_db)):
         _create_default_categories(db, user.id)
         db.commit()
         db.refresh(user)
+        posthog_client.identify(user.id, {"email": user.email, "name": user.name})
+        posthog_client.capture(user.id, "user_signed_up", {"method": "google"})
         logger.info(f"Usuario Google registrado: {google_email}")
     else:
+        posthog_client.capture(user.id, "user_logged_in", {"method": "google"})
         logger.info(f"Login Google exitoso: {google_email}")
     
     access_token = security.create_access_token(
@@ -203,6 +211,7 @@ def complete_onboarding(
     current_user.onboarding_completed = True
     db.commit()
     db.refresh(current_user)
+    posthog_client.capture(current_user.id, "onboarding_completed")
     return current_user
 
 

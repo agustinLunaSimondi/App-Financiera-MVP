@@ -7,6 +7,7 @@ from app.database import models
 from app.database.database import get_db
 from app.core.deps import get_current_user
 from app import schemas
+from app.core import posthog_client
 
 router = APIRouter(prefix="/transactions", tags=["transactions"])
 
@@ -73,6 +74,11 @@ def create_transaction(
         
     db.commit()
     db.refresh(new_tx)
+    posthog_client.capture(
+        current_user.id,
+        "transaction_created",
+        {"amount": float(tx_in.amount), "account_id": tx_in.account_id}
+    )
     return new_tx
 
 @router.put("/{tx_id}", response_model=schemas.Transaction)

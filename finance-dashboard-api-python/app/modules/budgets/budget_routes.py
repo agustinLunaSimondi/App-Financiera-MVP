@@ -5,6 +5,7 @@ from app.database import models
 from app.database.database import get_db
 from app.core.deps import get_current_user
 from app import schemas
+from app.core import posthog_client
 
 router = APIRouter(prefix="/budgets", tags=["budgets"])
 
@@ -44,6 +45,11 @@ def create_budget(
     db.add(new_budget)
     db.commit()
     db.refresh(new_budget)
+    posthog_client.capture(
+        current_user.id,
+        "budget_created",
+        {"amount": float(budget_in.amount), "period": budget_in.period}
+    )
     return new_budget
 
 @router.put("/{budget_id}", response_model=schemas.Budget)

@@ -21,6 +21,8 @@ from app.modules.recurring.recurring_processor import process_recurring_transact
 
 load_dotenv()
 
+from app.core import posthog_client  # noqa: E402 — must import after load_dotenv
+
 logger = logging.getLogger(__name__)
 
 # Scheduler para Tareas de Fondo
@@ -36,6 +38,7 @@ async def lifespan(app):
     # Shutdown
     scheduler.shutdown()
     logger.info("Scheduler apagado.")
+    posthog_client.shutdown()
 
 app = FastAPI(
     title="Finance Dashboard API (Python/FastAPI)",
