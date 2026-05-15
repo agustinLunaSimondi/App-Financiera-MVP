@@ -60,6 +60,22 @@ export const analytics = {
     onboardingCompleted: () =>
         capture('onboarding_completed'),
 
+    onboardingStepCompleted: (step) =>
+        capture('onboarding_step_completed', { step }),
+
+    onboardingStepSkipped: (step) =>
+        capture('onboarding_step_skipped', { step }),
+
+    // Setup desde onboarding
+    budgetAdded: (source, amountRange) =>
+        capture('budget_added', { source, amount_range: amountRange }),
+
+    savingsGoalCreated: (source, amountRange) =>
+        capture('savings_goal_created', { source, amount_range: amountRange }),
+
+    recurringCreated: (source, type, amountRange) =>
+        capture('recurring_created', { source, type, amount_range: amountRange }),
+
     // Transacciones
     expenseAdded: (category, amountRange) =>
         capture('expense_added', { category, amount_range: amountRange }),
