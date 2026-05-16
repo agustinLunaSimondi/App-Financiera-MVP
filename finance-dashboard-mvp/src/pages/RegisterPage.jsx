@@ -10,6 +10,7 @@ export function RegisterPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+    const [acceptTerms, setAcceptTerms] = useState(false);
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const { register, loginWithGoogle, isAuthenticated } = useAuth();
@@ -30,6 +31,11 @@ export function RegisterPage() {
         e.preventDefault();
         setError('');
 
+        if (!acceptTerms) {
+            setError('Tenés que aceptar los Términos y la Política de Privacidad para crear una cuenta.');
+            return;
+        }
+
         if (password.length < 6) {
             setError('La contraseña debe tener al menos 6 caracteres.');
             return;
@@ -49,6 +55,10 @@ export function RegisterPage() {
 
     const handleGoogleSuccess = async (credentialResponse) => {
         setError('');
+        if (!acceptTerms) {
+            setError('Marcá la casilla de Términos y Privacidad antes de continuar con Google.');
+            return;
+        }
         setIsLoading(true);
         try {
             await loginWithGoogle(credentialResponse.credential);
@@ -79,10 +89,10 @@ export function RegisterPage() {
                         <UserPlus className="h-8 w-8 text-white" />
                     </div>
                     <h2 className="text-3xl font-black text-zinc-900 dark:text-white tracking-tighter">
-                        Crea tu <span className="premium-gradient-text">Cuenta</span>
+                        Sumate a la <span className="premium-gradient-text">beta</span>
                     </h2>
                     <p className="text-zinc-500 dark:text-zinc-400 font-medium text-sm">
-                        Únete a miles de usuarios que ya optimizan sus ahorros.
+                        Vuelto es un proyecto personal en validación. Gratuito y sin compromiso.
                     </p>
                 </div>
 
@@ -185,14 +195,34 @@ export function RegisterPage() {
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-2 px-2 py-2">
-                        <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                        <p className="text-[10px] text-zinc-500 font-medium">Tus datos están protegidos con encriptación bancaria.</p>
+                    <label htmlFor="accept-terms" className="flex items-start gap-3 px-2 py-2 cursor-pointer select-none">
+                        <input
+                            id="accept-terms"
+                            type="checkbox"
+                            checked={acceptTerms}
+                            onChange={e => setAcceptTerms(e.target.checked)}
+                            className="mt-0.5 w-4 h-4 rounded border-zinc-300 dark:border-zinc-600 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-0 shrink-0"
+                        />
+                        <span className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-snug">
+                            Soy mayor de 18 años y acepto los{' '}
+                            <Link to="/terms" target="_blank" className="font-bold text-emerald-600 dark:text-emerald-400 underline underline-offset-2">
+                                Términos
+                            </Link>{' '}
+                            y la{' '}
+                            <Link to="/privacy" target="_blank" className="font-bold text-emerald-600 dark:text-emerald-400 underline underline-offset-2">
+                                Política de Privacidad
+                            </Link>. Entiendo que Vuelto está en beta y no es un servicio financiero.
+                        </span>
+                    </label>
+
+                    <div className="flex items-center gap-2 px-2 py-1">
+                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                        <p className="text-[10px] text-zinc-500 font-medium">Tu contraseña se guarda hasheada (bcrypt) y los tokens OAuth de Mercado Pago cifrados.</p>
                     </div>
 
                     <button
                         type="submit"
-                        disabled={isLoading}
+                        disabled={isLoading || !acceptTerms}
                         className="w-full group flex items-center justify-center gap-2 py-4 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-2xl font-black text-sm shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
                     >
                         {isLoading ? (

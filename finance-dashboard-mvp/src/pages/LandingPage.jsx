@@ -23,7 +23,7 @@ function Nav() {
     }, []);
 
     return (
-        <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        <header className={`fixed top-8 left-0 right-0 z-50 transition-all duration-300 ${
             scrolled
                 ? 'backdrop-blur-xl bg-white/70 dark:bg-zinc-950/70 border-b border-zinc-200/60 dark:border-zinc-800/60'
                 : 'bg-transparent'
@@ -41,7 +41,7 @@ function Nav() {
                 <nav className="hidden md:flex items-center gap-8 text-sm font-bold text-zinc-600 dark:text-zinc-400">
                     <a href="#features" className="hover:text-zinc-900 dark:hover:text-white transition-colors">Features</a>
                     <a href="#how" className="hover:text-zinc-900 dark:hover:text-white transition-colors">Cómo funciona</a>
-                    <a href="#pricing" className="hover:text-zinc-900 dark:hover:text-white transition-colors">Precios</a>
+                    <a href="#about" className="hover:text-zinc-900 dark:hover:text-white transition-colors">Sobre el proyecto</a>
                 </nav>
 
                 <div className="flex items-center gap-2">
@@ -303,6 +303,15 @@ export function LandingPage() {
 
     return (
         <div className="min-h-screen bg-white dark:bg-zinc-950 text-zinc-900 dark:text-white selection:bg-emerald-500/20 selection:text-emerald-700 overflow-x-hidden">
+            {/* ───── BETA BANNER (fixed top, always visible) ───── */}
+            <div className="fixed top-0 left-0 right-0 h-8 bg-amber-500 text-zinc-900 text-center text-xs sm:text-sm font-bold flex items-center justify-center px-4 z-[60]">
+                <span className="inline-flex items-center gap-2 flex-wrap justify-center">
+                    <span className="inline-block w-2 h-2 rounded-full bg-zinc-900 animate-pulse" />
+                    Vuelto está en <strong>beta privada gratuita</strong> · No es un servicio financiero ni mueve plata ·{' '}
+                    <Link to="/terms" className="underline underline-offset-2 hover:opacity-70">Términos</Link>
+                </span>
+            </div>
+
             <Nav />
 
             {/* ───── HERO ───── */}
@@ -684,91 +693,74 @@ export function LandingPage() {
                 </div>
             </Section>
 
-            {/* ───── PRICING ───── */}
+            {/* ───── SOBRE EL PROYECTO ───── */}
             <Section className="py-24 sm:py-32">
-                <div id="pricing" className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="text-center max-w-3xl mx-auto mb-16">
-                        <p className="text-xs font-black uppercase tracking-widest text-emerald-500 mb-3">Precios</p>
+                <div id="about" className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="text-center max-w-2xl mx-auto mb-12">
+                        <p className="text-xs font-black uppercase tracking-widest text-emerald-500 mb-3">Sobre el proyecto</p>
                         <h2 className="text-3xl sm:text-5xl font-black tracking-tight">
-                            Empezás gratis. <br className="hidden sm:block" />
-                            <span className="text-zinc-400 dark:text-zinc-500">Pagás solo si te suma.</span>
+                            Por qué existe Vuelto
                         </h2>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-4xl mx-auto">
-                        {/* Free */}
-                        <div className="p-8 rounded-3xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
-                            <p className="text-xs font-black uppercase tracking-widest text-zinc-500 mb-3">Free</p>
-                            <div className="flex items-baseline gap-1 mb-2">
-                                <span className="text-5xl font-black">$0</span>
-                                <span className="text-zinc-500 font-bold">/ siempre</span>
-                            </div>
-                            <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-6">Para arrancar a ordenarte.</p>
-                            <ul className="space-y-3 mb-8">
-                                {[
-                                    'Cargá gastos manualmente',
-                                    'Presupuestos básicos',
-                                    'Hasta 3 meses de historial',
-                                    'Categorías ilimitadas',
-                                    'Dashboard + métricas',
-                                ].map((item, i) => (
-                                    <li key={i} className="flex items-center gap-2 text-sm">
-                                        <Check className="w-4 h-4 text-emerald-500 shrink-0" />
-                                        <span className="text-zinc-700 dark:text-zinc-300 font-medium">{item}</span>
-                                    </li>
-                                ))}
+                    <div className="space-y-6 text-base sm:text-lg text-zinc-700 dark:text-zinc-300 leading-relaxed">
+                        <p>
+                            Soy Agustín, vivo en Argentina y me cansé de terminar el mes preguntándome a
+                            dónde se fue la plata. Probé el clásico Excel, lo abandoné en menos de una
+                            semana. Bajé tres apps de finanzas — todas pagas, todas en inglés o español
+                            neutro, ninguna entendía que en este país el 80% de mis gastos pasan por
+                            Mercado Pago.
+                        </p>
+                        <p>
+                            Las apps grandes te piden cargar todo a mano. Las locales son tu banco mostrándote
+                            tu banco — ningún agregador. Y nadie te dice cuánto estás gastando en dólar blue
+                            o cómo te está pegando la inflación de este mes en serio.
+                        </p>
+                        <p>
+                            Así nació <strong>Vuelto</strong>: un proyecto personal para resolverme un
+                            problema mío. Lo armé yo, en mis tiempos libres. Ahora está acá compartido en
+                            internet porque sospecho que no soy el único al que le pasa, y quiero validarlo
+                            con gente real antes de meterle más tiempo.
+                        </p>
+
+                        <div className="rounded-2xl border-2 border-amber-400 bg-amber-50 dark:bg-amber-900/20 p-5 not-prose">
+                            <p className="text-sm font-bold text-amber-900 dark:text-amber-200 mb-2">
+                                ⚠ Esto es una beta privada, gratis, en validación
+                            </p>
+                            <ul className="text-sm text-amber-900/90 dark:text-amber-200/90 space-y-1.5 list-disc list-inside font-medium">
+                                <li><strong>No es un servicio financiero</strong>. No mueve plata, no presta, no invierte por vos.</li>
+                                <li><strong>No es asesoramiento</strong>. Cualquier número o gráfico que veas es informativo.</li>
+                                <li><strong>Puede tener bugs</strong>. Si encontrás uno, escribime — me ayudás un montón.</li>
+                                <li><strong>Hoy es gratis</strong>. Si en el futuro se vuelve pago, te aviso antes y siempre te llevás tus datos.</li>
                             </ul>
-                            <Link
-                                to="/register"
-                                onClick={() => analytics.landingCtaClicked('pricing_free')}
-                                className="block w-full text-center py-3 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-black rounded-xl hover:bg-zinc-700 dark:hover:bg-zinc-100 transition-colors active:scale-95"
-                            >
-                                Empezar gratis
-                            </Link>
                         </div>
 
-                        {/* Premium */}
-                        <div className="relative p-8 rounded-3xl bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-2xl shadow-emerald-500/30 overflow-hidden">
-                            {/* Decorative shapes */}
-                            <div className="absolute -top-8 -right-8 w-48 h-48 bg-white/10 rounded-full blur-2xl pointer-events-none" />
-                            <div className="absolute -bottom-12 -left-12 w-48 h-48 bg-emerald-300/20 rounded-full blur-2xl pointer-events-none" />
+                        <p>
+                            Si te interesa o si tenés feedback (lo que sea: "esto no se entiende", "me
+                            falta X", "esto está mal"), te leo. Es literalmente lo más valioso que podés
+                            darme en este momento.
+                        </p>
+                    </div>
 
-                            <div className="relative">
-                                <div className="flex items-center justify-between mb-3">
-                                    <p className="text-xs font-black uppercase tracking-widest opacity-80">Premium</p>
-                                    <span className="text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-md bg-white/20">
-                                        Recomendado
-                                    </span>
-                                </div>
-                                <div className="flex items-baseline gap-1 mb-2">
-                                    <span className="text-5xl font-black">$3</span>
-                                    <span className="opacity-80 font-bold">USD / mes</span>
-                                </div>
-                                <p className="text-sm opacity-90 mb-6">El precio de un café para entender en qué se te va la plata.</p>
-                                <ul className="space-y-3 mb-8">
-                                    {[
-                                        'Todo lo de Free, más:',
-                                        'Mercado Pago auto-sync ⭐',
-                                        'AI Insights semanales',
-                                        'Captura por voz',
-                                        'Historial ilimitado',
-                                        'Export a Excel / CSV',
-                                    ].map((item, i) => (
-                                        <li key={i} className="flex items-center gap-2 text-sm">
-                                            <Check className="w-4 h-4 shrink-0" strokeWidth={3} />
-                                            <span className={i === 0 ? 'opacity-80 italic' : 'font-medium'}>{item}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                                <Link
-                                    to="/register"
-                                    onClick={() => analytics.landingCtaClicked('pricing_premium')}
-                                    className="block w-full text-center py-3 bg-white text-emerald-600 font-black rounded-xl hover:bg-zinc-50 transition-colors active:scale-95"
-                                >
-                                    Empezar 14 días free
-                                </Link>
-                            </div>
-                        </div>
+                    <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <a
+                            href="mailto:agustinluna760@gmail.com?subject=Feedback%20de%20Vuelto"
+                            onClick={() => analytics.landingCtaClicked('about_feedback')}
+                            className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-black text-sm rounded-2xl shadow-lg shadow-emerald-500/20 transition-all active:scale-95"
+                        >
+                            <MessageSquare className="w-4 h-4" />
+                            Mandame tu feedback
+                        </a>
+                        <a
+                            href="https://www.linkedin.com/in/agustin-luna/"
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={() => analytics.landingCtaClicked('about_linkedin')}
+                            className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-black text-sm rounded-2xl hover:bg-zinc-700 dark:hover:bg-zinc-100 transition-colors active:scale-95"
+                        >
+                            <ArrowUpRight className="w-4 h-4" />
+                            Quién soy (LinkedIn)
+                        </a>
                     </div>
                 </div>
             </Section>
@@ -812,22 +804,30 @@ export function LandingPage() {
 
             {/* ───── FOOTER ───── */}
             <footer className="border-t border-zinc-200 dark:border-zinc-800 py-12">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap justify-center">
                             <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center">
                                 <Wallet className="w-3.5 h-3.5 text-white" />
                             </div>
                             <span className="font-black text-zinc-900 dark:text-white">Vuelto</span>
-                            <span className="text-xs text-zinc-400">· Hecho con 🧉 en Argentina</span>
+                            <span className="text-xs text-zinc-400">· Proyecto personal de Agustín Luna · Hecho con 🧉 en Argentina</span>
                         </div>
 
-                        <div className="flex items-center gap-6 text-sm font-bold text-zinc-500 dark:text-zinc-400">
+                        <div className="flex items-center gap-6 text-sm font-bold text-zinc-500 dark:text-zinc-400 flex-wrap justify-center">
                             <Link to="/login" className="hover:text-zinc-900 dark:hover:text-white transition-colors">Iniciar sesión</Link>
-                            <a href="mailto:hola@vuelto.app" className="hover:text-zinc-900 dark:hover:text-white transition-colors">Contacto</a>
-                            <a href="#features" className="hover:text-zinc-900 dark:hover:text-white transition-colors">Features</a>
+                            <a href="mailto:agustinluna760@gmail.com" className="hover:text-zinc-900 dark:hover:text-white transition-colors">Contacto</a>
+                            <Link to="/privacy" className="hover:text-zinc-900 dark:hover:text-white transition-colors">Privacidad</Link>
+                            <Link to="/terms" className="hover:text-zinc-900 dark:hover:text-white transition-colors">Términos</Link>
                         </div>
                     </div>
+
+                    <p className="text-[11px] text-zinc-400 dark:text-zinc-500 text-center max-w-3xl mx-auto leading-relaxed">
+                        Vuelto es un proyecto personal en beta privada, gratuito y sin fines comerciales por el momento.
+                        No es una entidad financiera ni está regulado por el BCRA, la CNV o la UIF. No mueve plata, no
+                        presta servicios bancarios y no constituye asesoramiento financiero. Los datos del usuario están
+                        protegidos según la Ley 25.326 de Protección de Datos Personales.
+                    </p>
                 </div>
             </footer>
         </div>

@@ -33,6 +33,8 @@ import { AcademyPage } from './pages/AcademyPage';
 import HelpPage from './pages/HelpPage';
 import { OnboardingPage } from './pages/OnboardingPage';
 import { LandingPage } from './pages/LandingPage';
+import { PrivacyPage } from './pages/PrivacyPage';
+import { TermsPage } from './pages/TermsPage';
 
 // Guard for unauthenticated users — redirects to /login
 function RequireAuth() {
@@ -77,6 +79,8 @@ function App() {
                 {/* Public routes */}
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
+                <Route path="/privacy" element={<PrivacyPage />} />
+                <Route path="/terms" element={<TermsPage />} />
 
                 {/* Onboarding — auth required, no sidebar */}
                 <Route element={<RequireAuth />}>

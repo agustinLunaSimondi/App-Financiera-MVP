@@ -114,7 +114,7 @@ function SidebarContent({ onMobileNavClick }) {
                         <span className="text-xl font-black text-zinc-900 dark:text-zinc-100 tracking-tighter">Vuelto</span>
                         <div className="flex items-center gap-1.5 mt-0.5">
                             <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Premium Plan</span>
+                            <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-widest">Beta privada</span>
                         </div>
                     </div>
                 </div>
@@ -252,6 +252,16 @@ export function Layout({ children }) {
                             className="p-4 md:p-6 lg:p-10 pb-28 lg:pb-10 max-w-[1400px] mx-auto w-full"
                         >
                             {children}
+
+                            {/* Mini footer legal — siempre visible al final del scroll */}
+                            <footer className="mt-12 pt-6 border-t border-zinc-200/60 dark:border-zinc-800/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-zinc-400 dark:text-zinc-500">
+                                <p>Vuelto · Beta privada · Proyecto personal de Agustín Luna · No es un servicio financiero</p>
+                                <div className="flex items-center gap-4 font-bold">
+                                    <NavLink to="/privacy" className="hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors">Privacidad</NavLink>
+                                    <NavLink to="/terms" className="hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors">Términos</NavLink>
+                                    <a href="mailto:agustinluna760@gmail.com" className="hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors">Contacto</a>
+                                </div>
+                            </footer>
                         </motion.div>
                     </AnimatePresence>
                 </div>
