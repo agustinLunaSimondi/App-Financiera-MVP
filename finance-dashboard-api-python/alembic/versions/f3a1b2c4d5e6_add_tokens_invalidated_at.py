@@ -18,11 +18,10 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.add_column(
-        'users',
-        sa.Column('tokens_invalidated_at', sa.DateTime(timezone=True), nullable=True),
-    )
+    # Idempotente: tolera que la columna ya exista (puede pasar si el version_num
+    # se desincronizó del código deployado, ver historial de incidente 2026-05-16).
+    op.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS tokens_invalidated_at TIMESTAMP WITH TIME ZONE")
 
 
 def downgrade() -> None:
-    op.drop_column('users', 'tokens_invalidated_at')
+    op.execute("ALTER TABLE users DROP COLUMN IF EXISTS tokens_invalidated_at")
