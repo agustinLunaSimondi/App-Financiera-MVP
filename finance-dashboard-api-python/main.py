@@ -1,6 +1,8 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi.errors import RateLimitExceeded
+from slowapi import _rate_limit_exceeded_handler
 from apscheduler.schedulers.background import BackgroundScheduler
 import uvicorn
 import os
@@ -22,6 +24,7 @@ from app.modules.recurring.recurring_processor import process_recurring_transact
 load_dotenv()
 
 from app.core import posthog_client  # noqa: E402 — must import after load_dotenv
+from app.core.rate_limit import limiter  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +48,10 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan
 )
+
+# Rate limiting global (ver app/core/rate_limit.py)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Configuración de CORS
 # Soporta múltiples URLs separadas por coma en FRONTEND_URL

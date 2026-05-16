@@ -2,7 +2,7 @@
 Endpoints de integración con Mercado Pago.
 OAuth flow + sincronización de pagos + saldo de cuenta.
 """
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta, timezone
 import logging
@@ -10,6 +10,7 @@ import logging
 from app.database import models
 from app.database.database import get_db
 from app.core.deps import get_current_user
+from app.core.rate_limit import limiter
 from app import schemas
 from app.modules.mercadopago import mp_service
 
@@ -28,7 +29,9 @@ def get_auth_url(current_user: models.User = Depends(get_current_user)):
 
 
 @router.post("/callback", response_model=schemas.MercadoPagoStatus)
+@limiter.limit("20/minute")
 async def handle_callback(
+    request: Request,
     callback_data: schemas.MercadoPagoCallback,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
@@ -154,7 +157,9 @@ async def get_balance(
 
 
 @router.post("/sync", response_model=schemas.MercadoPagoSyncResult)
+@limiter.limit("10/minute")
 async def sync_transactions(
+    request: Request,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):

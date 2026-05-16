@@ -4,6 +4,8 @@ from sqlalchemy.sql import func
 import enum
 import uuid
 
+from app.core.crypto import EncryptedString
+
 class Base(DeclarativeBase):
     pass
 
@@ -46,6 +48,8 @@ class User(Base):
     currency = Column(String, default="USD")
     dark_mode = Column(Boolean, default=False)
     onboarding_completed = Column(Boolean, default=False, nullable=False, server_default="false")
+    # JWTs emitidos antes de esta marca son rechazados (revocación granular: logout total, cambio de contraseña, etc.)
+    tokens_invalidated_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
 
@@ -168,8 +172,9 @@ class MercadoPagoConnection(Base):
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False)
-    access_token = Column(String, nullable=False)
-    refresh_token = Column(String, nullable=False)
+    # Encriptados at rest: el ORM ve plaintext, la DB ciphertext (ver app/core/crypto.py)
+    access_token = Column(EncryptedString, nullable=False)
+    refresh_token = Column(EncryptedString, nullable=False)
     mp_user_id = Column(String, nullable=True)
     expires_at = Column(DateTime(timezone=True), nullable=True)
     last_sync_at = Column(DateTime(timezone=True), nullable=True)

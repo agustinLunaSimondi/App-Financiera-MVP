@@ -10,6 +10,18 @@ services:
         sync: false
       - key: JWT_SECRET
         sync: false
+      # Clave Fernet para cifrar tokens OAuth de terceros (MP) en DB.
+      # Generar con: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+      - key: ENCRYPTION_KEY
+        sync: false
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "60"
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: POSTHOG_API_KEY
+        sync: false
+      - key: POSTHOG_HOST
+        sync: false
       - key: FRONTEND_URL
         sync: false
       - key: MP_CLIENT_ID

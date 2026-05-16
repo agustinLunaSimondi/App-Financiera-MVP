@@ -2,13 +2,24 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
 from typing import Optional, List
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
+from decimal import Decimal
+import logging
+import httpx
+
 from app.database import models
 from app.database.database import get_db
 from app.core.deps import get_current_user
 from app import schemas
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/analytics", tags=["analytics"])
+
+# Cache en memoria para datos macro externos (dólar blue, IPC).
+# TTL de 1h: estos números no cambian intra-hora y no queremos pegarle a APIs
+# públicas en cada request del dashboard.
+_macro_cache: dict = {"data": None, "expires_at": None}
+_MACRO_TTL_SECONDS = 3600
 
 @router.get("/kpis")
 def get_kpis(
@@ -93,3 +104,103 @@ def get_cashflow(
     ).group_by('month').order_by('month').all()
     
     return [{"month": r.month, "income": float(r.income), "expenses": float(r.expenses)} for r in results[-months:]]
+
+
+async def _fetch_macro_data() -> dict:
+    """
+    Obtiene cotización del dólar blue y última inflación mensual publicada.
+    Fuentes:
+      - bluelytics.com.ar  (dólar oficial + blue)
+      - argentinadatos.com (IPC histórico de INDEC, scrapeado)
+    Cacheado 1h en memoria. Si una fuente falla, devolvemos lo que tengamos.
+    """
+    result = {"usd_blue": None, "usd_oficial": None, "ipc_month_pct": None, "ipc_month": None, "last_updated": None}
+
+    async with httpx.AsyncClient(timeout=8.0) as client:
+        try:
+            r = await client.get("https://api.bluelytics.com.ar/v2/latest")
+            if r.status_code == 200:
+                data = r.json()
+                result["usd_blue"] = float(data["blue"]["value_sell"])
+                result["usd_oficial"] = float(data["oficial"]["value_sell"])
+                result["last_updated"] = data.get("last_update")
+        except Exception as e:
+            logger.warning(f"bluelytics falló: {e}")
+
+        try:
+            r = await client.get("https://api.argentinadatos.com/v1/finanzas/indices/inflacion")
+            if r.status_code == 200:
+                data = r.json()
+                if data:
+                    last = data[-1]
+                    result["ipc_month_pct"] = float(last.get("valor", 0))
+                    result["ipc_month"] = last.get("fecha")
+        except Exception as e:
+            logger.warning(f"argentinadatos IPC falló: {e}")
+
+    return result
+
+
+@router.get("/inflation-context")
+async def get_inflation_context(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """
+    Devuelve contexto macro AR + gastos del mes del usuario expresados en pesos y USD blue.
+    Diseñado para alimentar el panel "Tu plata con inflación real" del dashboard.
+    """
+    now = datetime.now(timezone.utc)
+    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0).date()
+
+    if (
+        _macro_cache["data"] is not None
+        and _macro_cache["expires_at"] is not None
+        and _macro_cache["expires_at"] > now
+    ):
+        macro = _macro_cache["data"]
+    else:
+        macro = await _fetch_macro_data()
+        _macro_cache["data"] = macro
+        _macro_cache["expires_at"] = now + timedelta(seconds=_MACRO_TTL_SECONDS)
+
+    expenses_month_q = db.query(func.sum(func.abs(models.Transaction.amount))).join(models.Account).filter(
+        models.Account.user_id == current_user.id,
+        models.Transaction.amount < 0,
+        models.Transaction.transaction_date >= month_start,
+    )
+    expenses_month = float(expenses_month_q.scalar() or 0)
+
+    last_month_start = (month_start - timedelta(days=1)).replace(day=1)
+    last_month_end = month_start - timedelta(days=1)
+    expenses_last_month_q = db.query(func.sum(func.abs(models.Transaction.amount))).join(models.Account).filter(
+        models.Account.user_id == current_user.id,
+        models.Transaction.amount < 0,
+        models.Transaction.transaction_date >= last_month_start,
+        models.Transaction.transaction_date <= last_month_end,
+    )
+    expenses_last_month = float(expenses_last_month_q.scalar() or 0)
+
+    usd_blue = macro.get("usd_blue")
+    ipc_pct = macro.get("ipc_month_pct")
+
+    expenses_month_usd = (expenses_month / usd_blue) if usd_blue else None
+
+    # Variación real = nominal − IPC del mes anterior (proxy si no tenemos IPC del mes actual aún)
+    real_variation_pct = None
+    if expenses_last_month > 0 and ipc_pct is not None:
+        nominal_pct = ((expenses_month - expenses_last_month) / expenses_last_month) * 100
+        real_variation_pct = nominal_pct - ipc_pct
+
+    return {
+        "month": month_start.isoformat(),
+        "expenses_month_ars": expenses_month,
+        "expenses_last_month_ars": expenses_last_month,
+        "expenses_month_usd": expenses_month_usd,
+        "usd_blue": usd_blue,
+        "usd_oficial": macro.get("usd_oficial"),
+        "ipc_last_month_pct": ipc_pct,
+        "ipc_month_ref": macro.get("ipc_month"),
+        "real_variation_pct": real_variation_pct,
+        "last_macro_update": macro.get("last_updated"),
+    }

@@ -11,6 +11,7 @@ import logging
 
 from app.database import models
 from app.database.database import get_db
+from app.core.rate_limit import limiter
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/waitlist", tags=["waitlist"])
@@ -28,9 +29,10 @@ class WaitlistResponse(BaseModel):
 
 
 @router.post("", response_model=WaitlistResponse)
+@limiter.limit("10/minute")
 def join_waitlist(
-    payload: WaitlistSignup,
     request: Request,
+    payload: WaitlistSignup,
     db: Session = Depends(get_db),
 ):
     """Agrega un email a la lista de espera. Idempotente."""
