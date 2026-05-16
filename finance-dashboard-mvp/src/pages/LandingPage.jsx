@@ -34,7 +34,7 @@ function Nav() {
                         <Wallet className="w-4 h-4 text-white" />
                     </div>
                     <span className="text-lg font-black tracking-tight text-zinc-900 dark:text-white">
-                        FinanzApp
+                        Vuelto
                     </span>
                 </Link>
 
@@ -146,7 +146,7 @@ function DashboardMockup() {
                         <div className="w-2 h-2 rounded-full bg-amber-400" />
                         <div className="w-2 h-2 rounded-full bg-emerald-400" />
                     </div>
-                    <span className="text-xs font-bold text-zinc-400">finanzapp.io/dashboard</span>
+                    <span className="text-xs font-bold text-zinc-400">vuelto.app/dashboard</span>
                     <div className="w-12" />
                 </div>
 
@@ -571,7 +571,7 @@ export function LandingPage() {
                                     <ArrowRight className="w-6 h-6 text-white" />
                                 </motion.div>
 
-                                {/* FinanzApp card */}
+                                {/* Vuelto card */}
                                 <motion.div
                                     initial={{ opacity: 0, x: 40 }}
                                     whileInView={{ opacity: 1, x: 0 }}
@@ -583,7 +583,7 @@ export function LandingPage() {
                                         <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center">
                                             <Wallet className="w-4 h-4 text-white" />
                                         </div>
-                                        <span className="text-sm font-black text-zinc-900 dark:text-white">FinanzApp</span>
+                                        <span className="text-sm font-black text-zinc-900 dark:text-white">Vuelto</span>
                                     </div>
                                     <div className="space-y-1.5">
                                         <div className="flex items-center gap-2 text-xs"><span>🍔</span><span className="text-zinc-500 flex-1">Comida</span><span className="font-bold">-$3.450</span></div>
@@ -818,13 +818,13 @@ export function LandingPage() {
                             <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center">
                                 <Wallet className="w-3.5 h-3.5 text-white" />
                             </div>
-                            <span className="font-black text-zinc-900 dark:text-white">FinanzApp</span>
+                            <span className="font-black text-zinc-900 dark:text-white">Vuelto</span>
                             <span className="text-xs text-zinc-400">· Hecho con 🧉 en Argentina</span>
                         </div>
 
                         <div className="flex items-center gap-6 text-sm font-bold text-zinc-500 dark:text-zinc-400">
                             <Link to="/login" className="hover:text-zinc-900 dark:hover:text-white transition-colors">Iniciar sesión</Link>
-                            <a href="mailto:hola@finanzapp.io" className="hover:text-zinc-900 dark:hover:text-white transition-colors">Contacto</a>
+                            <a href="mailto:hola@vuelto.app" className="hover:text-zinc-900 dark:hover:text-white transition-colors">Contacto</a>
                             <a href="#features" className="hover:text-zinc-900 dark:hover:text-white transition-colors">Features</a>
                         </div>
                     </div>

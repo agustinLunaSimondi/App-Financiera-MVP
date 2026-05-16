@@ -15,16 +15,19 @@ import { analytics, amountRange } from '../services/analytics';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     ArrowRight, Check, Sparkles, SkipForward,
-    Target, PiggyBank, Repeat, CreditCard, Loader2,
+    Target, PiggyBank, Repeat, CreditCard, Loader2, Zap,
 } from 'lucide-react';
 
+// Categorías que se muestran en el grid del primer gasto.
+// Adaptadas al consumo real argentino — coordinadas con las categorías default del backend.
 const CATEGORY_BUTTONS = [
-    { emoji: '🍔', label: 'Comida', name: 'Alimentación' },
-    { emoji: '🚗', label: 'Transporte', name: 'Transporte' },
-    { emoji: '🎮', label: 'Entrete.', name: 'Entretenimiento' },
-    { emoji: '🛍️', label: 'Compras', name: 'Compras' },
-    { emoji: '💡', label: 'Servicios', name: 'Servicios' },
-    { emoji: '💊', label: 'Salud', name: 'Salud' },
+    { emoji: '🥐', label: 'Kiosco', name: 'Almacén / Kiosco / Supermercado' },
+    { emoji: '🛵', label: 'Delivery', name: 'Delivery (Rappi / PedidosYa)' },
+    { emoji: '🚌', label: 'SUBE', name: 'SUBE / Transporte / Combustible' },
+    { emoji: '🚕', label: 'Apps', name: 'Apps (Uber / Cabify / Didi)' },
+    { emoji: '🏠', label: 'Alquiler', name: 'Alquiler / Expensas' },
+    { emoji: '💡', label: 'Servicios', name: 'Servicios (luz, gas, agua, internet)' },
+    { emoji: '🎬', label: 'Streaming', name: 'Streaming USD (Netflix, Spotify, etc.)' },
     { emoji: '📌', label: 'Otros', name: 'Otros Gastos' },
 ];
 
@@ -35,13 +38,15 @@ const FREQUENCIES = [
     { value: 'YEARLY', label: 'Anual' },
 ];
 
+// Nuevo orden: MercadoPago se ofrece como primer paso accionable, porque es
+// el diferenciador real (auto-import) y el "aha moment" que valida la app.
 const STEP_NAMES = {
     1: 'welcome',
-    2: 'expense',
-    3: 'budget',
-    4: 'savings',
-    5: 'recurring',
-    6: 'mercadopago',
+    2: 'mercadopago',
+    3: 'expense',
+    4: 'budget',
+    5: 'savings',
+    6: 'recurring',
     7: 'done',
 };
 const TOTAL_ACTION_STEPS = 5;
@@ -54,30 +59,30 @@ export function OnboardingPage() {
     const [step, setStep] = useState(1);
     const [submitting, setSubmitting] = useState(false);
 
-    // Paso 2: Primer gasto
+    // Paso 2: MP
+    const [mpRedirecting, setMpRedirecting] = useState(false);
+
+    // Paso 3: Primer gasto
     const [expenseAmount, setExpenseAmount] = useState('');
     const [expenseCategory, setExpenseCategory] = useState(null);
     const [expenseDescription, setExpenseDescription] = useState('');
     const [savedExpense, setSavedExpense] = useState(null);
 
-    // Paso 3: Presupuesto
+    // Paso 4: Presupuesto
     const [budgetAmount, setBudgetAmount] = useState('');
     const [budgetCategory, setBudgetCategory] = useState(null);
 
-    // Paso 4: Meta de ahorro
+    // Paso 5: Meta de ahorro
     const [goalName, setGoalName] = useState('');
     const [goalAmount, setGoalAmount] = useState('');
     const [goalDeadline, setGoalDeadline] = useState('');
 
-    // Paso 5: Recurrente
+    // Paso 6: Recurrente
     const [recurringType, setRecurringType] = useState('INCOME');
     const [recurringDescription, setRecurringDescription] = useState('');
     const [recurringAmount, setRecurringAmount] = useState('');
     const [recurringFrequency, setRecurringFrequency] = useState('MONTHLY');
     const [recurringCategoryId, setRecurringCategoryId] = useState(null);
-
-    // Paso 6: MP
-    const [mpRedirecting, setMpRedirecting] = useState(false);
 
     const firstName = user?.name?.split(' ')[0] || 'ahí';
 
@@ -110,7 +115,36 @@ export function OnboardingPage() {
     const trackStepCompleted = (s) => analytics.onboardingStepCompleted(STEP_NAMES[s]);
     const trackStepSkipped = (s) => analytics.onboardingStepSkipped(STEP_NAMES[s]);
 
-    // ─── Paso 2: Primer gasto ──────────────────────────────────────────────
+    // ─── Paso 2: MercadoPago ───────────────────────────────────────────────
+    const handleConnectMP = async () => {
+        setMpRedirecting(true);
+        analytics.mpConnectClicked();
+        // Marcamos onboarding completo ANTES de redirigir — el OAuth de MP
+        // saca al usuario de la app; cuando vuelve, debe entrar al dashboard
+        // con MP conectado y no quedar atrapado en el onboarding.
+        try {
+            await completeOnboarding();
+            analytics.onboardingCompleted();
+            updateUser({ onboardingCompleted: true });
+        } catch {
+            updateUser({ onboardingCompleted: true });
+        }
+        trackStepCompleted(2);
+
+        try {
+            const t = getToken();
+            if (t) sessionStorage.setItem('mp_oauth_token_backup', t);
+        } catch { /* noop */ }
+
+        try {
+            const authUrl = await getMercadoPagoAuthUrl();
+            window.location.href = authUrl;
+        } catch {
+            navigate('/integrations', { replace: true });
+        }
+    };
+
+    // ─── Paso 3: Primer gasto ──────────────────────────────────────────────
     const handleExpenseSubmit = async (e) => {
         e.preventDefault();
         if (!expenseAmount || !expenseCategory) return;
@@ -130,22 +164,21 @@ export function OnboardingPage() {
                 });
                 analytics.expenseAdded(expenseCategory.name, amountRange(parsed));
                 setSavedExpense({ amount: parsed, category: expenseCategory });
-                // Pre-cargamos la categoría del primer gasto en el paso de presupuesto
                 if (!budgetCategory) setBudgetCategory(expenseCategory);
             } else {
                 setSavedExpense({ amount: parseFloat(expenseAmount) || 0, category: expenseCategory });
             }
-            trackStepCompleted(2);
-            setStep(3);
+            trackStepCompleted(3);
+            setStep(4);
         } catch {
             setSavedExpense({ amount: parseFloat(expenseAmount) || 0, category: expenseCategory });
-            setStep(3);
+            setStep(4);
         } finally {
             setSubmitting(false);
         }
     };
 
-    // ─── Paso 3: Presupuesto ───────────────────────────────────────────────
+    // ─── Paso 4: Presupuesto ───────────────────────────────────────────────
     const handleBudgetSubmit = async (e) => {
         e.preventDefault();
         if (!budgetAmount || !budgetCategory) return;
@@ -162,16 +195,16 @@ export function OnboardingPage() {
                 });
                 analytics.budgetAdded('onboarding', amountRange(parsed));
             }
-            trackStepCompleted(3);
-            setStep(4);
+            trackStepCompleted(4);
+            setStep(5);
         } catch {
-            setStep(4);
+            setStep(5);
         } finally {
             setSubmitting(false);
         }
     };
 
-    // ─── Paso 4: Meta de ahorro ────────────────────────────────────────────
+    // ─── Paso 5: Meta de ahorro ────────────────────────────────────────────
     const handleGoalSubmit = async (e) => {
         e.preventDefault();
         if (!goalName.trim() || !goalAmount) return;
@@ -185,16 +218,16 @@ export function OnboardingPage() {
                 deadline: goalDeadline || null,
             });
             analytics.savingsGoalCreated('onboarding', amountRange(parsed));
-            trackStepCompleted(4);
-            setStep(5);
+            trackStepCompleted(5);
+            setStep(6);
         } catch {
-            setStep(5);
+            setStep(6);
         } finally {
             setSubmitting(false);
         }
     };
 
-    // ─── Paso 5: Recurrente ────────────────────────────────────────────────
+    // ─── Paso 6: Recurrente ────────────────────────────────────────────────
     const handleRecurringSubmit = async (e) => {
         e.preventDefault();
         if (!recurringDescription.trim() || !recurringAmount) return;
@@ -218,42 +251,12 @@ export function OnboardingPage() {
                 });
                 analytics.recurringCreated('onboarding', recurringType.toLowerCase(), amountRange(parsed));
             }
-            trackStepCompleted(5);
-            setStep(6);
+            trackStepCompleted(6);
+            setStep(7);
         } catch {
-            setStep(6);
+            setStep(7);
         } finally {
             setSubmitting(false);
-        }
-    };
-
-    // ─── Paso 6: MercadoPago ───────────────────────────────────────────────
-    const handleConnectMP = async () => {
-        setMpRedirecting(true);
-        analytics.mpConnectClicked();
-        // Marcamos el onboarding como completado ANTES de redirigir.
-        // Si el usuario vuelve del OAuth (success o cancel), no se queda atascado.
-        try {
-            await completeOnboarding();
-            analytics.onboardingCompleted();
-            updateUser({ onboardingCompleted: true });
-        } catch {
-            updateUser({ onboardingCompleted: true });
-        }
-        trackStepCompleted(6);
-
-        // Guardar token como respaldo (mismo patrón que IntegrationsPage)
-        try {
-            const t = getToken();
-            if (t) sessionStorage.setItem('mp_oauth_token_backup', t);
-        } catch { /* noop */ }
-
-        try {
-            const authUrl = await getMercadoPagoAuthUrl();
-            window.location.href = authUrl;
-        } catch {
-            // Si falla la URL, llevamos al usuario a /integrations para que reintente
-            navigate('/integrations', { replace: true });
         }
     };
 
@@ -262,7 +265,6 @@ export function OnboardingPage() {
         setStep(nextStep);
     };
 
-    // Refresca datos al llegar al paso final
     React.useEffect(() => {
         if (step === 7) {
             refreshData?.();
@@ -271,7 +273,6 @@ export function OnboardingPage() {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-zinc-50 to-zinc-100 dark:from-zinc-950 dark:to-zinc-900 flex items-center justify-center p-4">
-            {/* Progress bar */}
             <div className="fixed top-0 left-0 right-0 h-1 bg-zinc-200 dark:bg-zinc-800 z-50">
                 <motion.div
                     className="h-full bg-emerald-500"
@@ -295,12 +296,12 @@ export function OnboardingPage() {
                                         Hola, {firstName} 👋
                                     </h1>
                                     <p className="text-zinc-500 dark:text-zinc-400 font-medium text-lg leading-relaxed">
-                                        Bienvenido a tu asistente financiero.
+                                        Bienvenido a Vuelto.
                                     </p>
                                     <p className="text-zinc-400 dark:text-zinc-500 text-sm leading-relaxed max-w-xs mx-auto">
-                                        En los próximos 3 minutos vamos a dejar tu cuenta lista:
-                                        primer gasto, presupuesto, meta de ahorro, gastos fijos y MercadoPago.
-                                        Podés omitir lo que quieras.
+                                        En 3 minutos dejamos tu cuenta lista: conectás MercadoPago,
+                                        cargás tu primer gasto y armás un presupuesto y una meta.
+                                        Podés omitir cualquier paso.
                                     </p>
                                 </div>
 
@@ -317,9 +318,64 @@ export function OnboardingPage() {
                         </StepWrapper>
                     )}
 
-                    {/* ─── Paso 2: Primer gasto ────────────────────────── */}
+                    {/* ─── Paso 2: MercadoPago (primer paso accionable) ──── */}
                     {step === 2 && (
                         <StepWrapper key="step2">
+                            <div className="space-y-6">
+                                <StepHeader
+                                    icon={<CreditCard className="w-6 h-6 text-[#00AAFF]" />}
+                                    iconBg="bg-[#00AAFF]/10"
+                                    title="Conectá tu MercadoPago"
+                                    subtitle="El paso que te ahorra cargar cada gasto a mano"
+                                />
+
+                                <div className="bg-gradient-to-br from-[#00AAFF]/5 to-emerald-500/5 border border-[#00AAFF]/20 rounded-2xl p-4 space-y-2.5">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <Zap className="w-4 h-4 text-emerald-500" />
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
+                                            Lo más valioso de Vuelto
+                                        </span>
+                                    </div>
+                                    {[
+                                        'Importamos tus últimos 90 días automáticamente',
+                                        'Distinguimos cobros vs. pagos por vos',
+                                        'Sincronizás de nuevo cuando quieras, sin recargar todo',
+                                        'Vas a ver tus gastos reales antes de terminar el onboarding',
+                                    ].map((feature, i) => (
+                                        <div key={i} className="flex items-start gap-2.5 text-xs text-zinc-700 dark:text-zinc-300 font-medium">
+                                            <Check className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                                            {feature}
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={handleConnectMP}
+                                    disabled={mpRedirecting}
+                                    className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-[#00AAFF] hover:bg-[#0099EE] disabled:opacity-60 text-white rounded-2xl font-black text-sm shadow-xl shadow-[#00AAFF]/20 transition-all active:scale-95 group"
+                                >
+                                    {mpRedirecting ? (
+                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                    ) : (
+                                        <CreditCard className="w-5 h-5" />
+                                    )}
+                                    {mpRedirecting ? 'Redirigiendo...' : 'Conectar Mercado Pago'}
+                                    {!mpRedirecting && <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />}
+                                </button>
+
+                                <SkipButton
+                                    onClick={() => handleSkipStep(2, 3)}
+                                    label="Cargar a mano por ahora"
+                                />
+                                <StepLabel step={2} />
+                            </div>
+                        </StepWrapper>
+                    )}
+
+                    {/* ─── Paso 3: Primer gasto ────────────────────────── */}
+                    {step === 3 && (
+                        <StepWrapper key="step3">
                             <form onSubmit={handleExpenseSubmit} className="space-y-6">
                                 <StepHeader
                                     icon={<Sparkles className="w-6 h-6 text-emerald-500" />}
@@ -339,7 +395,7 @@ export function OnboardingPage() {
                                     type="text"
                                     value={expenseDescription}
                                     onChange={e => setExpenseDescription(e.target.value)}
-                                    placeholder="Descripción (opcional) — ej: almuerzo en el trabajo"
+                                    placeholder="Descripción (opcional) — ej: dos medialunas en el laburo"
                                     className="w-full px-4 py-3 text-sm text-zinc-900 dark:text-white bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:border-emerald-500 transition-colors placeholder:text-zinc-400"
                                 />
 
@@ -349,15 +405,15 @@ export function OnboardingPage() {
                                     label="Guardar mi primer gasto"
                                 />
 
-                                <SkipButton onClick={() => handleSkipStep(2, 3)} label="Omitir este paso" />
-                                <StepLabel step={2} />
+                                <SkipButton onClick={() => handleSkipStep(3, 4)} label="Omitir este paso" />
+                                <StepLabel step={3} />
                             </form>
                         </StepWrapper>
                     )}
 
-                    {/* ─── Paso 3: Presupuesto ─────────────────────────── */}
-                    {step === 3 && (
-                        <StepWrapper key="step3">
+                    {/* ─── Paso 4: Presupuesto ─────────────────────────── */}
+                    {step === 4 && (
+                        <StepWrapper key="step4">
                             <form onSubmit={handleBudgetSubmit} className="space-y-6">
                                 <StepHeader
                                     icon={<Target className="w-6 h-6 text-sky-500" />}
@@ -382,15 +438,15 @@ export function OnboardingPage() {
                                     label="Crear presupuesto"
                                 />
 
-                                <SkipButton onClick={() => handleSkipStep(3, 4)} label="Omitir por ahora" />
-                                <StepLabel step={3} />
+                                <SkipButton onClick={() => handleSkipStep(4, 5)} label="Omitir por ahora" />
+                                <StepLabel step={4} />
                             </form>
                         </StepWrapper>
                     )}
 
-                    {/* ─── Paso 4: Meta de ahorro ──────────────────────── */}
-                    {step === 4 && (
-                        <StepWrapper key="step4">
+                    {/* ─── Paso 5: Meta de ahorro ──────────────────────── */}
+                    {step === 5 && (
+                        <StepWrapper key="step5">
                             <form onSubmit={handleGoalSubmit} className="space-y-6">
                                 <StepHeader
                                     icon={<PiggyBank className="w-6 h-6 text-amber-500" />}
@@ -403,7 +459,7 @@ export function OnboardingPage() {
                                     type="text"
                                     value={goalName}
                                     onChange={e => setGoalName(e.target.value)}
-                                    placeholder="Ej: Vacaciones, notebook, viaje a Europa..."
+                                    placeholder="Ej: vacaciones, notebook, dejar de vivir al límite..."
                                     autoFocus
                                     className="w-full px-4 py-4 text-base font-bold text-zinc-900 dark:text-white bg-white dark:bg-zinc-800 border-2 border-zinc-200 dark:border-zinc-700 rounded-2xl focus:outline-none focus:border-amber-500 transition-colors placeholder:text-zinc-400 placeholder:font-medium"
                                 />
@@ -431,24 +487,23 @@ export function OnboardingPage() {
                                     color="amber"
                                 />
 
-                                <SkipButton onClick={() => handleSkipStep(4, 5)} label="Omitir por ahora" />
-                                <StepLabel step={4} />
+                                <SkipButton onClick={() => handleSkipStep(5, 6)} label="Omitir por ahora" />
+                                <StepLabel step={5} />
                             </form>
                         </StepWrapper>
                     )}
 
-                    {/* ─── Paso 5: Recurrente ──────────────────────────── */}
-                    {step === 5 && (
-                        <StepWrapper key="step5">
+                    {/* ─── Paso 6: Recurrente ──────────────────────────── */}
+                    {step === 6 && (
+                        <StepWrapper key="step6">
                             <form onSubmit={handleRecurringSubmit} className="space-y-6">
                                 <StepHeader
                                     icon={<Repeat className="w-6 h-6 text-violet-500" />}
                                     iconBg="bg-violet-500/10"
                                     title="Cargá un ingreso o gasto fijo"
-                                    subtitle="Sueldo, alquiler, suscripciones... lo que se repite cada mes"
+                                    subtitle="Sueldo, alquiler, Netflix... lo que se repite cada mes"
                                 />
 
-                                {/* Tipo: ingreso / gasto */}
                                 <div className="grid grid-cols-2 gap-2 p-1 bg-zinc-100 dark:bg-zinc-800 rounded-2xl">
                                     {[
                                         { value: 'INCOME', label: '💰 Ingreso' },
@@ -476,7 +531,7 @@ export function OnboardingPage() {
                                     type="text"
                                     value={recurringDescription}
                                     onChange={e => setRecurringDescription(e.target.value)}
-                                    placeholder={recurringType === 'INCOME' ? 'Ej: Sueldo, freelance...' : 'Ej: Alquiler, Netflix, gimnasio...'}
+                                    placeholder={recurringType === 'INCOME' ? 'Ej: sueldo, freelance, monotributo...' : 'Ej: alquiler, Netflix, gimnasio...'}
                                     autoFocus
                                     className="w-full px-4 py-3.5 text-base font-bold text-zinc-900 dark:text-white bg-white dark:bg-zinc-800 border-2 border-zinc-200 dark:border-zinc-700 rounded-2xl focus:outline-none focus:border-violet-500 transition-colors placeholder:text-zinc-400 placeholder:font-medium"
                                 />
@@ -510,60 +565,9 @@ export function OnboardingPage() {
                                     color="violet"
                                 />
 
-                                <SkipButton onClick={() => handleSkipStep(5, 6)} label="Omitir por ahora" />
-                                <StepLabel step={5} />
-                            </form>
-                        </StepWrapper>
-                    )}
-
-                    {/* ─── Paso 6: MercadoPago ─────────────────────────── */}
-                    {step === 6 && (
-                        <StepWrapper key="step6">
-                            <div className="space-y-6">
-                                <StepHeader
-                                    icon={<CreditCard className="w-6 h-6 text-[#00AAFF]" />}
-                                    iconBg="bg-[#00AAFF]/10"
-                                    title="Conectá tu MercadoPago"
-                                    subtitle="Importá automáticamente tus últimos 90 días de movimientos"
-                                />
-
-                                <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl p-4 space-y-2.5">
-                                    {[
-                                        'Tus cobros y pagos al instante en el dashboard',
-                                        'Categorización automática',
-                                        'Sincronización on-demand cuando quieras',
-                                    ].map((feature, i) => (
-                                        <div key={i} className="flex items-center gap-2.5 text-xs text-zinc-600 dark:text-zinc-300 font-medium">
-                                            <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                                            {feature}
-                                        </div>
-                                    ))}
-                                </div>
-
-                                <button
-                                    type="button"
-                                    onClick={handleConnectMP}
-                                    disabled={mpRedirecting}
-                                    className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-[#00AAFF] hover:bg-[#0099EE] disabled:opacity-60 text-white rounded-2xl font-black text-sm shadow-xl shadow-[#00AAFF]/20 transition-all active:scale-95 group"
-                                >
-                                    {mpRedirecting ? (
-                                        <Loader2 className="w-5 h-5 animate-spin" />
-                                    ) : (
-                                        <CreditCard className="w-5 h-5" />
-                                    )}
-                                    {mpRedirecting ? 'Redirigiendo...' : 'Conectar Mercado Pago'}
-                                    {!mpRedirecting && <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />}
-                                </button>
-
-                                <SkipButton
-                                    onClick={() => {
-                                        trackStepSkipped(6);
-                                        setStep(7);
-                                    }}
-                                    label="Conectar después"
-                                />
+                                <SkipButton onClick={() => handleSkipStep(6, 7)} label="Omitir por ahora" />
                                 <StepLabel step={6} />
-                            </div>
+                            </form>
                         </StepWrapper>
                     )}
 
@@ -585,7 +589,7 @@ export function OnboardingPage() {
                                         ¡Cuenta lista, {firstName}!
                                     </h2>
                                     <p className="text-zinc-500 dark:text-zinc-400 font-medium">
-                                        Tu asistente financiero está listo para usar.
+                                        Vuelto está listo para mostrarte a dónde se te va la plata.
                                     </p>
 
                                     {savedExpense && (
@@ -601,7 +605,7 @@ export function OnboardingPage() {
                                 <div className="bg-zinc-100 dark:bg-zinc-800 rounded-2xl p-4 text-left space-y-2">
                                     <p className="text-sm font-bold text-zinc-700 dark:text-zinc-300">¿Y ahora?</p>
                                     <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                                        Seguí registrando tus gastos esta semana. En 7 días vas a ver tus primeros patrones de gasto y cuánto ahorrás.
+                                        Cargá tus gastos esta semana. En 7 días ves tus primeros patrones reales y cuánto te queda con la inflación de este mes.
                                     </p>
                                 </div>
 

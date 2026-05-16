@@ -111,7 +111,7 @@ function SidebarContent({ onMobileNavClick }) {
                         <Wallet className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                        <span className="text-xl font-black text-zinc-900 dark:text-zinc-100 tracking-tighter">FinanzApp</span>
+                        <span className="text-xl font-black text-zinc-900 dark:text-zinc-100 tracking-tighter">Vuelto</span>
                         <div className="flex items-center gap-1.5 mt-0.5">
                             <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
                             <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Premium Plan</span>
@@ -230,7 +230,7 @@ export function Layout({ children }) {
                         <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center">
                             <Wallet className="w-5 h-5 text-white" />
                         </div>
-                        <span className="text-lg font-black tracking-tighter">FinanzApp</span>
+                        <span className="text-lg font-black tracking-tighter">Vuelto</span>
                     </div>
                     <div className="flex items-center gap-2">
                         <DarkModeToggle isDark={isDark} onToggle={handleToggleDark} compact />

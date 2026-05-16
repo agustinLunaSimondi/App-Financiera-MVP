@@ -12,9 +12,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
       manifest: {
-        name: 'FinanzApp MVP',
-        short_name: 'FinanzApp',
-        description: 'Tu asistente financiero personal',
+        name: 'Vuelto — Tu plata, en serio',
+        short_name: 'Vuelto',
+        description: 'Finanzas personales para argentinos. MercadoPago + dólar blue + AI en castellano.',
         theme_color: '#10b981',
         icons: [
           {

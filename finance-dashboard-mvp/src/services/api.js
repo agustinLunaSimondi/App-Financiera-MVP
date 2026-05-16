@@ -299,3 +299,10 @@ export const disconnectMercadoPago = async () => {
     await client.delete('/mercadopago/disconnect');
     return true;
 };
+
+// ============= INFLATION / MACRO CONTEXT =============
+
+export const getInflationContext = async () => {
+    const res = await client.get('/analytics/inflation-context');
+    return res.data;
+};

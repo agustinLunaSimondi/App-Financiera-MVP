@@ -67,7 +67,7 @@ export const tutorials = {
             {
                 type: 'text',
                 title: 'Categorización Automática',
-                text: 'FinanzApp intenta categorizar tus gastos automáticamente basándose en tus registros anteriores.'
+                text: 'Vuelto intenta categorizar tus gastos automáticamente basándose en tus registros anteriores.'
             },
             {
                 type: 'text',

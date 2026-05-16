@@ -40,16 +40,33 @@ La inflación hace esto crítico: en Argentina, saber exactamente a dónde va ca
 
 ## Competencia real
 
+Separamos en dos cuadros: **bancos/fintechs argentinos** (los competidores estructurales que pelean por la misma cabeza del usuario) y **apps de presupuesto internacionales** (las que el usuario probó y dejó).
+
+### Bancos y fintechs locales (los enemigos reales)
+
 | Competidor | Fortaleza | Debilidad para nuestro usuario |
 |---|---|---|
-| YNAB | Metodología sólida, community | $15/mes, inglés, sin MP, sobre-complicado |
+| Ualá | App bancaria propia + tarjeta + inversión. Movimientos sin OAuth de terceros. | Solo ve lo de Ualá — no agrega MP, efectivo, otras tarjetas. Tampoco hace presupuesto serio. |
+| Brubank | Banco digital con UX moderna, KYC hecho, marca instalada. | Mismo techo: solo ve sus propios movimientos, sin agregación. |
+| Naranja X | Marca masiva, crédito embebido, base instalada en interior. | UX rígida orientada a crédito, no a tracking ni presupuesto. |
+| MODO | Hub de bancos AR, push notif de gastos. | No persiste historial usable ni categoriza con AI. Es transaccional, no analítico. |
+| Belo / Lemon | Cripto + pesos + tarjeta, audiencia joven igual a la nuestra. | Sin tracking de gastos, sin presupuesto, sin meta de ahorro. |
+| Mercado Pago (app oficial) | Tiene los datos directamente. | No es app de presupuesto: muestra movimientos, no insights, ni mezcla con efectivo u otras cuentas. |
+
+### Apps de presupuesto (las que el usuario probó y dejó)
+
+| Competidor | Fortaleza | Debilidad para nuestro usuario |
+|---|---|---|
+| YNAB | Metodología sólida, community fuerte | $15 USD/mes, inglés, sin MP, sobre-complicado |
+| Fintonic (España) | Agregador bancario real (PSD2), AI, alertas. **El más parecido a nuestra visión.** | No está en Argentina, no integra MP-AR |
+| Mobills (Brasil) | Popular en BR, presupuesto + import bancario | Foco BR, español neutro, sin MP-AR ni contexto inflación |
 | Fintual | Fuerte en inversiones | No trackea gastos del día a día |
 | Money Manager | Completo | UX de 2015, sin AI, sin MP |
 | Spendee | UX linda | No integra MP, euro-centrado |
 | Excel propio | Gratis | Fricción altísima, se abandona en días |
 | Wallet by BudgetBakers | Completo | Sin MP, sin AI, sin español arg |
 
-**Conclusión:** Nadie tiene las tres cosas juntas: integración MP + AI + contexto argentino.
+**Conclusión:** Los bancos y fintechs locales tienen los datos de ellos mismos pero no agregan ni analizan. Las apps internacionales agregan y analizan pero no entienden Argentina (MP, dólar blue, IPC, monotributo, SUBE). El espacio entre los dos cuadros es donde vivimos: **agregación local + análisis contextualizado**. Nadie tiene las cuatro cosas juntas: integración MP + AI en castellano rioplatense + contexto inflación/dólar + UX moderna.
 
 ---
 
