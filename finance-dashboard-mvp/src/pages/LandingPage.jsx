@@ -2,10 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useScroll, useTransform, useInView, AnimatePresence } from 'framer-motion';
 import {
-    ArrowRight, Check, Sparkles, Zap, Brain, Mic, PieChart,
+    ArrowRight, Check, Sparkles, Zap, PieChart,
     CreditCard, Bell, Lock, TrendingUp, TrendingDown, Wallet,
-    Github, Twitter, Star, ArrowUpRight, ArrowDownRight, Shield,
-    BarChart3, Bot, MessageSquare,
+    Star, ArrowUpRight, ArrowDownRight, Shield,
+    BarChart3, MessageSquare, RefreshCw, Bot,
 } from 'lucide-react';
 import { joinWaitlist, getWaitlistCount } from '../services/api';
 import { analytics } from '../services/analytics';
@@ -191,20 +191,20 @@ function DashboardMockup() {
                         </motion.div>
                     </div>
 
-                    {/* AI Insight card */}
+                    {/* Recurring summary card */}
                     <motion.div
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 1.05 }}
-                        className="p-4 rounded-2xl bg-gradient-to-r from-purple-500/10 via-sky-500/10 to-emerald-500/10 border border-purple-500/20 flex items-start gap-3"
+                        className="p-4 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-sky-500/10 to-emerald-500/5 border border-emerald-500/20 flex items-start gap-3"
                     >
-                        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-purple-500 to-sky-500 flex items-center justify-center shrink-0 shadow-lg shadow-purple-500/30">
-                            <Bot className="w-4 h-4 text-white" />
+                        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-500 to-sky-500 flex items-center justify-center shrink-0 shadow-lg shadow-emerald-500/30">
+                            <RefreshCw className="w-4 h-4 text-white" />
                         </div>
                         <div className="flex-1 min-w-0">
-                            <p className="text-[10px] uppercase font-black tracking-widest text-purple-600 dark:text-purple-400 mb-1">AI · Esta semana</p>
+                            <p className="text-[10px] uppercase font-black tracking-widest text-emerald-600 dark:text-emerald-400 mb-1">Recurrentes · Este mes</p>
                             <p className="text-xs font-bold text-zinc-700 dark:text-zinc-200 leading-relaxed">
-                                Gastaste 38% más en delivery que la semana pasada. Si cocinás 2 veces más, ahorrás ~$24k al mes.
+                                3 gastos fijos registrados automáticamente. Alquiler, Netflix y Spotify — $84.200 en total.
                             </p>
                         </div>
                     </motion.div>
@@ -342,7 +342,7 @@ export function LandingPage() {
                         >
                             <span className="text-base">🇦🇷</span>
                             <span className="text-xs font-black tracking-wider text-zinc-700 dark:text-zinc-300">
-                                HECHO EN ARGENTINA · POTENCIADO CON IA
+                                HECHO EN ARGENTINA · PARA ARGENTINOS
                             </span>
                         </motion.div>
 
@@ -370,7 +370,7 @@ export function LandingPage() {
                             className="text-lg sm:text-xl text-zinc-600 dark:text-zinc-400 max-w-2xl mx-auto mb-10 leading-relaxed font-medium"
                         >
                             Conectá tu Mercado Pago, mirá adónde se va tu sueldo en tiempo real,
-                            y dejá que la IA te diga cómo gastar mejor.
+                            y tenés tu plata organizada sin levantar un dedo.
                         </motion.p>
 
                         {/* CTA Form */}
@@ -435,7 +435,7 @@ export function LandingPage() {
                             { value: '$0', label: 'Para empezar' },
                             { value: '30s', label: 'Setup completo' },
                             { value: '90 días', label: 'De historial al conectar MP' },
-                            { value: 'IA', label: 'En español argentino' },
+                            { value: 'IPC', label: 'Inflación contemplada' },
                         ].map((stat, i) => (
                             <div key={i} className="text-center">
                                 <p className="text-3xl sm:text-4xl font-black tracking-tight bg-gradient-to-br from-zinc-900 to-zinc-600 dark:from-white dark:to-zinc-400 bg-clip-text text-transparent">
@@ -513,7 +513,7 @@ export function LandingPage() {
                             </h2>
                             <p className="text-lg text-zinc-600 dark:text-zinc-400 leading-relaxed mb-8 font-medium">
                                 Importamos automáticamente todos tus cobros y pagos de Mercado Pago.
-                                Categorizamos cada operación. Y aprendemos cómo gastás para ayudarte a gastar mejor.
+                                Organizamos cada operación por categoría y te mostramos el panorama completo de tu plata.
                             </p>
 
                             <ul className="space-y-4 mb-8">
@@ -620,10 +620,10 @@ export function LandingPage() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                         {[
                             { icon: CreditCard, color: '#00AAFF', title: 'MP auto-sync', body: 'Importación automática cada 24h. Cobros, pagos, transferencias.' },
-                            { icon: Bot, color: '#a855f7', title: 'AI Insights semanales', body: 'Cada lunes te llega un análisis con 3 acciones concretas para ahorrar.' },
-                            { icon: Mic, color: '#ec4899', title: 'Carga por voz', body: '"Gasté 800 en el almuerzo" → guardado. En español rioplatense.', soon: true },
+                            { icon: TrendingDown, color: '#f59e0b', title: 'Panel de inflación', body: 'Mirá cómo el IPC y el dólar blue impactan tu poder de compra mes a mes.' },
+                            { icon: RefreshCw, color: '#ec4899', title: 'Recurrentes automáticas', body: 'El alquiler, las suscripciones y el sueldo se registran solos cada período.' },
                             { icon: PieChart, color: '#10b981', title: 'Presupuestos vivos', body: 'Te avisamos al 80% del límite. Antes de que sea tarde.' },
-                            { icon: BarChart3, color: '#f59e0b', title: 'Categorización con IA', body: '"PEDIDOSYA*123" se categoriza como Comida sin que toques nada.' },
+                            { icon: Bot, color: '#a855f7', title: 'AI Insights', body: 'Análisis de tus patrones de gasto con recomendaciones concretas para ahorrar.', soon: true },
                             { icon: Lock, color: '#3b82f6', title: 'Tu plata, segura', body: 'OAuth real, solo lectura. Nunca pedimos contraseñas.' },
                         ].map((f, i) => (
                             <motion.div
@@ -667,7 +667,7 @@ export function LandingPage() {
                         {[
                             { n: '01', title: 'Te registrás', body: 'Email + contraseña, o Google. 30 segundos.', emoji: '🚀' },
                             { n: '02', title: 'Conectás tu MP', body: 'Un click. OAuth oficial. Nunca pedimos tu contraseña de MP.', emoji: '🔗' },
-                            { n: '03', title: 'La app hace el resto', body: 'Importa, categoriza, analiza. Cada semana te llegan insights con IA.', emoji: '🤖' },
+                            { n: '03', title: 'La app hace el resto', body: 'Importa, organiza y analiza todo. Vos solo mirás el dashboard.', emoji: '📊' },
                         ].map((step, i) => (
                             <motion.div
                                 key={i}
