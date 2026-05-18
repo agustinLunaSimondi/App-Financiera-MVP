@@ -752,7 +752,7 @@ export function LandingPage() {
                             Mandame tu feedback
                         </a>
                         <a
-                            href="https://www.linkedin.com/in/agustin-luna/"
+                            href="https://www.linkedin.com/in/agustin-luna-100a4a260"
                             target="_blank"
                             rel="noreferrer"
                             onClick={() => analytics.landingCtaClicked('about_linkedin')}
