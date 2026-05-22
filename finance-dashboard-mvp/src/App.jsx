@@ -35,6 +35,7 @@ import { OnboardingPage } from './pages/OnboardingPage';
 import { LandingPage } from './pages/LandingPage';
 import { PrivacyPage } from './pages/PrivacyPage';
 import { TermsPage } from './pages/TermsPage';
+import { ChatPage } from './pages/ChatPage';
 
 // Guard for unauthenticated users — redirects to /login
 function RequireAuth() {
@@ -99,6 +100,7 @@ function App() {
                   {/* Alias para el redirect de OAuth de Mercado Pago */}
                   <Route path="/integrations/mercadopago/callback" element={<IntegrationsPage />} />
                   <Route path="/academy" element={<AcademyPage />} />
+                  <Route path="/chat" element={<ChatPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
                   <Route path="/help" element={<HelpPage />} />
                 </Route>

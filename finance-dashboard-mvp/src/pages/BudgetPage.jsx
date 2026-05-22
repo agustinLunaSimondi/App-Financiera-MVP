@@ -1,12 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { toast } from 'sonner';
 import { useFinance } from '../hooks/useFinance';
 import { formatCompactCurrency } from '../utils/formatters';
+import { parseApiError } from '../lib/apiErrors';
 
 import { Card } from '../features/common/components/Card';
 import { Modal } from '../features/common/components/Modal';
+import { ConfirmDeleteModal } from '../features/common/components/ConfirmDeleteModal';
+import { EmptyState } from '../features/common/components/EmptyState';
+import { PageHeader } from '../features/common/components/PageHeader';
 import { BudgetForm } from '../features/budgets/components/BudgetForm';
-import { Plus, AlertCircle, Trash2, PieChart, Edit2, TrendingUp, AlertTriangle } from 'lucide-react';
+import { Plus, AlertCircle, Trash2, PieChart, Edit2, TrendingUp } from 'lucide-react';
+import { BTN_PRIMARY } from '../lib/formClasses';
 import { groupTransactionsByCategory, calculateBudgetUsage } from '../utils/calculations';
 import { cn } from '../lib/utils';
 import { motion } from 'framer-motion';
@@ -16,6 +21,7 @@ export function BudgetPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingBudget, setEditingBudget] = useState(null);
     const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+    const [deleting, setDeleting] = useState(false);
 
     if (loading) {
         return (
@@ -82,48 +88,57 @@ export function BudgetPage() {
             handleCloseModal();
         } catch (error) {
             console.error("Error saving budget:", error);
-            const detail = error?.response?.data?.detail;
-            const msg = typeof detail === 'string' ? detail
-                : Array.isArray(detail) ? detail.map(d => d.msg || d).join(', ')
-                : 'Error al guardar el presupuesto';
-            toast.error(msg);
+            toast.error(parseApiError(error, 'Error al guardar el presupuesto'));
         }
     };
 
     const handleDelete = (id) => setConfirmDeleteId(id);
 
     const handleConfirmDelete = async () => {
+        setDeleting(true);
         try {
             await deleteBudget(confirmDeleteId);
             toast.success('Presupuesto eliminado');
-        } catch {
-            toast.error('Error al eliminar el presupuesto');
-        } finally {
             setConfirmDeleteId(null);
+        } catch (err) {
+            toast.error(parseApiError(err, 'Error al eliminar el presupuesto'));
+        } finally {
+            setDeleting(false);
         }
     };
 
+    const budgetToDelete = useMemo(
+        () => budgetWithActuals.find(b => b.id === confirmDeleteId),
+        [budgetWithActuals, confirmDeleteId]
+    );
+
+    const exceededCount = budgetWithActuals.filter(b => b.exceeded).length;
+
     return (
         <div className="space-y-10">
-                {/* Header */}
-                <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 md:gap-6">
-                    <div>
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 bg-indigo-500/10 rounded-lg">
-                                <PieChart className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                            </div>
-                            <h2 className="text-sm font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Planificación</h2>
-                        </div>
-                        <h1 className="text-2xl md:text-4xl font-black text-zinc-900 dark:text-white tracking-tight">Presupuestos</h1>
-                    </div>
-                    <button
-                        onClick={handleOpenCreate}
-                        className="flex items-center justify-center gap-2 w-full md:w-auto px-6 py-3.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-2xl font-bold shadow-xl transition-all active:scale-95 group"
-                    >
-                        <Plus className="w-5 h-5 transition-transform group-hover:rotate-90" />
-                        Nuevo Presupuesto
-                    </button>
-                </header>
+                <PageHeader
+                    section="budget"
+                    icon={PieChart}
+                    kicker="Planificación"
+                    title="Presupuestos"
+                    subtitle={
+                        budgetWithActuals.length === 0
+                            ? "Definí límites mensuales por categoría para controlar tu plata."
+                            : exceededCount > 0
+                                ? `${exceededCount} ${exceededCount === 1 ? 'presupuesto excedido' : 'presupuestos excedidos'} este mes`
+                                : `${budgetWithActuals.length} ${budgetWithActuals.length === 1 ? 'presupuesto activo' : 'presupuestos activos'}, todo en curso`
+                    }
+                    action={
+                        <button
+                            type="button"
+                            onClick={handleOpenCreate}
+                            className={cn(BTN_PRIMARY, "w-full md:w-auto group py-3.5")}
+                        >
+                            <Plus className="w-5 h-5 transition-transform group-hover:rotate-90" />
+                            Nuevo Presupuesto
+                        </button>
+                    }
+                />
 
                 {/* Budgets Grid */}
                 {budgetWithActuals.length > 0 ? (
@@ -223,21 +238,14 @@ export function BudgetPage() {
                         })}
                     </div>
                 ) : (
-                    <div className="glass p-20 rounded-[3rem] text-center space-y-6">
-                        <div className="w-24 h-24 bg-indigo-500/10 rounded-full flex items-center justify-center mx-auto">
-                            <PieChart className="w-12 h-12 text-indigo-600 dark:text-indigo-400" />
-                        </div>
-                        <div className="max-w-xs mx-auto">
-                            <h3 className="text-2xl font-black text-zinc-900 dark:text-white">Sin Presupuestos</h3>
-                            <p className="text-zinc-500 dark:text-zinc-400 mt-2 font-medium">Define límites por categoría para optimizar tus gastos mensuales.</p>
-                        </div>
-                        <button
-                            onClick={handleOpenCreate}
-                            className="px-8 py-4 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-2xl font-black transition-all active:scale-95 shadow-xl shadow-zinc-900/10 dark:shadow-none"
-                        >
-                            Crear Primer Presupuesto
-                        </button>
-                    </div>
+                    <EmptyState
+                        icon={PieChart}
+                        tone="violet"
+                        title="Sin presupuestos todavía"
+                        description="Definí cuánto querés gastar como máximo por categoría (Comida, Transporte, etc.) y te avisamos cuando te acerques al límite."
+                        actionLabel="Crear primer presupuesto"
+                        onAction={handleOpenCreate}
+                    />
                 )}
 
                 <Modal isOpen={isModalOpen} onClose={handleCloseModal} title={editingBudget ? "Editar Presupuesto" : "Nuevo Presupuesto"}>
@@ -249,27 +257,15 @@ export function BudgetPage() {
                     />
                 </Modal>
 
-                {confirmDeleteId && (
-                    <div className="fixed bottom-24 lg:bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 w-full max-w-sm">
-                        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-2xl shadow-2xl shadow-zinc-900/20 p-4 flex items-center gap-4">
-                            <div className="w-9 h-9 rounded-xl bg-rose-100 dark:bg-rose-500/15 flex items-center justify-center shrink-0">
-                                <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <p className="text-sm font-bold text-zinc-900 dark:text-white">¿Eliminar presupuesto?</p>
-                                <p className="text-xs text-zinc-500">Esta acción no se puede deshacer.</p>
-                            </div>
-                            <div className="flex gap-2 shrink-0">
-                                <button onClick={() => setConfirmDeleteId(null)} className="px-3 py-1.5 text-xs font-bold border border-zinc-200 dark:border-zinc-700 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors text-zinc-600 dark:text-zinc-400">
-                                    Cancelar
-                                </button>
-                                <button onClick={handleConfirmDelete} className="px-3 py-1.5 text-xs font-bold bg-rose-500 hover:bg-rose-600 text-white rounded-xl transition-colors">
-                                    Eliminar
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
+                <ConfirmDeleteModal
+                    isOpen={!!confirmDeleteId}
+                    onClose={() => !deleting && setConfirmDeleteId(null)}
+                    onConfirm={handleConfirmDelete}
+                    title="¿Eliminar presupuesto?"
+                    description="Vas a perder el límite y el tracking de esta categoría."
+                    itemName={budgetToDelete?.categoryName}
+                    loading={deleting}
+                />
             </div>
     );
 }

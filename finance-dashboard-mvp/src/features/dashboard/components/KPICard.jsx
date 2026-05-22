@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowUp, ArrowDown, Wallet } from 'lucide-react';
+import { ArrowUp, ArrowDown, Wallet, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '../../../lib/utils';
 
@@ -11,6 +11,7 @@ const schemes = {
         accent: 'bg-blue-500',
         changeBg: 'bg-blue-50 dark:bg-blue-500/10',
         changeText: 'text-blue-700 dark:text-blue-400',
+        ring: 'hover:ring-blue-500/30',
     },
     emerald: {
         badge: 'bg-emerald-500/10 dark:bg-emerald-500/20',
@@ -19,6 +20,7 @@ const schemes = {
         accent: 'bg-emerald-500',
         changeBg: 'bg-emerald-50 dark:bg-emerald-500/10',
         changeText: 'text-emerald-700 dark:text-emerald-400',
+        ring: 'hover:ring-emerald-500/30',
     },
     rose: {
         badge: 'bg-rose-500/10 dark:bg-rose-500/20',
@@ -27,6 +29,7 @@ const schemes = {
         accent: 'bg-rose-500',
         changeBg: 'bg-rose-50 dark:bg-rose-500/10',
         changeText: 'text-rose-700 dark:text-rose-400',
+        ring: 'hover:ring-rose-500/30',
     },
     violet: {
         badge: 'bg-violet-500/10 dark:bg-violet-500/20',
@@ -35,29 +38,43 @@ const schemes = {
         accent: 'bg-violet-500',
         changeBg: 'bg-violet-50 dark:bg-violet-500/10',
         changeText: 'text-violet-700 dark:text-violet-400',
+        ring: 'hover:ring-violet-500/30',
     },
 };
 
-export function KPICard({ label, value, change, icon, scheme = 'emerald', delay = 0 }) {
+export function KPICard({ label, value, change, icon, scheme = 'emerald', delay = 0, onClick }) {
     const Icon = icon || Wallet;
     const colors = schemes[scheme] || schemes.emerald;
 
     const isNegative = change !== '--' && (change.includes('-') || change.includes('↓'));
     const isPositive = change !== '--' && change.includes('+');
 
+    const clickable = typeof onClick === 'function';
+
+    const Wrapper = clickable ? motion.button : motion.div;
+
     return (
-        <motion.div
+        <Wrapper
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay, ease: [0.23, 1, 0.32, 1] }}
-            className="glass-card rounded-2xl overflow-hidden relative group hover:shadow-xl transition-shadow duration-300"
+            onClick={clickable ? onClick : undefined}
+            type={clickable ? 'button' : undefined}
+            aria-label={clickable ? `Ver detalle de ${label}` : undefined}
+            className={cn(
+                "glass-card rounded-2xl overflow-hidden relative group hover:shadow-xl transition-all duration-300 text-left w-full",
+                clickable && cn(
+                    "cursor-pointer ring-1 ring-transparent hover:-translate-y-0.5 active:scale-[0.98] focus:outline-none focus-visible:ring-2",
+                    colors.ring
+                )
+            )}
         >
             {/* Top accent line */}
             <div className={cn("absolute top-0 left-0 right-0 h-0.5 z-10", colors.accent)} />
 
             {/* Corner glow */}
             <div className={cn(
-                "absolute -top-10 -right-10 w-32 h-32 rounded-full blur-2xl opacity-50 bg-gradient-to-br",
+                "absolute -top-10 -right-10 w-32 h-32 rounded-full blur-2xl opacity-50 bg-gradient-to-br transition-opacity duration-500 group-hover:opacity-80",
                 colors.glow
             )} />
 
@@ -77,22 +94,27 @@ export function KPICard({ label, value, change, icon, scheme = 'emerald', delay 
                     {value}
                 </span>
 
-                {/* Change pill */}
-                <div className={cn(
-                    "inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-lg",
-                    change === '--'
-                        ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500"
-                        : isNegative
-                            ? "bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400"
-                            : isPositive
-                                ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                                : cn(colors.changeBg, colors.changeText)
-                )}>
-                    {isPositive && <ArrowUp className="w-3 h-3" />}
-                    {isNegative && <ArrowDown className="w-3 h-3" />}
-                    <span>{change}</span>
+                {/* Change pill + chevron */}
+                <div className="flex items-center justify-between gap-2">
+                    <div className={cn(
+                        "inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-lg",
+                        change === '--'
+                            ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500"
+                            : isNegative
+                                ? "bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400"
+                                : isPositive
+                                    ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                                    : cn(colors.changeBg, colors.changeText)
+                    )}>
+                        {isPositive && <ArrowUp className="w-3 h-3" />}
+                        {isNegative && <ArrowDown className="w-3 h-3" />}
+                        <span>{change}</span>
+                    </div>
+                    {clickable && (
+                        <ChevronRight className="w-4 h-4 text-zinc-300 dark:text-zinc-600 group-hover:text-zinc-500 dark:group-hover:text-zinc-400 group-hover:translate-x-0.5 transition-all" />
+                    )}
                 </div>
             </div>
-        </motion.div>
+        </Wrapper>
     );
 }

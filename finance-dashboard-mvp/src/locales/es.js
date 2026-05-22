@@ -61,5 +61,17 @@ export const es = {
     // Insights
     "insights.title": "Recomendaciones de IA",
     "insights.subtitle": "Análisis inteligente de tu salud financiera",
-    "insights.empty": "Acumula más transacciones para que nuestro motor inteligente pueda darte recomendaciones precisas."
+    "insights.empty": "Acumula más transacciones para que nuestro motor inteligente pueda darte recomendaciones precisas.",
+
+    // Chat / Asistente AI
+    "sidebar.chat": "Asistente AI",
+    "chat.title": "Asistente AI",
+    "chat.subtitle": "Registrá transacciones, metas, presupuestos o haz preguntas en lenguaje natural",
+    "chat.placeholder": "Escribí tu mensaje...",
+    "chat.thinking": "Aki está pensando...",
+    "chat.welcome": "¡Hola! Soy Aki, tu asistente financiero. ¿Qué te gustaría hacer hoy?",
+    "chat.suggest.balance": "¿Cuál es mi saldo total?",
+    "chat.suggest.gasto": "Anotar gasto de $1200 en Cafetería hoy",
+    "chat.suggest.presupuesto": "Crear un presupuesto de $15000 en Comida",
+    "chat.suggest.meta": "Crear meta de ahorro 'Vacaciones' de $50000"
 };

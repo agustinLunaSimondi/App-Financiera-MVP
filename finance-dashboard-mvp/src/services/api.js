@@ -70,28 +70,28 @@ export const deleteTransaction = async (id) => {
 
 // ============= BUDGETS =============
 
+// Normaliza budget para que `category` sea siempre string (nombre) y `categoryId` siempre number.
+// El backend a veces devuelve `category` como objeto completo y otras como string.
+const normalizeBudget = (b) => ({
+    ...b,
+    amount: Number(b.amount),
+    category: typeof b.category === 'object' ? (b.category?.name || 'Sin categoría') : (b.category || 'Sin categoría'),
+    categoryId: b.categoryId ?? b.category?.id ?? null,
+});
+
 export const getBudgets = async () => {
     const response = await client.get('/budgets');
-    return response.data.map(b => ({
-        ...b,
-        amount: Number(b.amount)
-    }));
+    return response.data.map(normalizeBudget);
 };
 
 export const addBudget = async (budget) => {
     const response = await client.post('/budgets', budget);
-    return {
-        ...response.data,
-        amount: Number(response.data.amount)
-    };
+    return normalizeBudget(response.data);
 };
 
 export const updateBudget = async (id, updates) => {
     const response = await client.put(`/budgets/${id}`, updates);
-    return {
-        ...response.data,
-        amount: Number(response.data.amount)
-    };
+    return normalizeBudget(response.data);
 };
 
 export const deleteBudget = async (id) => {
@@ -222,30 +222,28 @@ export const deleteSavingGoal = async (id) => {
 };
 // ============= RECURRING TRANSACTIONS =============
 
+const normalizeRecurring = (rt) => ({
+    ...rt,
+    amount: Number(rt.amount),
+    category: typeof rt.category === 'object' ? (rt.category?.name || 'Sin categoría') : (rt.category || 'Sin categoría'),
+    account: typeof rt.account === 'object' ? (rt.account?.name || 'Desconocida') : (rt.account || 'Desconocida'),
+    categoryId: rt.categoryId ?? rt.category?.id ?? null,
+    accountId: rt.accountId ?? rt.account?.id ?? null,
+});
+
 export const getRecurring = async () => {
     const response = await client.get('/recurring');
-    return response.data.map(rt => ({
-        ...rt,
-        amount: Number(rt.amount),
-        category: rt.category?.name || rt.category,
-        account: rt.account?.name || rt.account
-    }));
+    return response.data.map(normalizeRecurring);
 };
 
 export const addRecurring = async (rt) => {
     const response = await client.post('/recurring', rt);
-    return {
-        ...response.data,
-        amount: Number(response.data.amount)
-    };
+    return normalizeRecurring(response.data);
 };
 
 export const updateRecurring = async (id, updates) => {
     const response = await client.put(`/recurring/${id}`, updates);
-    return {
-        ...response.data,
-        amount: Number(response.data.amount)
-    };
+    return normalizeRecurring(response.data);
 };
 
 export const deleteRecurring = async (id) => {

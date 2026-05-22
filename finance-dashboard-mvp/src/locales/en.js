@@ -61,5 +61,17 @@ export const en = {
     // Insights
     "insights.title": "AI Recommendations",
     "insights.subtitle": "Smart analysis of your financial health",
-    "insights.empty": "Gather more transactions so our smart engine can provide accurate recommendations."
+    "insights.empty": "Gather more transactions so our smart engine can provide accurate recommendations.",
+
+    // Chat / AI Assistant
+    "sidebar.chat": "AI Assistant",
+    "chat.title": "AI Assistant",
+    "chat.subtitle": "Record transactions, goals, budgets or ask questions in natural language",
+    "chat.placeholder": "Type your message...",
+    "chat.thinking": "Aki is thinking...",
+    "chat.welcome": "Hello! I am Aki, your financial assistant. What would you like to do today?",
+    "chat.suggest.balance": "What is my total balance?",
+    "chat.suggest.gasto": "Record expense of $1200 in Coffee today",
+    "chat.suggest.presupuesto": "Create a budget of $15000 in Food",
+    "chat.suggest.meta": "Create saving goal 'Vacation' of $50000"
 };

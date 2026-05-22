@@ -5,11 +5,12 @@ import { getToken, setToken } from '../services/tokenStore';
 import { analytics } from '../services/analytics';
 
 import { Card } from '../features/common/components/Card';
+import { PageHeader } from '../features/common/components/PageHeader';
 import { cn } from '../lib/utils';
 import {
     Link2, Unlink, RefreshCw, Check, AlertCircle, Clock,
     CreditCard, ArrowRight, Loader2, ExternalLink, Zap,
-    TrendingUp, TrendingDown, Wallet, ArrowUpRight, ArrowDownRight, AlertTriangle
+    Wallet, ArrowUpRight, ArrowDownRight, AlertTriangle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as api from '../services/api';
@@ -207,21 +208,13 @@ export function IntegrationsPage() {
 
     return (
         <div className="space-y-10">
-            {/* Header */}
-            <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-                <div>
-                    <div className="flex items-center gap-3 mb-2">
-                        <div className="p-2 bg-sky-500/10 rounded-lg">
-                            <Zap className="w-5 h-5 text-sky-600 dark:text-sky-400" />
-                        </div>
-                        <h2 className="text-sm font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Conexiones</h2>
-                    </div>
-                    <h1 className="text-2xl md:text-4xl font-black text-zinc-900 dark:text-white tracking-tight">Integraciones</h1>
-                    <p className="text-zinc-500 dark:text-zinc-400 font-medium mt-2">
-                        Conectá tus servicios financieros para importar transacciones automáticamente.
-                    </p>
-                </div>
-            </header>
+            <PageHeader
+                section="integrations"
+                icon={Zap}
+                kicker="Conexiones"
+                title="Integraciones"
+                subtitle="Conectá tus servicios financieros para importar transacciones automáticamente."
+            />
 
             {/* Success Message */}
             <AnimatePresence>
@@ -364,7 +357,7 @@ export function IntegrationsPage() {
                                         <p className="text-[10px] uppercase tracking-widest font-black text-zinc-400 mb-1">Última sincronización</p>
                                         <p className="text-sm font-bold text-zinc-900 dark:text-white">
                                             {mpStatus.lastSyncAt
-                                                ? new Date(mpStatus.lastSyncAt).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
+                                                ? new Date(mpStatus.lastSyncAt).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' })
                                                 : 'Nunca'}
                                         </p>
                                     </div>

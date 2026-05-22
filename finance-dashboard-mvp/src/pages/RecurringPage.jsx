@@ -1,24 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { toast } from 'sonner';
 import { useFinance } from '../hooks/useFinance';
 
 import { Modal } from '../features/common/components/Modal';
-import { Plus, Clock, AlertTriangle } from 'lucide-react';
+import { ConfirmDeleteModal } from '../features/common/components/ConfirmDeleteModal';
+import { EmptyState } from '../features/common/components/EmptyState';
+import { PageHeader } from '../features/common/components/PageHeader';
+import { Plus, Clock } from 'lucide-react';
 import { RecurringTransactionForm } from '../features/recurring/components/RecurringTransactionForm';
 import { RecurringTransactionCard } from '../features/recurring/components/RecurringTransactionCard';
-
-const apiErrorMessage = (error, fallback) => {
-    const detail = error?.response?.data?.detail;
-    if (typeof detail === 'string') return detail;
-    if (Array.isArray(detail)) return detail.map(d => d.msg || d).join(', ');
-    return fallback;
-};
+import { parseApiError } from '../lib/apiErrors';
+import { BTN_PRIMARY } from '../lib/formClasses';
+import { cn } from '../lib/utils';
 
 export function RecurringPage() {
     const { recurringTransactions, loading, addRecurring, updateRecurring, deleteRecurring } = useFinance();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingRT, setEditingRT] = useState(null);
     const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+    const [deleting, setDeleting] = useState(false);
 
     const handleOpenModal = (rt = null) => {
         setEditingRT(rt);
@@ -31,21 +31,23 @@ export function RecurringPage() {
             toast.success(rt.isActive ? 'Regla pausada' : 'Regla activada');
         } catch (error) {
             console.error('Error toggling status:', error);
-            toast.error(apiErrorMessage(error, 'Error al cambiar estado'));
+            toast.error(parseApiError(error, 'Error al cambiar estado'));
         }
     };
 
     const handleDelete = (id) => setConfirmDeleteId(id);
 
     const handleConfirmDelete = async () => {
+        setDeleting(true);
         try {
             await deleteRecurring(confirmDeleteId);
             toast.success('Regla eliminada');
+            setConfirmDeleteId(null);
         } catch (error) {
             console.error('Error deleting:', error);
-            toast.error(apiErrorMessage(error, 'Error al eliminar la regla'));
+            toast.error(parseApiError(error, 'Error al eliminar la regla'));
         } finally {
-            setConfirmDeleteId(null);
+            setDeleting(false);
         }
     };
 
@@ -62,30 +64,38 @@ export function RecurringPage() {
             setEditingRT(null);
         } catch (error) {
             console.error('Error saving recurring transaction:', error);
-            toast.error(apiErrorMessage(error, 'Error al guardar la regla'));
+            toast.error(parseApiError(error, 'Error al guardar la regla'));
         }
     };
 
+    const ruleToDelete = useMemo(
+        () => recurringTransactions.find(r => r.id === confirmDeleteId),
+        [recurringTransactions, confirmDeleteId]
+    );
+
     return (
         <div className="space-y-10">
-                <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 md:gap-6">
-                    <div>
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 bg-blue-500/10 rounded-lg">
-                                <Clock className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                            </div>
-                            <h2 className="text-sm font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Automatización</h2>
-                        </div>
-                        <h1 className="text-2xl md:text-4xl font-black text-zinc-900 dark:text-white tracking-tight">Recurrentes</h1>
-                    </div>
-                    <button
-                        onClick={() => handleOpenModal()}
-                        className="flex items-center justify-center gap-2 w-full md:w-auto px-6 py-3.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-2xl font-bold shadow-xl transition-all active:scale-95 group"
-                    >
-                        <Plus className="w-5 h-5 transition-transform group-hover:rotate-90" />
-                        Nueva Automatización
-                    </button>
-                </header>
+                <PageHeader
+                    section="recurring"
+                    icon={Clock}
+                    kicker="Automatización"
+                    title="Recurrentes"
+                    subtitle={
+                        recurringTransactions.length === 0
+                            ? "Automatizá ingresos y gastos fijos (sueldo, alquiler, suscripciones) para no tener que registrarlos manualmente."
+                            : `${recurringTransactions.length} ${recurringTransactions.length === 1 ? 'regla configurada' : 'reglas configuradas'} — ${recurringTransactions.filter(r => r.isActive).length} activas`
+                    }
+                    action={
+                        <button
+                            type="button"
+                            onClick={() => handleOpenModal()}
+                            className={cn(BTN_PRIMARY, "w-full md:w-auto group py-3.5")}
+                        >
+                            <Plus className="w-5 h-5 transition-transform group-hover:rotate-90" />
+                            Nueva Automatización
+                        </button>
+                    }
+                />
 
                 {loading ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -105,21 +115,14 @@ export function RecurringPage() {
                         ))}
                     </div>
                 ) : (
-                    <div className="glass p-20 rounded-[3rem] text-center space-y-6">
-                        <div className="w-24 h-24 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto">
-                            <Clock className="w-12 h-12 text-blue-600 dark:text-blue-400" />
-                        </div>
-                        <div className="max-w-xs mx-auto">
-                            <h3 className="text-2xl font-black text-zinc-900 dark:text-white">Automatización Vacía</h3>
-                            <p className="text-zinc-500 dark:text-zinc-400 mt-2 font-medium">Automatiza tus ingresos y gastos fijos para un control total sin esfuerzo.</p>
-                        </div>
-                        <button
-                            onClick={() => handleOpenModal()}
-                            className="px-8 py-4 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-2xl font-black transition-all active:scale-95 shadow-xl shadow-zinc-900/10 dark:shadow-none"
-                        >
-                            Crear Mi Primera Regla
-                        </button>
-                    </div>
+                    <EmptyState
+                        icon={Clock}
+                        tone="info"
+                        title="Sin automatizaciones"
+                        description="Sueldo, alquiler, Netflix, gym... configurálos una sola vez y se registran solos cada mes."
+                        actionLabel="Crear primera regla"
+                        onAction={() => handleOpenModal()}
+                    />
                 )}
 
                 <Modal
@@ -134,27 +137,15 @@ export function RecurringPage() {
                     />
                 </Modal>
 
-                {confirmDeleteId && (
-                    <div className="fixed bottom-24 lg:bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 w-full max-w-sm">
-                        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-2xl shadow-2xl shadow-zinc-900/20 p-4 flex items-center gap-4">
-                            <div className="w-9 h-9 rounded-xl bg-rose-100 dark:bg-rose-500/15 flex items-center justify-center shrink-0">
-                                <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <p className="text-sm font-bold text-zinc-900 dark:text-white">¿Eliminar esta regla?</p>
-                                <p className="text-xs text-zinc-500">No se seguirán generando transacciones automáticas.</p>
-                            </div>
-                            <div className="flex gap-2 shrink-0">
-                                <button onClick={() => setConfirmDeleteId(null)} className="px-3 py-1.5 text-xs font-bold border border-zinc-200 dark:border-zinc-700 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors text-zinc-600 dark:text-zinc-400">
-                                    Cancelar
-                                </button>
-                                <button onClick={handleConfirmDelete} className="px-3 py-1.5 text-xs font-bold bg-rose-500 hover:bg-rose-600 text-white rounded-xl transition-colors">
-                                    Eliminar
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
+                <ConfirmDeleteModal
+                    isOpen={!!confirmDeleteId}
+                    onClose={() => !deleting && setConfirmDeleteId(null)}
+                    onConfirm={handleConfirmDelete}
+                    title="¿Eliminar esta regla?"
+                    description="No se seguirán generando transacciones automáticas para esta regla."
+                    itemName={ruleToDelete?.description || ruleToDelete?.name}
+                    loading={deleting}
+                />
             </div>
     );
 }

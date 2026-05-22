@@ -1,6 +1,69 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ShieldCheck, ArrowLeft } from 'lucide-react';
+import { ShieldCheck, ArrowLeft, List, ChevronDown } from 'lucide-react';
+
+const SECTIONS = [
+    { id: 'sec-1', label: '1. Responsable del tratamiento' },
+    { id: 'sec-2', label: '2. Qué datos recolectamos' },
+    { id: 'sec-3', label: '3. Para qué usamos los datos' },
+    { id: 'sec-4', label: '4. Con quién compartimos los datos' },
+    { id: 'sec-5', label: '5. Cuánto tiempo guardamos los datos' },
+    { id: 'sec-6', label: '6. Tus derechos (Ley 25.326)' },
+    { id: 'sec-7', label: '7. Seguridad' },
+    { id: 'sec-8', label: '8. Cookies y tecnologías similares' },
+    { id: 'sec-9', label: '9. Menores de edad' },
+    { id: 'sec-10', label: '10. Cambios en esta política' },
+    { id: 'sec-11', label: '11. Jurisdicción' },
+];
+
+function LegalTOC({ sections }) {
+    const [open, setOpen] = useState(false);
+    return (
+        <nav aria-label="Tabla de contenidos" className="not-prose my-6">
+            {/* Mobile: acordeón */}
+            <div className="md:hidden">
+                <button
+                    type="button"
+                    onClick={() => setOpen(o => !o)}
+                    aria-expanded={open}
+                    className="w-full flex items-center justify-between px-4 py-3 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl font-bold text-sm text-zinc-800 dark:text-zinc-200"
+                >
+                    <span className="inline-flex items-center gap-2"><List className="w-4 h-4" /> Tabla de contenidos</span>
+                    <ChevronDown className={`w-4 h-4 transition-transform ${open ? 'rotate-180' : ''}`} />
+                </button>
+                {open && (
+                    <ol className="mt-2 space-y-1 p-2 bg-zinc-50 dark:bg-zinc-900/70 border border-zinc-200 dark:border-zinc-800 rounded-2xl list-none">
+                        {sections.map(s => (
+                            <li key={s.id}>
+                                <a href={`#${s.id}`} onClick={() => setOpen(false)} className="block px-3 py-2 rounded-lg text-sm text-zinc-700 dark:text-zinc-300 hover:bg-emerald-500/10 hover:text-emerald-700 dark:hover:text-emerald-400 transition-colors font-medium">
+                                    {s.label}
+                                </a>
+                            </li>
+                        ))}
+                    </ol>
+                )}
+            </div>
+
+            {/* Desktop: bloque inline al inicio */}
+            <div className="hidden md:block">
+                <div className="px-5 py-4 bg-zinc-50 dark:bg-zinc-900/70 border border-zinc-200 dark:border-zinc-800 rounded-2xl">
+                    <p className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400 mb-3">
+                        <List className="w-3.5 h-3.5" /> Tabla de contenidos
+                    </p>
+                    <ol className="grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-1 list-none m-0 p-0">
+                        {sections.map(s => (
+                            <li key={s.id} className="m-0">
+                                <a href={`#${s.id}`} className="block px-2 py-1.5 rounded-lg text-sm text-zinc-700 dark:text-zinc-300 hover:bg-emerald-500/10 hover:text-emerald-700 dark:hover:text-emerald-400 transition-colors font-medium">
+                                    {s.label}
+                                </a>
+                            </li>
+                        ))}
+                    </ol>
+                </div>
+            </div>
+        </nav>
+    );
+}
 
 /**
  * Política de Privacidad — Vuelto (Beta privada, sin monetización).
@@ -46,7 +109,9 @@ export function PrivacyPage() {
                     </p>
                 </div>
 
-                <h2>1. Responsable del tratamiento</h2>
+                <LegalTOC sections={SECTIONS} />
+
+                <h2 id="sec-1" className="scroll-mt-20">1. Responsable del tratamiento</h2>
                 <p>
                     El responsable de la base de datos es <strong>Agustín Luna</strong>, persona humana
                     con domicilio en la República Argentina. Cualquier consulta o ejercicio de
@@ -56,7 +121,7 @@ export function PrivacyPage() {
                     </a>.
                 </p>
 
-                <h2>2. Qué datos recolectamos</h2>
+                <h2 id="sec-2" className="scroll-mt-20">2. Qué datos recolectamos</h2>
                 <p>Recolectamos únicamente los datos que vos cargás voluntariamente al usar el servicio:</p>
                 <ul>
                     <li><strong>Datos de cuenta</strong>: nombre, email, contraseña (almacenada hasheada con bcrypt — nunca en texto plano).</li>
@@ -69,7 +134,7 @@ export function PrivacyPage() {
                     cuenta bancaria, fotos, ubicación, ni contactos.
                 </p>
 
-                <h2>3. Para qué usamos los datos</h2>
+                <h2 id="sec-3" className="scroll-mt-20">3. Para qué usamos los datos</h2>
                 <ul>
                     <li>Operar el servicio (mostrarte tu dashboard, presupuestos, etc.).</li>
                     <li>Si conectaste MP: importar tus transacciones para que no las cargues a mano.</li>
@@ -78,7 +143,7 @@ export function PrivacyPage() {
                 </ul>
                 <p>No usamos tus datos para vender publicidad ni los entregamos a anunciantes.</p>
 
-                <h2>4. Con quién compartimos los datos</h2>
+                <h2 id="sec-4" className="scroll-mt-20">4. Con quién compartimos los datos</h2>
                 <p>Solamente con los proveedores tecnológicos que hacen funcionar el servicio:</p>
                 <ul>
                     <li><strong>Supabase</strong> (base de datos PostgreSQL, región sa-east-1).</li>
@@ -90,7 +155,7 @@ export function PrivacyPage() {
                 </ul>
                 <p>No vendemos datos a terceros y no los compartimos con anunciantes ni brokers.</p>
 
-                <h2>5. Cuánto tiempo guardamos los datos</h2>
+                <h2 id="sec-5" className="scroll-mt-20">5. Cuánto tiempo guardamos los datos</h2>
                 <p>
                     Mantenemos tus datos mientras tengas una cuenta activa. Si eliminás tu cuenta desde
                     <em>Configuración → Eliminar mi cuenta</em>, borramos todas tus transacciones, cuentas,
@@ -98,7 +163,7 @@ export function PrivacyPage() {
                     o defendernos ante un reclamo pueden conservarse hasta 5 años.
                 </p>
 
-                <h2>6. Tus derechos (Ley 25.326 — derechos ARCO)</h2>
+                <h2 id="sec-6" className="scroll-mt-20">6. Tus derechos (Ley 25.326 — derechos ARCO)</h2>
                 <p>En cualquier momento podés:</p>
                 <ul>
                     <li><strong>Acceder</strong> a tus datos personales que tenemos.</li>
@@ -120,7 +185,7 @@ export function PrivacyPage() {
                     </a>, autoridad de aplicación de la Ley 25.326.
                 </p>
 
-                <h2>7. Seguridad</h2>
+                <h2 id="sec-7" className="scroll-mt-20">7. Seguridad</h2>
                 <p>
                     Implementamos las medidas técnicas razonables para proteger tus datos:
                 </p>
@@ -137,7 +202,7 @@ export function PrivacyPage() {
                     encontrar bugs.
                 </p>
 
-                <h2>8. Cookies y tecnologías similares</h2>
+                <h2 id="sec-8" className="scroll-mt-20">8. Cookies y tecnologías similares</h2>
                 <p>
                     Usamos almacenamiento local del navegador para mantenerte logueado (token JWT) y
                     recordar preferencias (idioma, modo oscuro, estado del onboarding). PostHog usa
@@ -145,20 +210,20 @@ export function PrivacyPage() {
                     publicidad.
                 </p>
 
-                <h2>9. Menores de edad</h2>
+                <h2 id="sec-9" className="scroll-mt-20">9. Menores de edad</h2>
                 <p>
                     Vuelto está pensado para mayores de 18 años. No recolectamos a sabiendas datos de
                     menores. Si nos enterás de que un menor creó una cuenta, la eliminamos.
                 </p>
 
-                <h2>10. Cambios en esta política</h2>
+                <h2 id="sec-10" className="scroll-mt-20">10. Cambios en esta política</h2>
                 <p>
                     Si modificamos esta política de forma material, te avisamos por email y/o con un
                     banner en la app antes de que el cambio tenga efecto. La versión vigente siempre
                     está publicada en <code>/privacy</code>.
                 </p>
 
-                <h2>11. Jurisdicción</h2>
+                <h2 id="sec-11" className="scroll-mt-20">11. Jurisdicción</h2>
                 <p>
                     Esta política se rige por la legislación de la República Argentina, particularmente
                     la Ley 25.326 y normativa concordante de la Agencia de Acceso a la Información

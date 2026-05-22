@@ -4,6 +4,9 @@ import { useNavigate, Link } from 'react-router-dom';
 import { UserPlus, ArrowRight, Loader2, Sparkles, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';
 import { motion } from 'framer-motion';
+import { parseApiError } from '../lib/apiErrors';
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function RegisterPage() {
     const [name, setName] = useState('');
@@ -29,31 +32,44 @@ export function RegisterPage() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (isLoading) return;
         setError('');
 
+        const trimmedName = name.trim();
+        const trimmedEmail = email.trim().toLowerCase();
+
+        if (!trimmedName) {
+            setError('Ingresá tu nombre.');
+            return;
+        }
+        if (!EMAIL_REGEX.test(trimmedEmail)) {
+            setError('Ingresá un email válido (ej. tucorreo@gmail.com).');
+            return;
+        }
+        if (password.length < 6) {
+            setError('La contraseña debe tener al menos 6 caracteres.');
+            return;
+        }
+        if (password.toLowerCase() === trimmedEmail) {
+            setError('La contraseña no puede ser igual a tu email.');
+            return;
+        }
         if (!acceptTerms) {
             setError('Tenés que aceptar los Términos y la Política de Privacidad para crear una cuenta.');
             return;
         }
 
-        if (password.length < 6) {
-            setError('La contraseña debe tener al menos 6 caracteres.');
-            return;
-        }
-
         setIsLoading(true);
         try {
-            await register(name.trim(), email.trim().toLowerCase(), password);
-            // navigate ocurre en useEffect
+            await register(trimmedName, trimmedEmail, password);
         } catch (err) {
-            const detail = err?.response?.data?.detail;
-            const msg = typeof detail === 'string' ? detail : 'Error al registrarse';
-            setError(msg);
+            setError(parseApiError(err, 'Error al registrarse'));
             setIsLoading(false);
         }
     };
 
     const handleGoogleSuccess = async (credentialResponse) => {
+        if (isLoading) return;
         setError('');
         if (!acceptTerms) {
             setError('Marcá la casilla de Términos y Privacidad antes de continuar con Google.');
@@ -62,11 +78,8 @@ export function RegisterPage() {
         setIsLoading(true);
         try {
             await loginWithGoogle(credentialResponse.credential);
-            // navigate ocurre en useEffect
         } catch (err) {
-            const detail = err?.response?.data?.detail;
-            const msg = typeof detail === 'string' ? detail : 'Error al continuar con Google';
-            setError(msg);
+            setError(parseApiError(err, 'Error al continuar con Google'));
             setIsLoading(false);
         }
     };
@@ -223,7 +236,9 @@ export function RegisterPage() {
                     <button
                         type="submit"
                         disabled={isLoading || !acceptTerms}
-                        className="w-full group flex items-center justify-center gap-2 py-4 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-2xl font-black text-sm shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
+                        aria-disabled={isLoading || !acceptTerms}
+                        aria-busy={isLoading}
+                        className="w-full group flex items-center justify-center gap-2 py-4 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-2xl font-black text-sm shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100"
                     >
                         {isLoading ? (
                             <Loader2 className="w-5 h-5 animate-spin" />
