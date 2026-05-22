@@ -1,5 +1,6 @@
 import React from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { PieChart as PieChartIcon } from 'lucide-react';
 
 const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
@@ -17,7 +18,25 @@ const CustomTooltip = ({ active, payload }) => {
     return null;
 };
 
+function EmptyState() {
+    return (
+        <div className="flex flex-col items-center justify-center h-full py-8 text-center bg-zinc-50/50 dark:bg-zinc-800/10 rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-800/50">
+            <div className="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-500/10 flex items-center justify-center mb-3 animate-pulse">
+                <PieChartIcon className="w-6 h-6 text-rose-400 dark:text-rose-400" />
+            </div>
+            <h4 className="text-sm font-bold text-zinc-800 dark:text-zinc-200">Sin gastos registrados</h4>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 max-w-[200px]">
+                La distribución por categoría aparecerá cuando registres tus gastos del mes.
+            </p>
+        </div>
+    );
+}
+
 export function ExpenseBreakdownChart({ data }) {
+    const isEmpty = !data || data.length === 0 || data.every(d => (d.value ?? 0) === 0);
+
+    if (isEmpty) return <EmptyState />;
+
     return (
         <ResponsiveContainer width="100%" height={300}>
             <PieChart>

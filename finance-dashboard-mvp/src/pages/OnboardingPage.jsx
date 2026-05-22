@@ -716,7 +716,9 @@ function PrimaryButton({ disabled, submitting, label, color = 'emerald' }) {
         <button
             type="submit"
             disabled={disabled}
-            className={`w-full flex items-center justify-center gap-3 px-6 py-4 ${colors[color]} disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-2xl font-black text-sm shadow-xl transition-all active:scale-95`}
+            aria-disabled={disabled}
+            aria-busy={submitting}
+            className={`w-full flex items-center justify-center gap-3 px-6 py-4 ${colors[color]} disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-2xl font-black text-sm shadow-xl transition-all active:scale-95 disabled:active:scale-100`}
         >
             {submitting ? 'Guardando...' : label}
             {!submitting && <ArrowRight className="w-4 h-4" />}

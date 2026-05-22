@@ -66,6 +66,8 @@ function Nav() {
     );
 }
 
+const LANDING_EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 function WaitlistForm({ source = 'hero', cta = 'Sumate a la beta', large = false }) {
     const [email, setEmail] = useState('');
     const [status, setStatus] = useState('idle'); // idle | loading | success | error
@@ -73,10 +75,19 @@ function WaitlistForm({ source = 'hero', cta = 'Sumate a la beta', large = false
 
     const onSubmit = async (e) => {
         e.preventDefault();
-        if (!email || status === 'loading') return;
+        if (status === 'loading' || status === 'success') return;
+
+        const trimmed = email.trim().toLowerCase();
+        if (!LANDING_EMAIL_REGEX.test(trimmed)) {
+            setStatus('error');
+            setMessage('Ingresá un email válido (ej. tucorreo@gmail.com).');
+            return;
+        }
+
         setStatus('loading');
+        setMessage('');
         try {
-            const res = await joinWaitlist(email, source);
+            const res = await joinWaitlist(trimmed, source);
             analytics.waitlistSignup(source);
             setStatus('success');
             setMessage(res.message || '¡Listo! Te avisamos pronto.');
@@ -87,22 +98,29 @@ function WaitlistForm({ source = 'hero', cta = 'Sumate a la beta', large = false
         }
     };
 
+    const isBlocked = status === 'loading' || status === 'success';
+
     return (
         <form onSubmit={onSubmit} className={`w-full ${large ? 'max-w-lg' : 'max-w-md'}`}>
             <div className={`flex flex-col sm:flex-row gap-2 p-1.5 ${large ? 'sm:p-2' : ''} bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-xl shadow-zinc-900/5`}>
                 <input
                     type="email"
+                    inputMode="email"
+                    autoComplete="email"
                     required
                     value={email}
-                    onChange={e => setEmail(e.target.value)}
+                    onChange={e => { setEmail(e.target.value); if (status === 'error') { setStatus('idle'); setMessage(''); } }}
                     placeholder="tu@email.com"
-                    disabled={status === 'loading' || status === 'success'}
+                    aria-label="Tu email"
+                    disabled={isBlocked}
                     className={`flex-1 px-4 ${large ? 'py-3.5 text-base' : 'py-3 text-sm'} bg-transparent outline-none text-zinc-900 dark:text-white placeholder:text-zinc-400 font-medium disabled:opacity-60`}
                 />
                 <button
                     type="submit"
-                    disabled={status === 'loading' || status === 'success'}
-                    className={`flex items-center justify-center gap-2 ${large ? 'px-6 py-3.5 text-base' : 'px-5 py-3 text-sm'} bg-emerald-500 hover:bg-emerald-600 disabled:opacity-60 text-white font-black rounded-xl shadow-lg shadow-emerald-500/30 transition-all active:scale-95 whitespace-nowrap`}
+                    disabled={isBlocked}
+                    aria-disabled={isBlocked}
+                    aria-busy={status === 'loading'}
+                    className={`flex items-center justify-center gap-2 ${large ? 'px-6 py-3.5 text-base' : 'px-5 py-3 text-sm'} bg-emerald-500 hover:bg-emerald-600 disabled:opacity-60 disabled:cursor-not-allowed text-white font-black rounded-xl shadow-lg shadow-emerald-500/30 transition-all active:scale-95 whitespace-nowrap`}
                 >
                     {status === 'loading' ? 'Sumando...' : status === 'success' ? <><Check className="w-4 h-4" />¡Sumado!</> : <>{cta}<ArrowRight className="w-4 h-4" /></>}
                 </button>

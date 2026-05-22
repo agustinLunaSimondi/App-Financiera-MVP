@@ -16,8 +16,12 @@ export function SavingGoalCard({ goal, onEdit, onDelete, onContribute, delay = 0
 
     const handleConfirmDeposit = async () => {
         const parsed = parseFloat(depositAmount);
-        if (isNaN(parsed) || parsed <= 0) {
+        if (!Number.isFinite(parsed) || parsed <= 0) {
             setAmountError('Ingresá un monto válido mayor a 0');
+            return;
+        }
+        if (parsed > 1_000_000_000) {
+            setAmountError('El monto es demasiado grande');
             return;
         }
         setAmountError('');

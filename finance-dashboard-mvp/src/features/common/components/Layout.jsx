@@ -3,7 +3,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
     LayoutDashboard, Wallet, CreditCard, PieChart, Settings,
     LogOut, Menu, PiggyBank, Clock, GraduationCap,
-    Link2, HelpCircle, X, Sun, Moon
+    Link2, HelpCircle, X, Sun, Moon, MessageSquare
 } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -89,6 +89,7 @@ function SidebarContent({ onMobileNavClick }) {
     const mainNav = [
         { icon: LayoutDashboard, label: t('sidebar.dashboard'), path: '/' },
         { icon: Wallet, label: t('sidebar.transactions'), path: '/transactions' },
+        { icon: MessageSquare, label: t('sidebar.chat'), path: '/chat' },
         { icon: PieChart, label: t('sidebar.budgets'), path: '/budget' },
         { icon: PiggyBank, label: t('sidebar.savings'), path: '/savings' },
         { icon: Clock, label: t('sidebar.recurring'), path: '/recurring' },

@@ -36,6 +36,19 @@
       radial-gradient(at 50% 0%, rgba(15, 23, 42, 1) 0px, transparent 50%),
       radial-gradient(at 100% 0%, rgba(59, 130, 246, 0.1) 0px, transparent 50%);
   }
+
+  /* Focus visible global — solo aparece con keyboard nav, no con click.
+     Cualquier componente que ya defina su propio focus-visible:ring-X lo va a override. */
+  *:focus-visible {
+    outline: 2px solid rgba(16, 185, 129, 0.5);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Scroll suave global — útil para anchors en Privacy/Terms */
+  html {
+    scroll-behavior: smooth;
+  }
 }
 
 @layer utilities {

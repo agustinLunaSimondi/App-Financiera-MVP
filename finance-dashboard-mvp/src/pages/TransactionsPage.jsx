@@ -1,23 +1,32 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
 import { useFinance } from '../hooks/useFinance';
+import { useLocalStorage } from '../hooks/useLocalStorage';
 
 import { Card } from '../features/common/components/Card';
-import { Search, Filter, Plus, Edit2, Trash2, AlertTriangle, Wallet } from 'lucide-react';
+import { Search, Filter, Plus, Edit2, Trash2, Wallet, X, Receipt } from 'lucide-react';
 import { Modal } from '../features/common/components/Modal';
+import { ConfirmDeleteModal } from '../features/common/components/ConfirmDeleteModal';
+import { EmptyState } from '../features/common/components/EmptyState';
+import { PageHeader } from '../features/common/components/PageHeader';
 import { TransactionForm } from '../features/transactions/components/TransactionForm';
 
 import { formatCurrency } from '../utils/formatters';
+import { parseApiError } from '../lib/apiErrors';
+import { BTN_PRIMARY } from '../lib/formClasses';
+import { cn } from '../lib/utils';
 
 export function TransactionsPage() {
     const { transactions, categories, loading, deleteTransaction } = useFinance();
-    const [searchQuery, setSearchQuery] = useState('');
-    const [categoryFilter, setCategoryFilter] = useState('all');
+    // Filtros persistentes vía localStorage
+    const [searchQuery, setSearchQuery] = useLocalStorage('tx-search', '');
+    const [categoryFilter, setCategoryFilter] = useLocalStorage('tx-category', 'all');
 
     // Modal states
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState(null);
     const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+    const [deleting, setDeleting] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
 
     const itemsPerPage = 10;
@@ -54,15 +63,27 @@ export function TransactionsPage() {
     const handleDelete = (id) => setConfirmDeleteId(id);
 
     const handleConfirmDelete = async () => {
+        setDeleting(true);
         try {
             await deleteTransaction(confirmDeleteId);
             toast.success('Transacción eliminada');
-        } catch (err) {
-            const detail = err?.response?.data?.detail;
-            toast.error(typeof detail === 'string' ? detail : 'Error al eliminar la transacción');
-        } finally {
             setConfirmDeleteId(null);
+        } catch (err) {
+            toast.error(parseApiError(err, 'Error al eliminar la transacción'));
+        } finally {
+            setDeleting(false);
         }
+    };
+
+    const transactionToDelete = useMemo(
+        () => transactions.find(t => t.id === confirmDeleteId),
+        [transactions, confirmDeleteId]
+    );
+
+    const hasActiveFilters = searchQuery.trim() !== '' || categoryFilter !== 'all';
+    const clearAllFilters = () => {
+        setSearchQuery('');
+        setCategoryFilter('all');
     };
 
     const handleCloseModal = () => {
@@ -89,80 +110,103 @@ export function TransactionsPage() {
 
     return (
         <div className="space-y-10">
-                {/* Header */}
-                <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 md:gap-6">
-                    <div>
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 bg-emerald-500/10 rounded-lg">
-                                <Search className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                            </div>
-                            <h2 className="text-sm font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Historial</h2>
-                        </div>
-                        <h1 className="text-2xl md:text-4xl font-black text-zinc-900 dark:text-white tracking-tight">Transacciones</h1>
-                    </div>
-                    <button
-                        onClick={() => setIsModalOpen(true)}
-                        className="flex items-center justify-center gap-2 w-full md:w-auto px-6 py-3.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-2xl font-bold shadow-xl transition-all active:scale-95 group"
-                    >
-                        <Plus className="w-5 h-5 transition-transform group-hover:rotate-90" />
-                        Nueva Transacción
-                    </button>
-                </header>
+                <PageHeader
+                    section="transactions"
+                    icon={Receipt}
+                    kicker="Historial"
+                    title="Transacciones"
+                    subtitle={`${transactions.length} ${transactions.length === 1 ? 'movimiento registrado' : 'movimientos registrados'}`}
+                    action={
+                        <button
+                            type="button"
+                            onClick={() => setIsModalOpen(true)}
+                            className={cn(BTN_PRIMARY, "w-full md:w-auto group py-3.5")}
+                        >
+                            <Plus className="w-5 h-5 transition-transform group-hover:rotate-90" />
+                            Nueva Transacción
+                        </button>
+                    }
+                />
 
                 {/* Filters & Search */}
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 md:gap-4">
-                    <div className="lg:col-span-3 relative group">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400 group-focus-within:text-emerald-500 transition-colors" />
-                        <input
-                            type="text"
-                            placeholder="Buscar por descripción..."
-                            aria-label="Buscar transacciones"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-12 pr-4 py-4 glass border-zinc-200/50 dark:border-zinc-800/50 rounded-2xl text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/50 transition-all font-medium"
-                        />
+                <div className="space-y-2">
+                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 md:gap-4">
+                        <div className="lg:col-span-3 relative group">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400 group-focus-within:text-emerald-500 transition-colors" />
+                            <input
+                                type="text"
+                                placeholder="Buscar por descripción..."
+                                aria-label="Buscar transacciones por descripción"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full pl-12 pr-10 py-4 glass border-zinc-200/50 dark:border-zinc-800/50 rounded-2xl text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/50 transition-all font-medium"
+                            />
+                            {searchQuery && (
+                                <button
+                                    type="button"
+                                    onClick={() => setSearchQuery('')}
+                                    aria-label="Limpiar búsqueda"
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-lg text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                                >
+                                    <X className="w-4 h-4" />
+                                </button>
+                            )}
+                        </div>
+
+                        <div className="relative group">
+                            <Filter className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400 group-focus-within:text-emerald-500 transition-colors pointer-events-none" />
+                            <select
+                                value={categoryFilter}
+                                onChange={(e) => setCategoryFilter(e.target.value)}
+                                aria-label="Filtrar por categoría"
+                                className="w-full pl-12 pr-8 py-4 glass border-zinc-200/50 dark:border-zinc-800/50 rounded-2xl text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/50 transition-all font-medium appearance-none"
+                            >
+                                <option value="all">Todas las categorías</option>
+                                {categories.map(cat => (
+                                    <option key={cat.id} value={cat.name}>{cat.name}</option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
 
-                    <div className="relative group">
-                        <Filter className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400 group-focus-within:text-emerald-500 transition-colors pointer-events-none" />
-                        <select
-                            value={categoryFilter}
-                            onChange={(e) => setCategoryFilter(e.target.value)}
-                            aria-label="Filtrar por categoría"
-                            className="w-full pl-12 pr-8 py-4 glass border-zinc-200/50 dark:border-zinc-800/50 rounded-2xl text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/50 transition-all font-medium appearance-none"
-                        >
-                            <option value="all">Todas las categorías</option>
-                            {categories.map(cat => (
-                                <option key={cat.id} value={cat.name}>{cat.name}</option>
-                            ))}
-                        </select>
-                    </div>
+                    {/* Filtros activos */}
+                    {hasActiveFilters && (
+                        <div className="flex items-center gap-2 text-xs">
+                            <span className="text-zinc-400 font-bold uppercase tracking-widest">Filtros activos:</span>
+                            <span className="font-bold text-emerald-600 dark:text-emerald-400">{filteredTransactions.length} resultados</span>
+                            <button
+                                type="button"
+                                onClick={clearAllFilters}
+                                className="ml-auto px-3 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 font-bold transition-colors"
+                            >
+                                Limpiar
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 {/* Mobile: Cards view */}
                 <div className="md:hidden space-y-3">
                     {paginatedTransactions.length === 0 ? (
-                        <div className="glass p-10 rounded-3xl text-center space-y-4">
-                            <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto">
-                                <Wallet className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
-                            </div>
-                            {filteredTransactions.length === 0 && transactions.length > 0 ? (
-                                <p className="text-zinc-500 font-medium text-sm">Ningún resultado para los filtros aplicados.</p>
-                            ) : (
-                                <>
-                                    <div>
-                                        <h3 className="text-lg font-black text-zinc-900 dark:text-white">Tu primera transacción</h3>
-                                        <p className="text-zinc-500 dark:text-zinc-400 text-sm mt-1 font-medium">Tocá el botón <span className="inline-flex w-5 h-5 bg-emerald-500 rounded-full items-center justify-center align-middle"><Plus className="w-3 h-3 text-white" strokeWidth={3} /></span> abajo para empezar.</p>
-                                    </div>
-                                    <button
-                                        onClick={() => setIsModalOpen(true)}
-                                        className="px-6 py-3 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-xl font-bold text-sm transition-transform active:scale-95"
-                                    >
-                                        Crear ahora
-                                    </button>
-                                </>
-                            )}
-                        </div>
+                        filteredTransactions.length === 0 && transactions.length > 0 ? (
+                            <EmptyState
+                                icon={Search}
+                                tone="neutral"
+                                title="Sin resultados"
+                                description="No encontramos movimientos con los filtros actuales. Probá limpiarlos o ajustar la búsqueda."
+                                actionLabel="Limpiar filtros"
+                                onAction={clearAllFilters}
+                            />
+                        ) : (
+                            <EmptyState
+                                icon={Wallet}
+                                tone="primary"
+                                title="Tu primera transacción"
+                                description="Registrá un gasto o ingreso para empezar a ver tu historial acá."
+                                actionLabel="Registrar movimiento"
+                                onAction={() => setIsModalOpen(true)}
+                            />
+                        )
                     ) : paginatedTransactions.map((tx) => (
                         <div key={tx.id} className="bg-white/60 dark:bg-zinc-900/60 backdrop-blur-xl border border-zinc-200/50 dark:border-zinc-800/50 rounded-2xl px-4 py-4 flex items-center gap-3">
                             <div className="flex-1 min-w-0">
@@ -205,7 +249,29 @@ export function TransactionsPage() {
                 </div>
 
                 {/* Desktop: Table view */}
-                <Card className="hidden md:block overflow-hidden border-none shadow-xl shadow-zinc-200/50 dark:shadow-none bg-white/40 dark:bg-zinc-900/40 backdrop-blur-xl">
+                <div className="hidden md:block">
+                {paginatedTransactions.length === 0 ? (
+                    filteredTransactions.length === 0 && transactions.length > 0 ? (
+                        <EmptyState
+                            icon={Search}
+                            tone="neutral"
+                            title="Sin resultados"
+                            description="No encontramos movimientos con los filtros actuales. Probá limpiarlos o ajustar la búsqueda."
+                            actionLabel="Limpiar filtros"
+                            onAction={clearAllFilters}
+                        />
+                    ) : (
+                        <EmptyState
+                            icon={Wallet}
+                            tone="primary"
+                            title="Sin transacciones todavía"
+                            description="Registrá tu primer ingreso o gasto para verlo listado acá."
+                            actionLabel="Crear transacción"
+                            onAction={() => setIsModalOpen(true)}
+                        />
+                    )
+                ) : (
+                <Card className="overflow-hidden border-none shadow-xl shadow-zinc-200/50 dark:shadow-none bg-white/40 dark:bg-zinc-900/40 backdrop-blur-xl">
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm text-left">
                             <thead className="text-[10px] text-zinc-400 dark:text-zinc-500 uppercase tracking-widest font-black border-b border-zinc-200/50 dark:border-zinc-800/50">
@@ -218,15 +284,7 @@ export function TransactionsPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-zinc-200/50 dark:divide-zinc-800/50">
-                                {paginatedTransactions.length === 0 ? (
-                                    <tr>
-                                        <td colSpan="5" className="px-8 py-20 text-center text-zinc-400 font-medium">
-                                            {filteredTransactions.length === 0 && transactions.length > 0
-                                                ? 'Ningún resultado para los filtros aplicados'
-                                                : 'No hay transacciones todavía'}
-                                        </td>
-                                    </tr>
-                                ) : (
+                                {(
                                     paginatedTransactions.map((tx) => (
                                         <tr key={tx.id} className="group hover:bg-emerald-500/[0.02] transition-colors">
                                             <td className="px-8 py-5">
@@ -278,6 +336,8 @@ export function TransactionsPage() {
                         </table>
                     </div>
                 </Card>
+                )}
+                </div>
 
                 {/* Pagination Controls */}
                 {filteredTransactions.length > 0 && (
@@ -319,28 +379,15 @@ export function TransactionsPage() {
                     />
                 </Modal>
 
-                {/* Confirm delete banner */}
-                {confirmDeleteId && (
-                    <div className="fixed bottom-24 lg:bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 w-full max-w-sm">
-                        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-2xl shadow-2xl shadow-zinc-900/20 p-4 flex items-center gap-4">
-                            <div className="w-9 h-9 rounded-xl bg-rose-100 dark:bg-rose-500/15 flex items-center justify-center shrink-0">
-                                <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <p className="text-sm font-bold text-zinc-900 dark:text-white">¿Eliminar transacción?</p>
-                                <p className="text-xs text-zinc-500">Esta acción no se puede deshacer.</p>
-                            </div>
-                            <div className="flex gap-2 shrink-0">
-                                <button onClick={() => setConfirmDeleteId(null)} className="px-3 py-1.5 text-xs font-bold border border-zinc-200 dark:border-zinc-700 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors text-zinc-600 dark:text-zinc-400">
-                                    Cancelar
-                                </button>
-                                <button onClick={handleConfirmDelete} className="px-3 py-1.5 text-xs font-bold bg-rose-500 hover:bg-rose-600 text-white rounded-xl transition-colors">
-                                    Eliminar
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
+                <ConfirmDeleteModal
+                    isOpen={!!confirmDeleteId}
+                    onClose={() => !deleting && setConfirmDeleteId(null)}
+                    onConfirm={handleConfirmDelete}
+                    title="¿Eliminar transacción?"
+                    description="Esta acción no se puede deshacer y afectará el saldo de tu cuenta."
+                    itemName={transactionToDelete?.description || transactionToDelete?.name}
+                    loading={deleting}
+                />
             </div>
     );
 }

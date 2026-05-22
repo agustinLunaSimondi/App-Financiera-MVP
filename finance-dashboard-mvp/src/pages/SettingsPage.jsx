@@ -4,11 +4,13 @@ import { useAuth } from '../contexts/AuthContext';
 
 import { Card } from '../features/common/components/Card';
 import { Modal } from '../features/common/components/Modal';
+import { PageHeader } from '../features/common/components/PageHeader';
 import { CategoryForm } from '../features/categories/components/CategoryForm';
-import { Moon, Sun, Globe, DollarSign, Palette, Download, Trash2, Edit2, Plus, X, PlayCircle, AlertTriangle } from 'lucide-react';
+import { Moon, Sun, Globe, DollarSign, Palette, Download, Trash2, Edit2, Plus, X, PlayCircle, AlertTriangle, Settings as SettingsIcon } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { resetOnboarding } from '../features/common/components/OnboardingTour';
 import { toast } from 'sonner';
+import { parseApiError } from '../lib/apiErrors';
 
 export function SettingsPage() {
     const {
@@ -36,8 +38,7 @@ export function SettingsPage() {
         try {
             await updateSettings({ darkMode: next });
         } catch (err) {
-            const detail = err?.response?.data?.detail;
-            toast.error(typeof detail === 'string' ? detail : 'No se pudo guardar la preferencia');
+            toast.error(parseApiError(err, 'No se pudo guardar la preferencia'));
         }
     };
 
@@ -46,8 +47,7 @@ export function SettingsPage() {
             await updateSettings({ currency });
             toast.success('Moneda actualizada');
         } catch (err) {
-            const detail = err?.response?.data?.detail;
-            toast.error(typeof detail === 'string' ? detail : 'Error al actualizar moneda');
+            toast.error(parseApiError(err, 'Error al actualizar moneda'));
         }
     };
 
@@ -70,8 +70,7 @@ export function SettingsPage() {
             await deleteCategory(confirmDeleteCategoryId);
             toast.success('Categoría eliminada');
         } catch (error) {
-            const detail = error?.response?.data?.detail;
-            toast.error(typeof detail === 'string' ? detail : (error?.message || 'Error al eliminar la categoría'));
+            toast.error(parseApiError(error, 'Error al eliminar la categoría'));
         } finally {
             setConfirmDeleteCategoryId(null);
         }
@@ -90,11 +89,7 @@ export function SettingsPage() {
             setEditingCategory(null);
         } catch (error) {
             console.error(error);
-            const detail = error?.response?.data?.detail;
-            const msg = typeof detail === 'string' ? detail
-                : Array.isArray(detail) ? detail.map(d => d.msg || d).join(', ')
-                : (error?.message || 'Error al guardar la categoría');
-            toast.error(msg);
+            toast.error(parseApiError(error, 'Error al guardar la categoría'));
         }
     };
 
@@ -134,11 +129,13 @@ export function SettingsPage() {
     return (
         <>
             <div className="space-y-6">
-                {/* Header */}
-                <div>
-                    <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Configuración</h2>
-                    <p className="text-zinc-500 dark:text-zinc-400">Personaliza tu experiencia</p>
-                </div>
+                <PageHeader
+                    section="settings"
+                    icon={SettingsIcon}
+                    kicker="Preferencias"
+                    title="Configuración"
+                    subtitle="Personalizá tu experiencia: idioma, moneda, modo oscuro, categorías y datos."
+                />
 
                 {/* Appearance Settings */}
                 <Card>
@@ -361,9 +358,14 @@ export function SettingsPage() {
                                 </button>
                             </div>
 
-                            <div className="space-y-2">
+                            <div className="space-y-2 max-h-[55vh] md:max-h-[50vh] overflow-y-auto pr-1 -mr-1">
                                 {categories.length === 0 && (
                                     <p className="text-center text-zinc-500 py-4">Sin categorías.</p>
+                                )}
+                                {categories.length > 0 && (
+                                    <p className="text-[10px] uppercase tracking-widest font-bold text-zinc-400 px-1 mb-2">
+                                        {categories.length} {categories.length === 1 ? 'categoría' : 'categorías'}
+                                    </p>
                                 )}
                                 {categories.map(category => (
                                     <div key={category.id} className="flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-700/50 rounded-lg">

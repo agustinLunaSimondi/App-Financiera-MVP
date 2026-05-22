@@ -5,6 +5,7 @@ import {
     ChevronDown, ChevronUp, Lightbulb, BookOpen, DollarSign, Percent,
     ArrowRight, Star, Clock, BarChart3
 } from 'lucide-react';
+import { PageHeader } from '../features/common/components/PageHeader';
 
 // ─── Data ────────────────────────────────────────────────────
 const concepts = [
@@ -272,16 +273,13 @@ function PlazoFijoCalculator() {
 export function AcademyPage() {
     return (
         <div className="space-y-8">
-            {/* Header */}
-            <div className="flex items-center gap-4">
-                <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-3 rounded-xl shadow-lg">
-                    <GraduationCap className="h-8 w-8 text-white" />
-                </div>
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Academia Financiera</h1>
-                    <p className="text-gray-500 dark:text-gray-400">Aprendé conceptos clave para tomar mejores decisiones con tu dinero</p>
-                </div>
-            </div>
+            <PageHeader
+                section="academy"
+                icon={GraduationCap}
+                kicker="Educación"
+                title="Academia Financiera"
+                subtitle="Aprendé conceptos clave (TNA, TEA, plazo fijo, diversificación) para tomar mejores decisiones con tu plata."
+            />
 
             {/* Tips Banner */}
             <div className="bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 dark:from-blue-500/20 dark:via-purple-500/20 dark:to-pink-500/20 border border-blue-200/50 dark:border-blue-800/50 rounded-xl p-5">

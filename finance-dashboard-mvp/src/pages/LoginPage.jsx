@@ -4,6 +4,9 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Wallet, ArrowRight, Loader2, Sparkles, Eye, EyeOff } from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';
 import { motion } from 'framer-motion';
+import { parseApiError } from '../lib/apiErrors';
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function LoginPage() {
     const [email, setEmail] = useState('');
@@ -40,32 +43,40 @@ export function LoginPage() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (isLoading) return;
+
+        const trimmedEmail = email.trim().toLowerCase();
+        if (!EMAIL_REGEX.test(trimmedEmail)) {
+            setError('Ingresá un email válido (ej. tucorreo@gmail.com).');
+            return;
+        }
+        if (password.length < 6) {
+            setError('La contraseña debe tener al menos 6 caracteres.');
+            return;
+        }
+
         setError('');
         setIsLoading(true);
         try {
-            await login(email.trim().toLowerCase(), password);
+            await login(trimmedEmail, password);
             // navigate ocurre en useEffect cuando isAuthenticated → true
         } catch (err) {
-            // FastAPI envía errores en `detail`, no en `error`
-            const detail = err?.response?.data?.detail;
-            const msg = typeof detail === 'string' ? detail
-                : err?.response?.status === 401 ? 'Email o contraseña incorrectos'
-                : 'Error al iniciar sesión';
+            const msg = err?.response?.status === 401
+                ? 'Email o contraseña incorrectos'
+                : parseApiError(err, 'Error al iniciar sesión');
             setError(msg);
             setIsLoading(false);
         }
     };
 
     const handleGoogleSuccess = async (credentialResponse) => {
+        if (isLoading) return;
         setError('');
         setIsLoading(true);
         try {
             await loginWithGoogle(credentialResponse.credential);
-            // navigate ocurre en useEffect
         } catch (err) {
-            const detail = err?.response?.data?.detail;
-            const msg = typeof detail === 'string' ? detail : 'Error al iniciar con Google';
-            setError(msg);
+            setError(parseApiError(err, 'Error al iniciar con Google'));
             setIsLoading(false);
         }
     };
@@ -179,7 +190,9 @@ export function LoginPage() {
                     <button
                         type="submit"
                         disabled={isLoading}
-                        className="w-full group flex items-center justify-center gap-2 py-4 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-2xl font-black text-sm shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
+                        aria-disabled={isLoading}
+                        aria-busy={isLoading}
+                        className="w-full group flex items-center justify-center gap-2 py-4 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-2xl font-black text-sm shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100"
                     >
                         {isLoading ? (
                             <>

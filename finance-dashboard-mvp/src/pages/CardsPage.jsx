@@ -1,13 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { toast } from 'sonner';
 import { useFinance } from '../hooks/useFinance';
 
 import { Card } from '../features/common/components/Card';
-import { Plus, Edit2, Trash2, Wallet, CreditCard, AlertTriangle } from 'lucide-react';
+import { Plus, Edit2, Trash2, Wallet, CreditCard } from 'lucide-react';
 import { Modal } from '../features/common/components/Modal';
+import { ConfirmDeleteModal } from '../features/common/components/ConfirmDeleteModal';
+import { EmptyState } from '../features/common/components/EmptyState';
+import { PageHeader } from '../features/common/components/PageHeader';
 import { AccountForm } from '../features/accounts/components/AccountForm';
 import { cn } from '../lib/utils';
 import { formatCurrency } from '../utils/formatters';
+import { parseApiError } from '../lib/apiErrors';
+import { BTN_PRIMARY } from '../lib/formClasses';
+
+// Helpers seguros — evitan NaN y crashes con datos parciales
+const safeBalance = (acc) => {
+    const n = Number(acc?.balance);
+    return Number.isFinite(n) ? n : 0;
+};
+const safeType = (type) => (type ?? '').toString().toLowerCase();
 
 export function CardsPage() {
     const { accounts, loading, deleteAccount } = useFinance();
@@ -16,6 +28,7 @@ export function CardsPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingAccount, setEditingAccount] = useState(null);
     const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+    const [deleting, setDeleting] = useState(false);
 
     const handleEdit = (account) => {
         setEditingAccount(account);
@@ -25,16 +38,29 @@ export function CardsPage() {
     const handleDelete = (id) => setConfirmDeleteId(id);
 
     const handleConfirmDelete = async () => {
+        setDeleting(true);
         try {
             await deleteAccount(confirmDeleteId);
             toast.success('Cuenta eliminada');
-        } catch (err) {
-            const detail = err?.response?.data?.detail;
-            toast.error(typeof detail === 'string' ? detail : 'No se pudo eliminar la cuenta');
-        } finally {
             setConfirmDeleteId(null);
+        } catch (err) {
+            toast.error(parseApiError(err, 'No se pudo eliminar la cuenta'));
+        } finally {
+            setDeleting(false);
         }
     };
+
+    const accountToDelete = useMemo(
+        () => accounts.find(a => a.id === confirmDeleteId),
+        [accounts, confirmDeleteId]
+    );
+
+    const totalBalance = useMemo(
+        () => accounts.reduce((sum, acc) => sum + safeBalance(acc), 0),
+        [accounts]
+    );
+    const avgBalance = accounts.length > 0 ? totalBalance / accounts.length : 0;
+    const isNegativeTotal = totalBalance < 0;
 
     const handleCloseModal = () => {
         setIsModalOpen(false);
@@ -60,80 +86,61 @@ export function CardsPage() {
         );
     }
 
-    const getAccountIcon = (type) => {
-        switch (type) {
-            case 'credit':
-            case 'CREDIT':
-                return CreditCard;
-            default:
-                return Wallet;
-        }
-    };
+    const getAccountIcon = (type) => safeType(type) === 'credit' ? CreditCard : Wallet;
 
     const getAccountTypeLabel = (type) => {
-        switch (type) {
-            case 'checking':
-            case 'CHECKING':
-                return 'Cuenta Corriente';
-            case 'savings':
-            case 'SAVINGS':
-                return 'Ahorros';
-            case 'credit':
-            case 'CREDIT':
-                return 'Tarjeta de Crédito';
-            case 'investment':
-            case 'INVESTMENT':
-                return 'Inversión';
-            default:
-                return type;
+        const t = safeType(type);
+        switch (t) {
+            case 'checking': return 'Cuenta Corriente';
+            case 'savings': return 'Ahorros';
+            case 'credit': return 'Tarjeta de Crédito';
+            case 'investment': return 'Inversión';
+            case 'cash': return 'Efectivo';
+            default: return type || 'Cuenta';
         }
     };
 
     return (
         <div className="space-y-10">
-                {/* Header */}
-                <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 md:gap-6">
-                    <div>
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 bg-blue-500/10 rounded-lg">
-                                <CreditCard className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                            </div>
-                            <h2 className="text-sm font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Billetera</h2>
-                        </div>
-                        <h1 className="text-2xl md:text-4xl font-black text-zinc-900 dark:text-white tracking-tight">Cuentas y Tarjetas</h1>
-                    </div>
-                    <button
-                        onClick={() => setIsModalOpen(true)}
-                        className="flex items-center justify-center gap-2 w-full md:w-auto px-6 py-3.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-2xl font-bold shadow-xl transition-all active:scale-95 group"
-                    >
-                        <Plus className="w-5 h-5 transition-transform group-hover:rotate-90" />
-                        Nueva Cuenta
-                    </button>
-                </header>
+                <PageHeader
+                    section="cards"
+                    icon={CreditCard}
+                    kicker="Billetera"
+                    title="Cuentas y Tarjetas"
+                    subtitle={
+                        accounts.length === 0
+                            ? "Agregá las cuentas y tarjetas que usás en tu día a día para trackear el saldo total."
+                            : `${accounts.length} ${accounts.length === 1 ? 'cuenta activa' : 'cuentas activas'} — ${formatCurrency(totalBalance)} consolidado`
+                    }
+                    action={
+                        <button
+                            type="button"
+                            onClick={() => setIsModalOpen(true)}
+                            className={cn(BTN_PRIMARY, "w-full md:w-auto group py-3.5")}
+                        >
+                            <Plus className="w-5 h-5 transition-transform group-hover:rotate-90" />
+                            Nueva Cuenta
+                        </button>
+                    }
+                />
 
                 {accounts.length === 0 && (
-                    <div className="glass p-12 md:p-20 rounded-[2rem] md:rounded-[3rem] text-center space-y-6">
-                        <div className="w-20 h-20 md:w-24 md:h-24 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto">
-                            <Wallet className="w-10 h-10 md:w-12 md:h-12 text-blue-600 dark:text-blue-400" />
-                        </div>
-                        <div className="max-w-xs mx-auto">
-                            <h3 className="text-xl md:text-2xl font-black text-zinc-900 dark:text-white">Sin cuentas todavía</h3>
-                            <p className="text-zinc-500 dark:text-zinc-400 mt-2 font-medium text-sm md:text-base">Creá tu primera cuenta para empezar a registrar movimientos.</p>
-                        </div>
-                        <button
-                            onClick={() => setIsModalOpen(true)}
-                            className="px-6 md:px-8 py-3.5 md:py-4 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-2xl font-black transition-all active:scale-95 shadow-xl shadow-zinc-900/10 dark:shadow-none"
-                        >
-                            Crear Primera Cuenta
-                        </button>
-                    </div>
+                    <EmptyState
+                        icon={Wallet}
+                        tone="info"
+                        title="Sin cuentas todavía"
+                        description="Creá tu primera cuenta (efectivo, débito, crédito o ahorros) para empezar a registrar movimientos."
+                        actionLabel="Crear primera cuenta"
+                        onAction={() => setIsModalOpen(true)}
+                    />
                 )}
 
                 {/* Accounts Grid */}
+                {accounts.length > 0 && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     {accounts.map((account, index) => {
                         const Icon = getAccountIcon(account.type);
-                        const isCredit = account.type.toLowerCase() === 'credit';
+                        const isCredit = safeType(account.type) === 'credit';
 
                         return (
                             <Card key={account.id} className="group relative overflow-hidden" delay={index * 0.1}>
@@ -183,16 +190,19 @@ export function CardsPage() {
                         );
                     })}
                 </div>
+                )}
 
                 {/* Summary Card */}
+                {accounts.length > 0 && (
                 <div className="glass p-8 rounded-[2.5rem] relative overflow-hidden">
                     <div className="relative z-10 grid grid-cols-1 sm:grid-cols-3 gap-8 text-center sm:text-left">
                         <div>
                             <p className="text-[10px] uppercase tracking-widest font-black text-zinc-400 mb-2">Total Consolidado</p>
-                            <div className="flex items-center gap-4">
-                                <div className="text-3xl font-black text-zinc-900 dark:text-white">
-                                    {formatCurrency(accounts.reduce((sum, acc) => sum + Number(acc.balance), 0))}
-                                </div>
+                            <div className={cn(
+                                "text-3xl font-black",
+                                isNegativeTotal ? "text-rose-600 dark:text-rose-400" : "text-zinc-900 dark:text-white"
+                            )}>
+                                {formatCurrency(totalBalance)}
                             </div>
                         </div>
                         <div className="sm:border-l sm:border-zinc-200/50 dark:sm:border-zinc-800/50 sm:pl-8">
@@ -203,14 +213,16 @@ export function CardsPage() {
                         </div>
                         <div className="sm:border-l sm:border-zinc-200/50 dark:sm:border-zinc-800/50 sm:pl-8">
                             <p className="text-[10px] uppercase tracking-widest font-black text-zinc-400 mb-2">Promedio p/ Cuenta</p>
-                            <div className="flex items-center gap-4">
-                                <div className="text-3xl font-black text-zinc-900 dark:text-white">
-                                    {formatCurrency(accounts.length > 0 ? accounts.reduce((sum, acc) => sum + Number(acc.balance), 0) / accounts.length : 0)}
-                                </div>
+                            <div className={cn(
+                                "text-3xl font-black",
+                                avgBalance < 0 ? "text-rose-600 dark:text-rose-400" : "text-zinc-900 dark:text-white"
+                            )}>
+                                {formatCurrency(avgBalance)}
                             </div>
                         </div>
                     </div>
                 </div>
+                )}
 
                 {/* MODAL CUENTA */}
                 <Modal
@@ -224,27 +236,15 @@ export function CardsPage() {
                     />
                 </Modal>
 
-                {confirmDeleteId && (
-                    <div className="fixed bottom-24 lg:bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 w-full max-w-sm">
-                        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-2xl shadow-2xl shadow-zinc-900/20 p-4 flex items-center gap-4">
-                            <div className="w-9 h-9 rounded-xl bg-rose-100 dark:bg-rose-500/15 flex items-center justify-center shrink-0">
-                                <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <p className="text-sm font-bold text-zinc-900 dark:text-white">¿Eliminar esta cuenta?</p>
-                                <p className="text-xs text-zinc-500">Se perderán las transacciones asociadas.</p>
-                            </div>
-                            <div className="flex gap-2 shrink-0">
-                                <button onClick={() => setConfirmDeleteId(null)} className="px-3 py-1.5 text-xs font-bold border border-zinc-200 dark:border-zinc-700 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors text-zinc-600 dark:text-zinc-400">
-                                    Cancelar
-                                </button>
-                                <button onClick={handleConfirmDelete} className="px-3 py-1.5 text-xs font-bold bg-rose-500 hover:bg-rose-600 text-white rounded-xl transition-colors">
-                                    Eliminar
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
+                <ConfirmDeleteModal
+                    isOpen={!!confirmDeleteId}
+                    onClose={() => !deleting && setConfirmDeleteId(null)}
+                    onConfirm={handleConfirmDelete}
+                    title="¿Eliminar esta cuenta?"
+                    description="Se perderán todas las transacciones asociadas a esta cuenta."
+                    itemName={accountToDelete?.name}
+                    loading={deleting}
+                />
             </div>
     );
 }

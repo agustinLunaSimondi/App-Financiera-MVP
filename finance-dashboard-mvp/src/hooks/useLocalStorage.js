@@ -1,37 +1,68 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 /**
- * Hook personalizado para sincronizar estado con localStorage
- * @param {string} key - Clave de localStorage
- * @param {any} initialValue - Valor inicial si no existe en localStorage
- * @returns {[any, Function]} - [valor, setValue]
+ * Hook tipo useState pero persistido en localStorage.
+ * - Lee el valor inicial de localStorage (o usa initialValue si no existe).
+ * - Sincroniza cualquier cambio a localStorage.
+ * - Soporta función como setter (igual que useState).
+ * - Si JSON.parse falla, devuelve initialValue silenciosamente.
+ * - Sincroniza entre tabs vía el evento `storage`.
+ *
+ * @param {string} key — clave en localStorage
+ * @param {*} initialValue — valor por defecto
+ * @returns {[value, setValue, clear]}
  */
 export function useLocalStorage(key, initialValue) {
-    // Estado para almacenar el valor
-    const [storedValue, setStoredValue] = useState(() => {
+    const readValue = useCallback(() => {
+        if (typeof window === 'undefined') return initialValue;
         try {
             const item = window.localStorage.getItem(key);
-            return item ? JSON.parse(item) : initialValue;
-        } catch (error) {
-            console.error(`Error loading localStorage key "${key}":`, error);
+            return item !== null ? JSON.parse(item) : initialValue;
+        } catch {
             return initialValue;
         }
-    });
+    }, [key, initialValue]);
 
-    // Retornar una versión envuelta de useState's setter que
-    // persiste el nuevo valor en localStorage
-    const setValue = (value) => {
+    const [storedValue, setStoredValue] = useState(readValue);
+
+    const setValue = useCallback((value) => {
         try {
-            // Permitir que value sea una función para tener la misma API que useState
-            const valueToStore = value instanceof Function ? value(storedValue) : value;
-
-            setStoredValue(valueToStore);
-
-            window.localStorage.setItem(key, JSON.stringify(valueToStore));
-        } catch (error) {
-            console.error(`Error saving localStorage key "${key}":`, error);
+            const next = value instanceof Function ? value(storedValue) : value;
+            setStoredValue(next);
+            if (typeof window !== 'undefined') {
+                window.localStorage.setItem(key, JSON.stringify(next));
+            }
+        } catch (err) {
+            console.warn(`useLocalStorage: error al guardar "${key}"`, err);
         }
-    };
+    }, [key, storedValue]);
 
-    return [storedValue, setValue];
+    const clear = useCallback(() => {
+        try {
+            setStoredValue(initialValue);
+            if (typeof window !== 'undefined') {
+                window.localStorage.removeItem(key);
+            }
+        } catch {
+            // noop
+        }
+    }, [key, initialValue]);
+
+    // Sincronizar entre tabs (storage event)
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const handler = (e) => {
+            if (e.key === key && e.newValue !== null) {
+                try {
+                    setStoredValue(JSON.parse(e.newValue));
+                } catch {
+                    // noop
+                }
+            }
+        };
+        window.addEventListener('storage', handler);
+        return () => window.removeEventListener('storage', handler);
+    }, [key]);
+
+    return [storedValue, setValue, clear];
 }
