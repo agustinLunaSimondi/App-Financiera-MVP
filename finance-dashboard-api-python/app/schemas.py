@@ -195,6 +195,32 @@ class SavingGoal(SavingGoalBase):
     updated_at: datetime
 
 
+# Goal Rules (#56) — auto-depósito al recibir tx en categoría trigger
+# Nota: precision la enforcea la DB (Numeric(5,2)/Numeric(12,2)). Pydantic v2 no
+# soporta max_digits sobre Optional[Decimal] directamente.
+class GoalRuleBase(CamelModel):
+    trigger_category_id: str
+    percentage: Optional[Decimal] = None
+    fixed_amount: Optional[Decimal] = None
+    is_active: bool = True
+
+class GoalRuleCreate(GoalRuleBase):
+    pass
+
+class GoalRuleUpdate(CamelModel):
+    trigger_category_id: Optional[str] = None
+    percentage: Optional[Decimal] = None
+    fixed_amount: Optional[Decimal] = None
+    is_active: Optional[bool] = None
+
+class GoalRule(GoalRuleBase):
+    id: str
+    user_id: str
+    goal_id: str
+    created_at: datetime
+    updated_at: datetime
+
+
 # Recurring Transaction Schemas
 class RecurringTransactionBase(CamelModel):
     account_id: str
@@ -237,6 +263,68 @@ class RecurringTransaction(RecurringTransactionBase):
     updated_at: datetime
     category: Optional[Category] = None
     account: Optional[Account] = None
+
+
+# Sugerencias de suscripciones (#61)
+class SubscriptionSuggestionItem(CamelModel):
+    key: str
+    sample_description: str
+    occurrences: int
+    average_amount: Decimal
+    median_interval_days: float
+    last_transaction_date: date
+    transaction_ids: List[str]
+    category_id: Optional[str] = None
+    account_id: Optional[str] = None
+
+
+class SubscriptionSuggestionList(CamelModel):
+    suggestions: List[SubscriptionSuggestionItem]
+
+
+class SubscriptionFromSuggestionItem(CamelModel):
+    """Sugerencia aceptada por el usuario, con eventuales overrides desde el modal."""
+    sample_description: str
+    average_amount: Decimal
+    last_transaction_date: date
+    transaction_ids: List[str] = []
+    account_id: str
+    category_id: str
+    frequency: RecurrenceFrequency = RecurrenceFrequency.MONTHLY
+
+
+class SubscriptionFromSuggestionRequest(CamelModel):
+    items: List[SubscriptionFromSuggestionItem]
+
+
+class SubscriptionFromSuggestionResult(CamelModel):
+    created: List[RecurringTransaction]
+    skipped: int = 0
+
+
+# Auto-categorización por embeddings (#55)
+class AutoCategorizeRequest(CamelModel):
+    transaction_ids: Optional[List[str]] = None  # None = backend elige candidatos default
+
+class CategorySuggestionItem(CamelModel):
+    transaction_id: str
+    suggested_category_id: str
+    suggested_category_name: str
+    confidence: float
+    sample_description: str
+
+class AutoCategorizeResponse(CamelModel):
+    suggestions: List[CategorySuggestionItem]
+
+class AcceptCategorySuggestionItem(CamelModel):
+    transaction_id: str
+    category_id: str
+
+class AcceptCategorySuggestionsRequest(CamelModel):
+    items: List[AcceptCategorySuggestionItem]
+
+class AcceptCategorySuggestionsResponse(CamelModel):
+    updated: int
 
 
 # Mercado Pago Schemas

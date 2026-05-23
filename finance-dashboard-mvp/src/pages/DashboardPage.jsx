@@ -18,12 +18,16 @@ import {
     calculateNetSavings,
     calculateTotalBalance,
     generateIncomeVsExpensesChartData,
-    groupTransactionsByCategory
+    groupTransactionsByCategory,
+    projectMonthEndSpend,
+    calculateMonthlyBudgetTotal,
+    calculateHistoricalMonthlyExpenseAverage,
 } from '../utils/calculations';
 import { formatCurrency, formatCompactCurrency } from '../utils/formatters';
 import { useLanguage } from '../contexts/LanguageContext';
 import { AIInsightsCard } from './components/AIInsightsCard';
 import { InflationPanel } from '../features/dashboard/components/InflationPanel';
+import { ProjectionCard } from '../features/dashboard/components/ProjectionCard';
 
 export function DashboardPage() {
     const { transactions, accounts, budgets, categories, loading, filters, updateFilters, clearFilters } = useFinance();
@@ -171,6 +175,11 @@ export function DashboardPage() {
     ];
 
     const activeKPI = detailModal.type ? kpiData.find(k => k.type === detailModal.type) : null;
+
+    // Proyección fin de mes (#54) — solo cuando vemos el mes actual sin filtro custom.
+    const projectionData = quickFilter === 'thisMonth' ? projectMonthEndSpend(transactions) : null;
+    const monthlyBudgetTotal = calculateMonthlyBudgetTotal(budgets);
+    const historicalAverage = calculateHistoricalMonthlyExpenseAverage(transactions);
 
     // Generar datos para gráficos
     const incomeVsExpensesData = generateIncomeVsExpensesChartData(transactions, 6);
@@ -330,6 +339,14 @@ export function DashboardPage() {
                         />
                     ))}
                 </div>
+
+                {projectionData && projectionData.spentToDate > 0 && (
+                    <ProjectionCard
+                        projectionData={projectionData}
+                        monthlyBudgetTotal={monthlyBudgetTotal}
+                        historicalAverage={historicalAverage}
+                    />
+                )}
 
                 <InflationPanel />
 

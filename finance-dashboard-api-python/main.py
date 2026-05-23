@@ -22,6 +22,7 @@ from app.modules.mercadopago import mp_routes
 from app.modules.waitlist import waitlist_routes
 from app.modules.chat import chat_routes
 from app.modules.recurring.recurring_processor import process_recurring_transactions
+from app.modules.notifications.processor import run_daily_smart_alerts, run_weekly_snapshots
 from app.database.database import SessionLocal
 
 load_dotenv()
@@ -38,6 +39,10 @@ logger = logging.getLogger(__name__)
 # Scheduler para Tareas de Fondo
 scheduler = BackgroundScheduler()
 scheduler.add_job(process_recurring_transactions, 'interval', hours=1)
+# Aki proactivo (#51): cada día a las 9am hora ART (UTC-3 → 12 UTC).
+scheduler.add_job(run_daily_smart_alerts, 'cron', hour=12, minute=0, id='daily_smart_alerts')
+# Snapshot semanal (#52): domingos 10am ART (13 UTC).
+scheduler.add_job(run_weekly_snapshots, 'cron', day_of_week='sun', hour=13, minute=0, id='weekly_snapshot')
 
 @asynccontextmanager
 async def lifespan(app):
@@ -62,9 +67,15 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Configuración de CORS — explícita en métodos y headers (no usar wildcards con credenciales).
 _frontend_urls = os.getenv("FRONTEND_URL", "http://localhost:5173")
+# Vite sube de puerto (5174, 5175...) cuando el default est ocupado — incluimos
+# los siguientes por defecto para evitar Network Error en dev.
 origins = list(set(
     [url.strip() for url in _frontend_urls.split(",") if url.strip()]
-    + ["http://localhost:5173", "http://127.0.0.1:5173"]
+    + [
+        "http://localhost:5173", "http://127.0.0.1:5173",
+        "http://localhost:5174", "http://127.0.0.1:5174",
+        "http://localhost:5175", "http://127.0.0.1:5175",
+    ]
 ))
 
 app.add_middleware(

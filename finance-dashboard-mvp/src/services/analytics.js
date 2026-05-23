@@ -140,6 +140,20 @@ export const analytics = {
 
     landingCtaClicked: (cta) =>
         capture('landing_cta_clicked', { cta }),
+
+    // Quick win #54 — proyección fin de mes
+    projectionViewed: ({ exceedsBudget, daysElapsed }) =>
+        capture('projection_viewed', { exceeds_budget: !!exceedsBudget, days_elapsed: daysElapsed }),
+
+    // Quick win #61 — sugerencias de suscripciones recurrentes
+    subscriptionsSuggestionViewed: (count) =>
+        capture('subscriptions_suggestion_viewed', { count }),
+
+    subscriptionsSuggestionEngaged: (count) =>
+        capture('subscriptions_suggestion_engaged', { count }),
+
+    subscriptionsSuggestionConverted: (count) =>
+        capture('subscriptions_suggestion_converted', { count }),
 };
 
 // Util: rangos de monto para no enviar valores exactos

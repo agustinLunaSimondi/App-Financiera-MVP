@@ -10,6 +10,8 @@ from app.database.database import get_db
 from app.core.deps import get_current_user
 from app import schemas
 from app.core import posthog_client
+from app.modules.savings.auto_deposit import apply_auto_deposit_rules
+from app.modules.transactions.embeddings import suggest_categories_for_user
 
 router = APIRouter(prefix="/transactions", tags=["transactions"])
 
@@ -89,9 +91,13 @@ def create_transaction(
 
     new_tx = models.Transaction(**tx_in.model_dump())
     db.add(new_tx)
+    db.flush()  # asegurar que new_tx.account esté disponible para el hook.
 
     # Convención: gasto = negativo, ingreso = positivo. La suma respeta el signo.
     account.balance = (account.balance or Decimal("0")) + Decimal(str(tx_in.amount))
+
+    # Auto-depósito en metas (#56) — solo se dispara para ingresos.
+    affected_goals = apply_auto_deposit_rules(db, new_tx)
 
     db.commit()
     db.refresh(new_tx)
@@ -100,6 +106,12 @@ def create_transaction(
         "transaction_created",
         {"amount": float(tx_in.amount), "account_id": tx_in.account_id}
     )
+    for goal in affected_goals:
+        posthog_client.capture(
+            current_user.id,
+            "goal_auto_deposit_applied",
+            {"goal_id": goal.id}
+        )
     return new_tx
 
 
@@ -149,6 +161,61 @@ def update_transaction(
     db.commit()
     db.refresh(tx)
     return tx
+
+
+@router.post("/auto-categorize", response_model=schemas.AutoCategorizeResponse)
+def auto_categorize(
+    payload: schemas.AutoCategorizeRequest,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Devuelve sugerencias de categoría para tx en categorías default (#55)."""
+    suggestions = suggest_categories_for_user(db, current_user.id, payload.transaction_ids)
+    db.commit()  # persistir embeddings calculados
+    return {
+        "suggestions": [
+            {
+                "transactionId": s.transaction_id,
+                "suggestedCategoryId": s.suggested_category_id,
+                "suggestedCategoryName": s.suggested_category_name,
+                "confidence": s.confidence,
+                "sampleDescription": s.sample_description,
+            }
+            for s in suggestions
+        ]
+    }
+
+
+@router.post("/accept-categorizations", response_model=schemas.AcceptCategorySuggestionsResponse)
+def accept_categorizations(
+    payload: schemas.AcceptCategorySuggestionsRequest,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Aplica las categorías aceptadas por el user. Verifica ownership de cada tx."""
+    if not payload.items:
+        return {"updated": 0}
+    tx_ids = [it.transaction_id for it in payload.items]
+    txs = (
+        db.query(models.Transaction)
+        .join(models.Account)
+        .filter(models.Transaction.id.in_(tx_ids), models.Account.user_id == current_user.id)
+        .all()
+    )
+    by_id = {t.id: t for t in txs}
+    updated = 0
+    for item in payload.items:
+        tx = by_id.get(item.transaction_id)
+        if not tx:
+            continue
+        # Validar que la categoría pertenezca al user (o sea default).
+        cat = db.query(models.Category).filter(models.Category.id == item.category_id).first()
+        if not cat or (cat.user_id and cat.user_id != current_user.id):
+            continue
+        tx.category_id = item.category_id
+        updated += 1
+    db.commit()
+    return {"updated": updated}
 
 
 @router.delete("/{tx_id}")

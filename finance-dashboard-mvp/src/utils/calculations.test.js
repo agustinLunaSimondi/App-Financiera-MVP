@@ -8,6 +8,9 @@ import {
     calculateBudgetUsage,
     isBudgetExceeded,
     calculatePercentageChange,
+    projectMonthEndSpend,
+    calculateMonthlyBudgetTotal,
+    calculateHistoricalMonthlyExpenseAverage,
 } from './calculations';
 
 describe('calculations', () => {
@@ -53,5 +56,64 @@ describe('calculations', () => {
     it('percentage change', () => {
         expect(calculatePercentageChange(120, 100)).toBe(20);
         expect(calculatePercentageChange(50, 0)).toBe(0);
+    });
+
+    describe('projectMonthEndSpend (#54)', () => {
+        const now = new Date(2026, 4, 15); // 15 de mayo 2026, mes con 31 días.
+
+        it('proyecta al ritmo del gasto a la fecha', () => {
+            const txs = [
+                { amount: -10000, transactionDate: '2026-05-01' },
+                { amount: -5000, transactionDate: '2026-05-10' },
+            ];
+            const out = projectMonthEndSpend(txs, now);
+            expect(out.spentToDate).toBe(15000);
+            // 15000 * (31 / 15) = 31000
+            expect(out.projection).toBeCloseTo(31000, 0);
+            expect(out.daysInMonth).toBe(31);
+            expect(out.daysElapsed).toBe(15);
+        });
+
+        it('ignora ingresos y transacciones de otros meses', () => {
+            const txs = [
+                { amount: 50000, transactionDate: '2026-05-05' }, // ingreso
+                { amount: -3000, transactionDate: '2026-04-30' }, // mes pasado
+                { amount: -2000, transactionDate: '2026-05-10' }, // cuenta
+            ];
+            const out = projectMonthEndSpend(txs, now);
+            expect(out.spentToDate).toBe(2000);
+        });
+
+        it('si no hay gastos este mes, projection = 0', () => {
+            const out = projectMonthEndSpend([], now);
+            expect(out.spentToDate).toBe(0);
+            expect(out.projection).toBe(0);
+        });
+    });
+
+    it('calculateMonthlyBudgetTotal suma solo MONTHLY', () => {
+        const budgets = [
+            { amount: 10000, period: 'MONTHLY' },
+            { amount: 5000, period: 'WEEKLY' },
+            { amount: 7000 },  // sin period default es MONTHLY
+        ];
+        expect(calculateMonthlyBudgetTotal(budgets)).toBe(17000);
+    });
+
+    it('historicalMonthlyExpenseAverage excluye mes actual', () => {
+        const now = new Date(2026, 4, 15);
+        const txs = [
+            { amount: -1000, transactionDate: '2026-03-15' },
+            { amount: -2000, transactionDate: '2026-04-20' },
+            { amount: -99999, transactionDate: '2026-05-10' }, // mes actual: se excluye
+        ];
+        const avg = calculateHistoricalMonthlyExpenseAverage(txs, now);
+        expect(avg).toBe(1500);
+    });
+
+    it('historicalMonthlyExpenseAverage devuelve null si no hay histórico', () => {
+        const now = new Date(2026, 4, 15);
+        const txs = [{ amount: -1000, transactionDate: '2026-05-10' }];
+        expect(calculateHistoricalMonthlyExpenseAverage(txs, now)).toBeNull();
     });
 });

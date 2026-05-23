@@ -9,12 +9,13 @@ import { PageHeader } from '../features/common/components/PageHeader';
 import { Plus, Clock } from 'lucide-react';
 import { RecurringTransactionForm } from '../features/recurring/components/RecurringTransactionForm';
 import { RecurringTransactionCard } from '../features/recurring/components/RecurringTransactionCard';
+import { SubscriptionSuggestionsBanner } from '../features/recurring/components/SubscriptionSuggestionsBanner';
 import { parseApiError } from '../lib/apiErrors';
 import { BTN_PRIMARY } from '../lib/formClasses';
 import { cn } from '../lib/utils';
 
 export function RecurringPage() {
-    const { recurringTransactions, loading, addRecurring, updateRecurring, deleteRecurring } = useFinance();
+    const { recurringTransactions, loading, addRecurring, updateRecurring, deleteRecurring, refreshData } = useFinance();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingRT, setEditingRT] = useState(null);
     const [confirmDeleteId, setConfirmDeleteId] = useState(null);
@@ -96,6 +97,8 @@ export function RecurringPage() {
                         </button>
                     }
                 />
+
+                <SubscriptionSuggestionsBanner onSuggestionsConverted={refreshData} />
 
                 {loading ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

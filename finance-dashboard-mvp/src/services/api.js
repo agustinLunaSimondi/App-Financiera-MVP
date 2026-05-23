@@ -89,6 +89,18 @@ export const deleteTransaction = async (id) => {
     return true;
 };
 
+// Auto-categorización por embeddings (#55)
+export const getAutoCategorizeSuggestions = async (transactionIds = null) => {
+    const body = transactionIds ? { transactionIds } : {};
+    const res = await client.post('/transactions/auto-categorize', body);
+    return res.data.suggestions || [];
+};
+
+export const acceptCategorizations = async (items) => {
+    const res = await client.post('/transactions/accept-categorizations', { items });
+    return res.data.updated || 0;
+};
+
 // ============= BUDGETS =============
 
 const normalizeBudget = (b) => ({
@@ -252,6 +264,33 @@ export const deleteSavingGoal = async (id) => {
     return true;
 };
 
+// Reglas de auto-depósito (#56)
+const normalizeRule = (r) => ({
+    ...r,
+    percentage: r.percentage == null ? null : Number(r.percentage),
+    fixedAmount: r.fixedAmount == null ? null : Number(r.fixedAmount),
+});
+
+export const getGoalRules = async (goalId) => {
+    const res = await client.get(`/savings-goals/${goalId}/rules`);
+    return res.data.map(normalizeRule);
+};
+
+export const createGoalRule = async (goalId, rule) => {
+    const res = await client.post(`/savings-goals/${goalId}/rules`, rule);
+    return normalizeRule(res.data);
+};
+
+export const updateGoalRule = async (goalId, ruleId, updates) => {
+    const res = await client.put(`/savings-goals/${goalId}/rules/${ruleId}`, updates);
+    return normalizeRule(res.data);
+};
+
+export const deleteGoalRule = async (goalId, ruleId) => {
+    await client.delete(`/savings-goals/${goalId}/rules/${ruleId}`);
+    return true;
+};
+
 // ============= RECURRING TRANSACTIONS =============
 
 const normalizeRecurring = (rt) => ({
@@ -281,6 +320,23 @@ export const updateRecurring = async (id, updates) => {
 export const deleteRecurring = async (id) => {
     await client.delete(`/recurring/${id}`);
     return true;
+};
+
+export const getRecurringSuggestions = async () => {
+    const response = await client.get('/recurring/suggestions');
+    return response.data.suggestions.map(s => ({
+        ...s,
+        averageAmount: Number(s.averageAmount),
+        medianIntervalDays: Number(s.medianIntervalDays),
+    }));
+};
+
+export const createRecurringFromSuggestions = async (items) => {
+    const response = await client.post('/recurring/from-suggestion', { items });
+    return {
+        created: (response.data.created || []).map(normalizeRecurring),
+        skipped: response.data.skipped || 0,
+    };
 };
 
 // ============= MERCADO PAGO =============
