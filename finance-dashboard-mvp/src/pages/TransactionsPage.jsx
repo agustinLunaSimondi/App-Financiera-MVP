@@ -32,10 +32,12 @@ export function TransactionsPage() {
     const itemsPerPage = 10;
 
     // ── Hooks (siempre antes de cualquier return condicional) ──
+    // categoryFilter ahora es categoryId — fix de bug donde dos categorías con mismo nombre
+    // se mezclaban en el filtro.
     const filteredTransactions = useMemo(() => transactions.filter(tx => {
         const text = (tx.description || tx.name || '').toLowerCase();
         const matchesSearch = text.includes(searchQuery.toLowerCase());
-        const matchesCategory = categoryFilter === 'all' || tx.category === categoryFilter;
+        const matchesCategory = categoryFilter === 'all' || tx.categoryId === categoryFilter;
         return matchesSearch && matchesCategory;
     }), [transactions, searchQuery, categoryFilter]);
 
@@ -163,7 +165,7 @@ export function TransactionsPage() {
                             >
                                 <option value="all">Todas las categorías</option>
                                 {categories.map(cat => (
-                                    <option key={cat.id} value={cat.name}>{cat.name}</option>
+                                    <option key={cat.id} value={cat.id}>{cat.name}</option>
                                 ))}
                             </select>
                         </div>

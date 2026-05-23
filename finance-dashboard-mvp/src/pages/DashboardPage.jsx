@@ -66,25 +66,28 @@ export function DashboardPage() {
     const downloadReport = () => {
         if (!transactions.length) return;
 
-        // Escape para CSV: envolver en comillas y duplicar comillas internas si hace falta
+        // Excel-ES interpreta `,` como decimal — usamos `;` como separador y la línea sep= para forzarlo.
+        const SEP = ';';
         const csvCell = (val) => {
             const str = (val ?? '').toString();
-            if (/[",\n;]/.test(str)) return `"${str.replace(/"/g, '""')}"`;
+            if (str.includes('"') || str.includes(SEP) || str.includes('\n')) {
+                return `"${str.replace(/"/g, '""')}"`;
+            }
             return str;
         };
 
         const headers = ["Fecha", "Descripción", "Categoría", "Cuenta", "Monto"];
         const rows = transactions.map(tx => [
-            // Forzar interpretación local sin offset UTC para evitar saltos de día
             new Date((tx.date || tx.transactionDate) + 'T00:00:00').toLocaleDateString('es-AR'),
             tx.description || tx.name,
             tx.category,
             tx.account,
-            tx.amount
+            // Forzar coma decimal AR
+            String(tx.amount).replace('.', ','),
         ]);
 
-        const csvContent = [headers, ...rows].map(row => row.map(csvCell).join(',')).join('\r\n');
-        // BOM UTF-8 para Excel
+        // sep=; ayuda a Excel-ES a detectar el separador. BOM UTF-8 para acentos.
+        const csvContent = `sep=${SEP}\r\n` + [headers, ...rows].map(row => row.map(csvCell).join(SEP)).join('\r\n');
         const blob = new Blob(['﻿' + csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         const url = URL.createObjectURL(blob);
@@ -124,11 +127,15 @@ export function DashboardPage() {
     const hasData = transactions.length > 0;
     const hasAccounts = accounts.length > 0;
 
+    // El balance es siempre el saldo actual de las cuentas — no se filtra por fecha.
+    // Lo aclaramos en la sublabel para evitar confusión cuando hay filtro activo.
+    const hasFilter = !!(filters?.startDate || filters?.endDate);
+    const balanceSubtitle = hasFilter ? 'Saldo actual (no afecta filtro)' : (hasAccounts ? (totalBalance >= 0 ? t('onTrack') : '↓ Negativo') : '--');
     const kpiData = [
         {
             label: t('balance'),
             value: formatCompactCurrency(totalBalance),
-            change: hasAccounts ? (totalBalance >= 0 ? t('onTrack') : '↓ Negativo') : '--',
+            change: balanceSubtitle,
             icon: Wallet,
             scheme: 'blue',
             type: 'balance',

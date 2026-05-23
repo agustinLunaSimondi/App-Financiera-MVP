@@ -15,7 +15,9 @@ export function SavingGoalCard({ goal, onEdit, onDelete, onContribute, delay = 0
     const [amountError, setAmountError] = useState('');
 
     const handleConfirmDeposit = async () => {
-        const parsed = parseFloat(depositAmount);
+        // Aceptar tanto "1.50" como "1,50" (input ES-AR usa coma decimal en mobile).
+        const normalized = String(depositAmount).replace(',', '.');
+        const parsed = parseFloat(normalized);
         if (!Number.isFinite(parsed) || parsed <= 0) {
             setAmountError('Ingresá un monto válido mayor a 0');
             return;

@@ -1,5 +1,6 @@
 import bcrypt
 import os
+import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 from jose import jwt
@@ -10,7 +11,10 @@ load_dotenv()
 SECRET_KEY = os.getenv("SECRET_KEY") or os.getenv("JWT_SECRET")
 ALGORITHM = os.getenv("ALGORITHM", "HS256")
 # JWT corto. Para una finance app, 60min es el techo razonable sin refresh token.
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 60))
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 180))
+# Issuer/Audience — útiles si en el futuro publicamos APIs internas o microservicios.
+JWT_ISSUER = os.getenv("JWT_ISSUER", "vuelto-api")
+JWT_AUDIENCE = os.getenv("JWT_AUDIENCE", "vuelto-web")
 
 if not SECRET_KEY:
     raise RuntimeError(
@@ -51,6 +55,14 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
         expire = now + expires_delta
     else:
         expire = now + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    # iat (issued-at) habilita revocación por User.tokens_invalidated_at (ver deps.py)
-    to_encode.update({"exp": expire, "iat": now})
+    # iat (issued-at) habilita revocación por User.tokens_invalidated_at (ver deps.py).
+    # jti permite blacklist granular si se implementa en el futuro.
+    # iss/aud: defensa en profundidad si compartimos firma con otros servicios.
+    to_encode.update({
+        "exp": expire,
+        "iat": now,
+        "jti": str(uuid.uuid4()),
+        "iss": JWT_ISSUER,
+        "aud": JWT_AUDIENCE,
+    })
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)

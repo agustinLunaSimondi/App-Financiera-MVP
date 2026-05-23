@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from datetime import date, datetime
@@ -10,6 +10,7 @@ import logging
 from app.database import models
 from app.database.database import get_db
 from app.core.deps import get_current_user
+from app.core.rate_limit import limiter
 
 logger = logging.getLogger(__name__)
 
@@ -162,11 +163,11 @@ def execute_get_financial_summary(db: Session, user_id: str) -> Dict[str, Any]:
     }
 
 def execute_create_transaction(db: Session, user_id: str, amount: float, description: str, category_name: str, account_name: str, transaction_date: Optional[str] = None) -> Dict[str, Any]:
-    # 1. Validar o buscar cuenta
+    # 1. Validar o buscar cuenta — lockeada para evitar race con otros endpoints.
     account = db.query(models.Account).filter(
         models.Account.user_id == user_id,
         models.Account.name.ilike(f"%{account_name}%")
-    ).first()
+    ).with_for_update().first()
     
     if not account_name or not account_name.strip():
         return {
@@ -186,10 +187,11 @@ def execute_create_transaction(db: Session, user_id: str, amount: float, descrip
     account_used_name = account.name
 
     # 2. Validar o buscar categoría
-    # Las categorías pueden ser del usuario o globales (user_id IS NULL)
+    # Solo categorías del usuario actual. `is_default` se setea por-usuario al registrarse,
+    # así que filtrar por user_id es suficiente y evita cross-user category matching.
     category_type = models.CategoryType.EXPENSE if amount < 0 else models.CategoryType.INCOME
     category = db.query(models.Category).filter(
-        (models.Category.user_id == user_id) | (models.Category.is_default == True),
+        models.Category.user_id == user_id,
         models.Category.name.ilike(category_name),
         models.Category.type == category_type
     ).first()
@@ -286,9 +288,9 @@ def execute_create_saving_goal(db: Session, user_id: str, name: str, target_amou
     }
 
 def execute_create_budget(db: Session, user_id: str, category_name: str, amount: float) -> Dict[str, Any]:
-    # Buscar categoría
+    # Buscar categoría — solo las del user (las defaults también se crean por-usuario al registrarse).
     category = db.query(models.Category).filter(
-        (models.Category.user_id == user_id) | (models.Category.is_default == True),
+        models.Category.user_id == user_id,
         models.Category.name.ilike(category_name),
         models.Category.type == models.CategoryType.EXPENSE
     ).first()
@@ -376,7 +378,9 @@ def call_database_tool(name: str, args: Dict[str, Any], db: Session, user_id: st
 
 # Endpoint Principal del Chat
 @router.post("")
+@limiter.limit("20/minute")
 async def chat_with_agent(
+    request: Request,
     body: Dict[str, Any],
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
@@ -386,6 +390,11 @@ async def chat_with_agent(
 
     if not message:
         raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
+
+    # Tope defensivo. Sin esto un user puede inflar costos de Gemini con prompts gigantes.
+    MAX_MESSAGE_LEN = 4000
+    if len(message) > MAX_MESSAGE_LEN:
+        raise HTTPException(status_code=413, detail=f"Mensaje demasiado largo (máx {MAX_MESSAGE_LEN} caracteres).")
 
     gemini_key = os.getenv("GEMINI_API_KEY", "").strip()
 
@@ -482,7 +491,8 @@ async def chat_with_agent(
                 func_name = func_call.get("name")
                 func_args = func_call.get("args", {})
                 
-                logger.info(f"Gemini solicitó llamar a la función: {func_name} con argumentos: {func_args}")
+                # No logueamos `func_args` — pueden contener montos / descripciones privadas.
+                logger.info(f"Gemini solicitó función: {func_name}")
                 
                 # Ejecutar la acción real en la DB
                 result = call_database_tool(func_name, func_args, db, current_user.id)

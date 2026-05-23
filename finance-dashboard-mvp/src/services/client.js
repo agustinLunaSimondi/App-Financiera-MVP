@@ -7,7 +7,8 @@ const client = axios.create({
     baseURL: API_URL,
     headers: {
         'Content-Type': 'application/json'
-    }
+    },
+    timeout: 30000, // 30s — cubre cold-starts de Render
 });
 
 const looksLikeId = (segment) => {
@@ -44,26 +45,36 @@ client.interceptors.request.use(
     (error) => Promise.reject(error)
 );
 
-// Interceptor para manejar errores (ej. token expirado)
-//
-// Sólo redirige al login si el 401 viene de un endpoint de auth o de un
-// recurso "core" (transacciones, cuentas, categorías). Endpoints opcionales
-// como /mercadopago/* pueden fallar transitoriamente (cold start, MP API caída)
-// y no deberían botar la sesión del usuario.
-//
-// Para forzar opt-out por request: pasar `{ __skipAuthRedirect: true }` en la config.
+// Interceptor de respuesta
+// - 401: redirige al login solo para endpoints de auth/core. Endpoints opcionales (MP) no botan sesión.
+// - 502/503/504: reintenta una vez con backoff corto (cubre cold start de Render).
 const AUTH_REDIRECT_BLOCKLIST = [
     /\/mercadopago\//i,
     /\/integrations\//i,
 ];
 
+const RETRY_STATUS = new Set([502, 503, 504]);
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
 client.interceptors.response.use(
     (response) => response,
-    (error) => {
+    async (error) => {
         const status = error?.response?.status;
+        const config = error?.config;
+
+        // Auto-retry para errores transitorios (cold start típico)
+        if (config && !config.__noRetry && (RETRY_STATUS.has(status) || error.code === 'ECONNABORTED')) {
+            if (!config.__retryCount) config.__retryCount = 0;
+            if (config.__retryCount < 1) {
+                config.__retryCount += 1;
+                await sleep(1500);
+                return client(config);
+            }
+        }
+
         if (status === 401) {
-            const reqUrl = (error?.config?.url || '').toString();
-            const skipPerRequest = !!error?.config?.__skipAuthRedirect;
+            const reqUrl = (config?.url || '').toString();
+            const skipPerRequest = !!config?.__skipAuthRedirect;
             const skipByPath = AUTH_REDIRECT_BLOCKLIST.some(rx => rx.test(reqUrl));
 
             if (!skipPerRequest && !skipByPath) {

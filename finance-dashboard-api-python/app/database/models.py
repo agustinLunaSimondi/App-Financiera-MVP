@@ -100,7 +100,7 @@ class Transaction(Base):
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     account_id = Column(String, ForeignKey("accounts.id", ondelete="CASCADE"), nullable=False)
-    category_id = Column(String, ForeignKey("categories.id"), nullable=False)
+    category_id = Column(String, ForeignKey("categories.id", ondelete="RESTRICT"), nullable=False)
     recurring_id = Column(String, ForeignKey("recurring_transactions.id", ondelete="SET NULL"), nullable=True)
     amount = Column(Numeric(12, 2), nullable=False)
     description = Column(String, nullable=False)

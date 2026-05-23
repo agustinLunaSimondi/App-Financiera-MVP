@@ -71,10 +71,16 @@ export function FinanceProvider({ children }) {
 
         if (failures.length > 0) {
             setError(`No se pudieron cargar: ${failures.join(', ')}`);
+        } else {
+            // Limpiamos cualquier error previo cuando la carga sale OK.
+            setError(null);
         }
 
         setLoading(false);
     }, []);
+
+    // Permite descartar el error desde la UI sin tener que recargar.
+    const clearError = useCallback(() => setError(null), []);
 
     // Sólo cargar datos cuando el usuario está autenticado. Si no, limpiar
     // todo el estado para que después de un login fresco no aparezcan datos
@@ -385,7 +391,8 @@ export function FinanceProvider({ children }) {
         clearFilters,
 
         // Reload data
-        refreshData: loadData
+        refreshData: loadData,
+        clearError,
     };
 
     return (

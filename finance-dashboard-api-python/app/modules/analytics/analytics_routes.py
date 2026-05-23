@@ -4,6 +4,7 @@ from sqlalchemy import func
 from typing import Optional, List
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
+import asyncio
 import logging
 import httpx
 
@@ -19,6 +20,7 @@ router = APIRouter(prefix="/analytics", tags=["analytics"])
 # TTL de 1h: estos números no cambian intra-hora y no queremos pegarle a APIs
 # públicas en cada request del dashboard.
 _macro_cache: dict = {"data": None, "expires_at": None}
+_macro_lock = asyncio.Lock()
 _MACRO_TTL_SECONDS = 3600
 
 @router.get("/kpis")
@@ -28,38 +30,51 @@ def get_kpis(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
-    # 1. Balance Total
+    # 1. Balance Total — agrupado por moneda. Sin tipo de cambio confiable es engañoso sumar.
     accounts = db.query(models.Account).filter(models.Account.user_id == current_user.id).all()
-    total_balance = sum(acc.balance for acc in accounts)
-    
+    balance_by_currency: dict = {}
+    for acc in accounts:
+        cur = (acc.currency or "USD").upper()
+        balance_by_currency[cur] = balance_by_currency.get(cur, Decimal("0")) + Decimal(str(acc.balance or 0))
+
+    # Heurística: si el user solo tiene una moneda, devolvemos `totalBalance` flat para compat con UI.
+    if len(balance_by_currency) == 1:
+        primary_cur, primary_total = next(iter(balance_by_currency.items()))
+        total_balance = float(primary_total)
+    else:
+        primary_cur = current_user.currency or "USD"
+        total_balance = float(balance_by_currency.get(primary_cur.upper(), Decimal("0")))
+
     # 2. Ingresos del periodo
     income_query = db.query(func.sum(models.Transaction.amount)).join(models.Account).filter(
         models.Account.user_id == current_user.id,
         models.Transaction.amount > 0
     )
-    
+
     # 3. Gastos del periodo
     expense_query = db.query(func.sum(models.Transaction.amount)).join(models.Account).filter(
         models.Account.user_id == current_user.id,
         models.Transaction.amount < 0
     )
-    
+
     if startDate:
         income_query = income_query.filter(models.Transaction.transaction_date >= startDate)
         expense_query = expense_query.filter(models.Transaction.transaction_date >= startDate)
     if endDate:
         income_query = income_query.filter(models.Transaction.transaction_date <= endDate)
         expense_query = expense_query.filter(models.Transaction.transaction_date <= endDate)
-        
+
     period_income = income_query.scalar() or 0
     period_expenses = abs(expense_query.scalar() or 0)
-    net_savings = period_income - period_expenses
-    
+    net_savings = float(period_income) - float(period_expenses)
+
     return {
         "totalBalance": total_balance,
-        "periodIncome": period_income,
-        "periodExpenses": period_expenses,
-        "netSavings": net_savings
+        "primaryCurrency": primary_cur,
+        "balanceByCurrency": {k: float(v) for k, v in balance_by_currency.items()},
+        "periodIncome": float(period_income),
+        "periodExpenses": float(period_expenses),
+        "netSavings": net_savings,
     }
 
 @router.get("/breakdown")
@@ -153,16 +168,18 @@ async def get_inflation_context(
     now = datetime.now(timezone.utc)
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0).date()
 
-    if (
-        _macro_cache["data"] is not None
-        and _macro_cache["expires_at"] is not None
-        and _macro_cache["expires_at"] > now
-    ):
-        macro = _macro_cache["data"]
-    else:
-        macro = await _fetch_macro_data()
-        _macro_cache["data"] = macro
-        _macro_cache["expires_at"] = now + timedelta(seconds=_MACRO_TTL_SECONDS)
+    # Lock para evitar que N requests simultáneos peguen a bluelytics/IPC en paralelo.
+    async with _macro_lock:
+        if (
+            _macro_cache["data"] is not None
+            and _macro_cache["expires_at"] is not None
+            and _macro_cache["expires_at"] > now
+        ):
+            macro = _macro_cache["data"]
+        else:
+            macro = await _fetch_macro_data()
+            _macro_cache["data"] = macro
+            _macro_cache["expires_at"] = now + timedelta(seconds=_MACRO_TTL_SECONDS)
 
     expenses_month_q = db.query(func.sum(func.abs(models.Transaction.amount))).join(models.Account).filter(
         models.Account.user_id == current_user.id,

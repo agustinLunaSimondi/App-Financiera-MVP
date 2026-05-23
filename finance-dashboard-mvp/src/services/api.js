@@ -6,16 +6,16 @@ import client from './client';
 
 // ============= TRANSACTIONS =============
 
+const PAGE_LIMIT = 200;
+
 export const getTransactions = async (filters = {}) => {
-    // Request high limit to ensure we get all transactions for client-side calculation
-    // TODO: Future refactor -> move aggregation to backend
-    const params = { limit: 10000 };
+    const params = { limit: PAGE_LIMIT, page: 1 };
     if (filters.startDate) params.startDate = filters.startDate;
     if (filters.endDate) params.endDate = filters.endDate;
     if (filters.category) params.categoryId = filters.category;
+    if (filters.search) params.search = filters.search;
 
     const response = await client.get('/transactions', { params });
-    // Parse amounts ensuring they are numbers and flatten relations
     return response.data.transactions.map(tx => ({
         ...tx,
         amount: Number(tx.amount),
@@ -24,6 +24,27 @@ export const getTransactions = async (filters = {}) => {
         categoryId: tx.categoryId,
         accountId: tx.accountId
     }));
+};
+
+export const getTransactionsPage = async (filters = {}, page = 1, limit = 50) => {
+    const params = { limit, page };
+    if (filters.startDate) params.startDate = filters.startDate;
+    if (filters.endDate) params.endDate = filters.endDate;
+    if (filters.category) params.categoryId = filters.category;
+    if (filters.search) params.search = filters.search;
+
+    const response = await client.get('/transactions', { params });
+    return {
+        transactions: response.data.transactions.map(tx => ({
+            ...tx,
+            amount: Number(tx.amount),
+            category: tx.category?.name || tx.category || 'Sin categoría',
+            account: tx.account?.name || tx.account || 'Desconocida',
+            categoryId: tx.categoryId,
+            accountId: tx.accountId,
+        })),
+        pagination: response.data.pagination,
+    };
 };
 
 export const getTransactionById = async (id) => {
@@ -70,8 +91,6 @@ export const deleteTransaction = async (id) => {
 
 // ============= BUDGETS =============
 
-// Normaliza budget para que `category` sea siempre string (nombre) y `categoryId` siempre number.
-// El backend a veces devuelve `category` como objeto completo y otras como string.
 const normalizeBudget = (b) => ({
     ...b,
     amount: Number(b.amount),
@@ -130,17 +149,22 @@ export const deleteAccount = async (id) => {
     return true;
 };
 
-// ============= CATEGORIES =============
-
-export const getCategories = async () => {
-    const response = await client.get('/categories');
-    return response.data.map(normalizeCategory);
+export const recalculateBalances = async () => {
+    const response = await client.post('/accounts/recalculate-balances');
+    return response.data;
 };
+
+// ============= CATEGORIES =============
 
 const normalizeCategory = (cat) => ({
     ...cat,
     type: (cat?.type || cat?.categoryType || '').toString().toUpperCase()
 });
+
+export const getCategories = async () => {
+    const response = await client.get('/categories');
+    return response.data.map(normalizeCategory);
+};
 
 export const addCategory = async (category) => {
     const payload = {
@@ -165,25 +189,32 @@ export const deleteCategory = async (id) => {
 
 // ============= SETTINGS =============
 
+// Cache simple in-memory para /auth/me — evita re-fetch en cada navegación.
+const ME_CACHE_TTL = 60 * 1000; // 60s
+let _meCache = { data: null, ts: 0 };
+
 export const getSettings = async () => {
-    // __skipAuthRedirect: un 401 acá no debe causar logout global — es datos opcionales.
+    const now = Date.now();
+    if (_meCache.data && now - _meCache.ts < ME_CACHE_TTL) {
+        const u = _meCache.data;
+        return { currency: u.currency || 'USD', darkMode: u.darkMode };
+    }
     const response = await client.get('/auth/me', { __skipAuthRedirect: true });
-    return {
-        currency: response.data.currency || 'USD',
-        darkMode: response.data.darkMode
-    };
+    _meCache = { data: response.data, ts: now };
+    return { currency: response.data.currency || 'USD', darkMode: response.data.darkMode };
 };
 
 export const updateSettings = async (updates) => {
     const response = await client.put('/auth/me', updates);
-    return {
-        currency: response.data.currency,
-        darkMode: response.data.darkMode
-    };
+    _meCache = { data: response.data, ts: Date.now() };
+    return { currency: response.data.currency, darkMode: response.data.darkMode };
 };
+
+export const invalidateMeCache = () => { _meCache = { data: null, ts: 0 }; };
 
 export const deleteUserAccount = async () => {
     await client.delete('/auth/me');
+    invalidateMeCache();
     return true;
 };
 
@@ -220,6 +251,7 @@ export const deleteSavingGoal = async (id) => {
     await client.delete(`/savings-goals/${id}`);
     return true;
 };
+
 // ============= RECURRING TRANSACTIONS =============
 
 const normalizeRecurring = (rt) => ({
@@ -298,9 +330,39 @@ export const disconnectMercadoPago = async () => {
     return true;
 };
 
+// ============= ANALYTICS (server-side aggregations) =============
+
+export const getAnalyticsKpis = async ({ startDate, endDate } = {}) => {
+    const params = {};
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+    const res = await client.get('/analytics/kpis', { params });
+    return res.data;
+};
+
+export const getAnalyticsBreakdown = async ({ startDate, endDate } = {}) => {
+    const params = {};
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+    const res = await client.get('/analytics/breakdown', { params });
+    return res.data;
+};
+
+export const getAnalyticsCashflow = async (months = 6) => {
+    const res = await client.get('/analytics/cashflow', { params: { months } });
+    return res.data;
+};
+
 // ============= INFLATION / MACRO CONTEXT =============
 
 export const getInflationContext = async () => {
     const res = await client.get('/analytics/inflation-context');
+    return res.data;
+};
+
+// ============= AUTH =============
+
+export const refreshAuthToken = async () => {
+    const res = await client.post('/auth/refresh');
     return res.data;
 };

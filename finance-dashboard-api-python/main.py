@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
 from slowapi.errors import RateLimitExceeded
 from slowapi import _rate_limit_exceeded_handler
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -21,12 +22,17 @@ from app.modules.mercadopago import mp_routes
 from app.modules.waitlist import waitlist_routes
 from app.modules.chat import chat_routes
 from app.modules.recurring.recurring_processor import process_recurring_transactions
+from app.database.database import SessionLocal
 
 load_dotenv()
 
 from app.core import posthog_client  # noqa: E402 — must import after load_dotenv
 from app.core.rate_limit import limiter  # noqa: E402
+from app.core.logging_config import configure_logging  # noqa: E402
+from app.core.sentry_init import init_sentry  # noqa: E402
 
+configure_logging()
+init_sentry()
 logger = logging.getLogger(__name__)
 
 # Scheduler para Tareas de Fondo
@@ -54,8 +60,7 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# Configuración de CORS
-# Soporta múltiples URLs separadas por coma en FRONTEND_URL
+# Configuración de CORS — explícita en métodos y headers (no usar wildcards con credenciales).
 _frontend_urls = os.getenv("FRONTEND_URL", "http://localhost:5173")
 origins = list(set(
     [url.strip() for url in _frontend_urls.split(",") if url.strip()]
@@ -66,8 +71,10 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "Accept", "X-Requested-With"],
+    expose_headers=["Content-Disposition"],
+    max_age=600,
 )
 
 # Registro de Rutas
@@ -89,7 +96,26 @@ def read_root():
 
 @app.get("/health")
 def health_check():
-    return {"status": "ok"}
+    """Health check con ping a DB. Útil para healthchecks de Render/K8s."""
+    db_ok = True
+    db_error = None
+    db = SessionLocal()
+    try:
+        db.execute(text("SELECT 1"))
+    except Exception as e:
+        db_ok = False
+        db_error = str(e)[:200]
+    finally:
+        db.close()
+    payload = {
+        "status": "ok" if db_ok else "degraded",
+        "db": "ok" if db_ok else "error",
+        "scheduler_running": scheduler.running if scheduler else False,
+        "version": app.version,
+    }
+    if db_error:
+        payload["db_error"] = db_error
+    return payload
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=int(os.getenv("PORT", 8000)), reload=True)
