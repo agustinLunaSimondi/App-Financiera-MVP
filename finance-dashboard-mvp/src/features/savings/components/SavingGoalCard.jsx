@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { Card } from '../../common/components/Card';
-import { Target, TrendingUp, Calendar, MoreVertical, Trash2, Check, X } from 'lucide-react';
+import { Target, TrendingUp, Calendar, MoreVertical, Trash2, Check, X, Zap } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { motion } from 'framer-motion';
 import { formatCurrency } from '../../../utils/formatters';
+import { GoalRulesModal } from './GoalRulesModal';
 
 export function SavingGoalCard({ goal, onEdit, onDelete, onContribute, delay = 0 }) {
     const percentage = Math.min(Math.round((goal.currentAmount / goal.targetAmount) * 100), 100);
@@ -13,9 +14,12 @@ export function SavingGoalCard({ goal, onEdit, onDelete, onContribute, delay = 0
     const [depositAmount, setDepositAmount] = useState('');
     const [depositing, setDepositing] = useState(false);
     const [amountError, setAmountError] = useState('');
+    const [rulesOpen, setRulesOpen] = useState(false);
 
     const handleConfirmDeposit = async () => {
-        const parsed = parseFloat(depositAmount);
+        // Aceptar tanto "1.50" como "1,50" (input ES-AR usa coma decimal en mobile).
+        const normalized = String(depositAmount).replace(',', '.');
+        const parsed = parseFloat(normalized);
         if (!Number.isFinite(parsed) || parsed <= 0) {
             setAmountError('Ingresá un monto válido mayor a 0');
             return;
@@ -71,6 +75,13 @@ export function SavingGoalCard({ goal, onEdit, onDelete, onContribute, delay = 0
                     </div>
                 </div>
                 <div className="flex gap-1">
+                    <button
+                        onClick={() => setRulesOpen(true)}
+                        title="Reglas de ahorro automático"
+                        className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors text-zinc-400 hover:text-emerald-500"
+                    >
+                        <Zap className="w-5 h-5" />
+                    </button>
                     <button
                         onClick={() => onEdit(goal)}
                         className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors text-zinc-400 hover:text-blue-500"
@@ -172,6 +183,8 @@ export function SavingGoalCard({ goal, onEdit, onDelete, onContribute, delay = 0
 
             {/* Decoración Glass sutil */}
             <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-gradient-to-br from-white/10 to-transparent blur-2xl rounded-full" />
+
+            <GoalRulesModal goal={goal} isOpen={rulesOpen} onClose={() => setRulesOpen(false)} />
         </Card>
     );
 }

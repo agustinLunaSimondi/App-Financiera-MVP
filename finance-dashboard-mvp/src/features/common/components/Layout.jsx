@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useReducedMotion } from 'framer-motion';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
     LayoutDashboard, Wallet, CreditCard, PieChart, Settings,
@@ -168,6 +169,7 @@ export function Layout({ children }) {
     const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
     const { settings, updateSettings } = useFinance();
     const location = useLocation();
+    const prefersReducedMotion = useReducedMotion();
 
     // Inicializar desde localStorage. Si no hay preferencia local, usar la del sistema.
     const [isDark, setIsDark] = useState(() => {
@@ -186,9 +188,11 @@ export function Layout({ children }) {
         document.documentElement.classList.toggle('dark', isDark);
     }, [isDark]);
 
-    // Sincronizar con backend SOLO si el usuario no tiene una preferencia local explícita.
-    // Evita que Render (al despertarse con valor desactualizado) sobreescriba la preferencia local.
+    // Sincronización inicial backend → cliente: solo se aplica UNA vez por sesión y solo si
+    // no hay preferencia local. Evita que un refresh tardío del backend pise el toggle del user.
+    const didInitialSyncRef = React.useRef(false);
     useEffect(() => {
+        if (didInitialSyncRef.current) return;
         if (settings.darkMode === undefined) return;
         try {
             const stored = localStorage.getItem('darkMode');
@@ -196,6 +200,7 @@ export function Layout({ children }) {
                 setIsDark(settings.darkMode);
             }
         } catch { /* noop */ }
+        didInitialSyncRef.current = true;
     }, [settings.darkMode]);
 
     const handleToggleDark = async () => {
@@ -246,10 +251,10 @@ export function Layout({ children }) {
                     <AnimatePresence mode="wait">
                         <motion.div
                             key={location.pathname}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            transition={{ duration: 0.3, ease: "easeOut" }}
+                            initial={prefersReducedMotion ? false : { opacity: 0, y: 10 }}
+                            animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
+                            exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: -10 }}
+                            transition={{ duration: prefersReducedMotion ? 0 : 0.3, ease: "easeOut" }}
                             className="p-4 md:p-6 lg:p-10 pb-28 lg:pb-10 max-w-[1400px] mx-auto w-full"
                         >
                             {children}
@@ -312,8 +317,8 @@ export function Layout({ children }) {
                 )}
             </AnimatePresence>
 
-            {/* Onboarding Tour – shows automatically for new users */}
-            <OnboardingTour />
+            {/* Onboarding Tour – solo dentro del Layout privado y fuera de la ruta /onboarding */}
+            {location.pathname !== '/onboarding' && <OnboardingTour />}
         </div>
     );
 }

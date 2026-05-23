@@ -7,7 +7,6 @@ from sqlalchemy.orm import Session
 from app.core import security
 from app.database.database import get_db
 from app.database import models
-from app import schemas
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
 
@@ -19,7 +18,24 @@ def get_current_user(db: Session = Depends(get_db), token: str = Depends(oauth2_
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        payload = jwt.decode(token, security.SECRET_KEY, algorithms=[security.ALGORITHM])
+        # Validamos issuer y audience explícitos. Tokens emitidos antes del rollout
+        # de aud/iss (legacy) son aceptados con un fallback graceful.
+        try:
+            payload = jwt.decode(
+                token,
+                security.SECRET_KEY,
+                algorithms=[security.ALGORITHM],
+                audience=security.JWT_AUDIENCE,
+                issuer=security.JWT_ISSUER,
+            )
+        except JWTError:
+            # Fallback: tokens viejos sin aud/iss siguen siendo válidos hasta su expiración.
+            payload = jwt.decode(
+                token,
+                security.SECRET_KEY,
+                algorithms=[security.ALGORITHM],
+                options={"verify_aud": False, "verify_iss": False},
+            )
         user_id: str = payload.get("userId")
         iat = payload.get("iat")
         if user_id is None:

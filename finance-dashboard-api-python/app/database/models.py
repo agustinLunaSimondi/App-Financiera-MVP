@@ -48,6 +48,9 @@ class User(Base):
     currency = Column(String, default="USD")
     dark_mode = Column(Boolean, default=False)
     onboarding_completed = Column(Boolean, default=False, nullable=False, server_default="false")
+    # Preferencias de email (#51 #52). Default True — el user opt-out desde settings.
+    email_weekly_snapshot = Column(Boolean, default=True, nullable=False, server_default="true")
+    email_smart_alerts = Column(Boolean, default=True, nullable=False, server_default="true")
     # JWTs emitidos antes de esta marca son rechazados (revocación granular: logout total, cambio de contraseña, etc.)
     tokens_invalidated_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -100,7 +103,7 @@ class Transaction(Base):
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     account_id = Column(String, ForeignKey("accounts.id", ondelete="CASCADE"), nullable=False)
-    category_id = Column(String, ForeignKey("categories.id"), nullable=False)
+    category_id = Column(String, ForeignKey("categories.id", ondelete="RESTRICT"), nullable=False)
     recurring_id = Column(String, ForeignKey("recurring_transactions.id", ondelete="SET NULL"), nullable=True)
     amount = Column(Numeric(12, 2), nullable=False)
     description = Column(String, nullable=False)
@@ -144,6 +147,26 @@ class SavingGoal(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
 
     user = relationship("User", back_populates="saving_goals")
+    rules = relationship("GoalRule", back_populates="goal", cascade="all, delete-orphan")
+
+
+class GoalRule(Base):
+    """Regla de auto-depósito: cuando entra una tx en `trigger_category_id`, transfiere
+    `percentage` % o `fixed_amount` a la meta. Exactamente uno de los dos debe estar set."""
+    __tablename__ = "goal_rules"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    goal_id = Column(String, ForeignKey("saving_goals.id", ondelete="CASCADE"), nullable=False, index=True)
+    trigger_category_id = Column(String, ForeignKey("categories.id", ondelete="CASCADE"), nullable=False)
+    percentage = Column(Numeric(5, 2), nullable=True)        # ej. 10.00 = 10%
+    fixed_amount = Column(Numeric(12, 2), nullable=True)
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
+
+    goal = relationship("SavingGoal", back_populates="rules")
+    trigger_category = relationship("Category")
 
 class RecurringTransaction(Base):
     __tablename__ = "recurring_transactions"
@@ -182,6 +205,32 @@ class MercadoPagoConnection(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
 
     user = relationship("User", back_populates="mercadopago_connection")
+
+
+class Notification(Base):
+    """Histórico de notificaciones enviadas (email u otros). El par
+    (user_id, dedup_key) sirve para no enviar la misma alerta dos veces."""
+    __tablename__ = "notifications"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    type = Column(String, nullable=False)  # 'weekly_snapshot' | 'budget_at_risk' | 'unusual_spend' | etc.
+    dedup_key = Column(String, nullable=False, index=True)
+    channel = Column(String, default="email", nullable=False)  # email | push | in_app
+    sent_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (UniqueConstraint('user_id', 'dedup_key', name='_user_dedup_key_uc'),)
+
+
+class TransactionEmbedding(Base):
+    """Vector embedding para auto-categorización (#55). 1 fila por TX. Si
+    transactions se actualiza/borra, el ORM cascadea por la FK."""
+    __tablename__ = "transaction_embeddings"
+
+    transaction_id = Column(String, ForeignKey("transactions.id", ondelete="CASCADE"), primary_key=True)
+    embedding_json = Column(String, nullable=False)  # JSON-serialized list[float]
+    model = Column(String, nullable=False, default="text-embedding-004")
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
 class WaitlistEmail(Base):

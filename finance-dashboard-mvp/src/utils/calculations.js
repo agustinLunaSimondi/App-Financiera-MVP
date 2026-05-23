@@ -170,3 +170,68 @@ export const calculatePercentageChange = (current, previous) => {
     if (previous === 0) return 0;
     return ((current - previous) / previous) * 100;
 };
+
+/**
+ * Proyecta el gasto total al fin de mes a partir del ritmo actual.
+ *
+ * spentToDate * (diasDelMes / diaActual). Devuelve { projection, spentToDate,
+ * daysElapsed, daysInMonth, daysRemaining } o null si todavía no hay datos.
+ *
+ * Permite inyectar `now` y `transactions` para tests deterministas.
+ */
+export const projectMonthEndSpend = (transactions = [], now = new Date()) => {
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const day = now.getDate();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    const monthTxs = transactions.filter(tx => {
+        const dateStr = tx.date || tx.transactionDate;
+        if (!dateStr) return false;
+        const d = new Date(dateStr + 'T00:00:00');
+        return d.getFullYear() === year && d.getMonth() === month && Number(tx.amount) < 0;
+    });
+
+    const spentToDate = monthTxs.reduce((sum, tx) => sum + Math.abs(Number(tx.amount)), 0);
+
+    if (day <= 0 || spentToDate === 0) {
+        return {
+            projection: spentToDate,
+            spentToDate,
+            daysElapsed: day,
+            daysInMonth,
+            daysRemaining: daysInMonth - day,
+        };
+    }
+
+    const projection = spentToDate * (daysInMonth / day);
+
+    return {
+        projection,
+        spentToDate,
+        daysElapsed: day,
+        daysInMonth,
+        daysRemaining: daysInMonth - day,
+    };
+};
+
+/**
+ * Suma los budgets que aplican al mes actual (period MONTHLY).
+ */
+export const calculateMonthlyBudgetTotal = (budgets = []) => {
+    return budgets
+        .filter(b => !b.period || String(b.period).toUpperCase() === 'MONTHLY')
+        .reduce((sum, b) => sum + Number(b.amount || 0), 0);
+};
+
+/**
+ * Promedio histórico de gasto mensual, excluyendo el mes actual.
+ * Necesita al menos un mes histórico completo; si no, devuelve null.
+ */
+export const calculateHistoricalMonthlyExpenseAverage = (transactions = [], now = new Date()) => {
+    const currentKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const monthly = groupTransactionsByMonth(transactions).filter(m => m.month !== currentKey);
+    if (monthly.length === 0) return null;
+    const total = monthly.reduce((sum, m) => sum + m.expenses, 0);
+    return total / monthly.length;
+};

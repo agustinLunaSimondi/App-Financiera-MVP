@@ -105,7 +105,14 @@ function App() {
                   <Route path="/help" element={<HelpPage />} />
                 </Route>
               </Routes>
-              <Toaster position="top-right" richColors />
+              <Toaster
+                position="top-right"
+                richColors
+                closeButton
+                toastOptions={{
+                    ariaProps: { role: 'alert', 'aria-live': 'polite' },
+                }}
+              />
             </FinanceProvider>
           </AuthProvider>
         </Router>

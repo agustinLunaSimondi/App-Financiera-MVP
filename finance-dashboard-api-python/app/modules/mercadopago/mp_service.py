@@ -22,11 +22,18 @@ def get_mp_config():
     """Obtener configuración de Mercado Pago desde variables de entorno."""
     client_id = os.getenv("MP_CLIENT_ID")
     client_secret = os.getenv("MP_CLIENT_SECRET")
-    redirect_uri = os.getenv("MP_REDIRECT_URI", "http://localhost:5173/integrations")
-    
+    redirect_uri = os.getenv("MP_REDIRECT_URI")
+    env = os.getenv("APP_ENV", "development").lower()
+
     if not client_id or not client_secret:
         raise ValueError("MP_CLIENT_ID y MP_CLIENT_SECRET deben estar configurados en .env")
-    
+
+    if not redirect_uri:
+        if env in ("production", "prod"):
+            # En producción no aceptamos un default a localhost — el OAuth de MP devolvería el code a un host irrelevante.
+            raise ValueError("MP_REDIRECT_URI debe estar configurado en producción.")
+        redirect_uri = "http://localhost:5173/integrations"
+
     return {
         "client_id": client_id,
         "client_secret": client_secret,
@@ -76,7 +83,7 @@ async def exchange_code_for_tokens(code: str) -> dict:
 async def refresh_access_token(connection: models.MercadoPagoConnection) -> dict:
     """Renueva el access token usando el refresh token."""
     config = get_mp_config()
-    
+
     async with httpx.AsyncClient() as client:
         response = await client.post(MP_OAUTH_URL, json={
             "client_id": config["client_id"],
@@ -84,15 +91,20 @@ async def refresh_access_token(connection: models.MercadoPagoConnection) -> dict
             "grant_type": "refresh_token",
             "refresh_token": connection.refresh_token,
         })
-        
+
         if response.status_code != 200:
             logger.error(f"Error renovando token: {response.status_code} - {response.text}")
             raise ValueError("No se pudo renovar el token de MP. Reconectá tu cuenta.")
-        
+
         data = response.json()
+        access_token = data.get("access_token")
+        # MP a veces devuelve el refresh_token vacío (rotation no aplicada). En ese caso preservamos el viejo.
+        new_refresh = data.get("refresh_token") or connection.refresh_token
+        if not access_token:
+            raise ValueError("Respuesta inválida de MP — falta access_token.")
         return {
-            "access_token": data["access_token"],
-            "refresh_token": data["refresh_token"],
+            "access_token": access_token,
+            "refresh_token": new_refresh,
             "expires_in": data.get("expires_in", 15552000),
         }
 

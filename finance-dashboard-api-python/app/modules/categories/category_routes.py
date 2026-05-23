@@ -76,9 +76,11 @@ def update_category(
         raise HTTPException(status_code=404, detail="Categoría no encontrada o no tienes permisos")
     
     update_data = category_update.model_dump(exclude_unset=True)
+    # `is_default` no se puede cambiar vía API — solo se setea al crear (registro/MP/chat fallback).
+    update_data.pop("is_default", None)
     for key, value in update_data.items():
         setattr(category, key, value)
-        
+
     db.commit()
     db.refresh(category)
     return category
@@ -95,6 +97,15 @@ def delete_category(
     ).first()
     if not category:
         raise HTTPException(status_code=404, detail="Categoría no encontrada")
+
+    # Si tiene transacciones, no permitimos borrar — el user tendría que recategorizarlas primero.
+    tx_count = db.query(models.Transaction).filter(models.Transaction.category_id == category_id).count()
+    if tx_count > 0:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Esta categoría tiene {tx_count} transacciones asociadas. Recategorizalas antes de borrarla."
+        )
+
     db.delete(category)
     db.commit()
     return {"message": "Categoría eliminada correctamente"}

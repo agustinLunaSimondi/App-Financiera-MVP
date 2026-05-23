@@ -114,7 +114,7 @@ def login(request: Request, user_in: schemas.UserLogin, db: Session = Depends(ge
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    logger.info(f"Login exitoso user_id={user.id}")
+    logger.debug("Login exitoso por email")
     posthog_client.capture(user.id, "user_logged_in", {"method": "email"})
     access_token = security.create_access_token(
         data={"userId": user.id, "email": user.email}
@@ -255,6 +255,17 @@ def complete_onboarding(
     return current_user
 
 
+@router.post("/refresh", response_model=schemas.Token)
+def refresh_token(
+    current_user: models.User = Depends(get_current_user),
+):
+    """Re-emite un JWT fresco para extender la sesión sin pedir contraseña."""
+    access_token = security.create_access_token(
+        data={"userId": current_user.id, "email": current_user.email}
+    )
+    return {"token": access_token, "user": current_user}
+
+
 @router.delete("/me")
 def delete_my_account(
     db: Session = Depends(get_db),
@@ -262,12 +273,15 @@ def delete_my_account(
 ):
     """Eliminar la cuenta del usuario autenticado y todos sus datos."""
     user_id = current_user.id
+    user_email = current_user.email
     posthog_client.capture(user_id, "account_deleted")
     account_ids = [acc.id for acc in current_user.accounts]
     if account_ids:
         db.query(models.Transaction).filter(
             models.Transaction.account_id.in_(account_ids)
         ).delete(synchronize_session='fetch')
+    # Limpieza de waitlist — derecho al olvido (mínimo).
+    db.query(models.WaitlistEmail).filter(models.WaitlistEmail.email == user_email).delete(synchronize_session='fetch')
     db.delete(current_user)
     db.commit()
     logger.info(f"Cuenta eliminada user_id={user_id}")

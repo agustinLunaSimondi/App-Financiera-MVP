@@ -11,16 +11,49 @@ const HOST = import.meta.env.VITE_POSTHOG_HOST || 'https://app.posthog.com';
 
 let initialized = false;
 
+// El usuario puede aceptar/rechazar tracking vía banner o /settings.
+// Default: opt-in implícito (compatible con AR / fuera de UE). Para UE poner CONSENT_REQUIRED=true.
+const CONSENT_REQUIRED = (import.meta.env.VITE_ANALYTICS_CONSENT_REQUIRED || 'false') === 'true';
+const CONSENT_KEY = 'analytics_consent';
+
+function hasConsent() {
+    if (!CONSENT_REQUIRED) return true;
+    try {
+        return localStorage.getItem(CONSENT_KEY) === 'granted';
+    } catch {
+        return false;
+    }
+}
+
+export function setAnalyticsConsent(granted) {
+    try {
+        localStorage.setItem(CONSENT_KEY, granted ? 'granted' : 'denied');
+    } catch { /* noop */ }
+    if (initialized) {
+        if (granted) posthog.opt_in_capturing();
+        else posthog.opt_out_capturing();
+    } else if (granted) {
+        initAnalytics();
+    }
+}
+
+export function getAnalyticsConsent() {
+    if (!CONSENT_REQUIRED) return 'granted';
+    try {
+        return localStorage.getItem(CONSENT_KEY) || 'pending';
+    } catch {
+        return 'pending';
+    }
+}
+
 export function initAnalytics() {
     if (!KEY || initialized) return;
+    if (!hasConsent()) return;
     posthog.init(KEY, {
         api_host: HOST,
-        // Captura automática de pageviews y clicks desactivada — usamos eventos manuales
-        // para tener control total sobre qué se trackea.
         autocapture: false,
         capture_pageview: false,
         persistence: 'localStorage+cookie',
-        // No trackear en desarrollo local
         loaded: (ph) => {
             if (import.meta.env.DEV) ph.opt_out_capturing();
         },
@@ -107,6 +140,20 @@ export const analytics = {
 
     landingCtaClicked: (cta) =>
         capture('landing_cta_clicked', { cta }),
+
+    // Quick win #54 — proyección fin de mes
+    projectionViewed: ({ exceedsBudget, daysElapsed }) =>
+        capture('projection_viewed', { exceeds_budget: !!exceedsBudget, days_elapsed: daysElapsed }),
+
+    // Quick win #61 — sugerencias de suscripciones recurrentes
+    subscriptionsSuggestionViewed: (count) =>
+        capture('subscriptions_suggestion_viewed', { count }),
+
+    subscriptionsSuggestionEngaged: (count) =>
+        capture('subscriptions_suggestion_engaged', { count }),
+
+    subscriptionsSuggestionConverted: (count) =>
+        capture('subscriptions_suggestion_converted', { count }),
 };
 
 // Util: rangos de monto para no enviar valores exactos
