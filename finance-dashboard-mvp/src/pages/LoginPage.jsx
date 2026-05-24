@@ -28,6 +28,21 @@ export function LoginPage() {
         return () => clearTimeout(t);
     }, [isLoading]);
 
+    // Pre-warm del backend (Render free-tier hace cold-start tras inactividad).
+    // Disparamos un ping fire-and-forget a /health mientras el usuario tipea
+    // sus credenciales, así POST /auth/login encuentra el server caliente y
+    // evita el spinner largo post-login que obligaba al usuario a recargar.
+    useEffect(() => {
+        const apiBase = (import.meta.env.VITE_API_URL || 'https://finance-api-9fe5.onrender.com/api/')
+            .replace(/\/api\/?$/, '');
+        const healthUrl = `${apiBase}/health`;
+        const controller = new AbortController();
+        // fire-and-forget: ignoramos el resultado, solo despertamos al server
+        fetch(healthUrl, { method: 'GET', signal: controller.signal, cache: 'no-store' })
+            .catch(() => { /* noop: si falla, el login normal seguirá funcionando */ });
+        return () => controller.abort();
+    }, []);
+
     // Navegar via useEffect cuando isAuthenticated cambia.
     // Evita race condition (en iOS Safari el setState + navigate síncrono
     // dejaba el spinner congelado hasta que el usuario tocaba la pantalla).
