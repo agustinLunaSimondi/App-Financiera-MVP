@@ -9,6 +9,8 @@ import { CategoryForm } from '../features/categories/components/CategoryForm';
 import { Moon, Sun, Globe, DollarSign, Palette, Download, Trash2, Edit2, Plus, X, PlayCircle, AlertTriangle, Settings as SettingsIcon } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { resetOnboarding } from '../features/common/components/OnboardingTour';
+import { TaxReportSection } from '../features/common/components/TaxReportSection';
+import { WidgetsSection } from '../features/common/components/WidgetsSection';
 import { toast } from 'sonner';
 import { parseApiError } from '../lib/apiErrors';
 
@@ -297,6 +299,16 @@ export function SettingsPage() {
                         </div>
                     </div>
                 </Card>
+
+                {/* Tax Report — #63 */}
+                <Card>
+                    <TaxReportSection />
+                </Card>
+
+                {/* Public Widgets — #64 */}
+                <Card>
+                    <WidgetsSection />
+                </Card>
             </div>
 
             {/* Delete Account Confirmation Modal */}
@@ -380,6 +392,11 @@ export function SettingsPage() {
                                             <span className="text-xs px-2 py-0.5 bg-zinc-200 dark:bg-zinc-600 rounded text-zinc-600 dark:text-zinc-300 shrink-0">
                                                 {category.type === 'INCOME' ? 'Ingreso' : 'Gasto'}
                                             </span>
+                                            {category.taxDeductible && (
+                                                <span className="text-[10px] px-1.5 py-0.5 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 rounded font-bold shrink-0" title="Incluida en el reporte AFIP">
+                                                    AFIP
+                                                </span>
+                                            )}
                                         </div>
                                         <div className="flex items-center gap-1 shrink-0 ml-2">
                                             {confirmDeleteCategoryId === category.id ? (

@@ -6,7 +6,8 @@ export function CategoryForm({ onSubmit, onCancel, initialData = null }) {
         name: '',
         type: 'EXPENSE',
         color: '#6B7280',
-        icon: ''
+        icon: '',
+        taxDeductible: false,
     });
 
     useEffect(() => {
@@ -15,8 +16,11 @@ export function CategoryForm({ onSubmit, onCancel, initialData = null }) {
                 name: initialData.name,
                 type: initialData.type,
                 color: initialData.color || '#6B7280',
-                icon: initialData.icon || ''
+                icon: initialData.icon || '',
+                taxDeductible: !!initialData.taxDeductible,
             });
+        } else {
+            setFormData({ name: '', type: 'EXPENSE', color: '#6B7280', icon: '', taxDeductible: false });
         }
     }, [initialData]);
 
@@ -31,6 +35,7 @@ export function CategoryForm({ onSubmit, onCancel, initialData = null }) {
             name: formData.name.trim(),
             type: formData.type,
             color: formData.color,
+            taxDeductible: formData.taxDeductible,
         };
         if (formData.icon && formData.icon.trim()) payload.icon = formData.icon.trim();
         onSubmit(payload);
@@ -125,6 +130,24 @@ export function CategoryForm({ onSubmit, onCancel, initialData = null }) {
                     </label>
                 </div>
             </div>
+
+            {/* Tax deductible — solo aplica a categorías de gasto (AFIP). */}
+            {formData.type === 'EXPENSE' && (
+                <label className="flex items-start gap-3 p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/15 cursor-pointer hover:bg-emerald-500/10 transition-colors">
+                    <input
+                        type="checkbox"
+                        checked={formData.taxDeductible}
+                        onChange={(e) => setFormData(prev => ({ ...prev, taxDeductible: e.target.checked }))}
+                        className="mt-0.5 w-4 h-4 rounded accent-emerald-500"
+                    />
+                    <div className="flex-1">
+                        <p className="text-sm font-bold text-zinc-800 dark:text-zinc-100">Categoría deducible (AFIP)</p>
+                        <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
+                            Marcala si vas a incluirla en el reporte para tu contador (freelancers, monotributistas).
+                        </p>
+                    </div>
+                </label>
+            )}
 
             <div className="flex gap-3 pt-4">
                 <button

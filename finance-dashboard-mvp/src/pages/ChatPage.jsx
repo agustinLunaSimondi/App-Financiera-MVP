@@ -9,6 +9,7 @@ import { useFinance } from '../hooks/useFinance';
 import { sendMessageToAgent } from '../services/chat';
 import { formatCurrency } from '../utils/formatters';
 import { parseApiError, isTimeoutError } from '../lib/apiErrors';
+import { AIInsightsCard } from './components/AIInsightsCard';
 
 // ─────────────────────────────────────────────
 // SAFE MARKDOWN RENDERER
@@ -287,7 +288,10 @@ export function ChatPage() {
     };
 
     return (
-        <div className="flex flex-col h-[calc(100vh-140px)] md:h-[calc(100vh-160px)] lg:h-[calc(100vh-110px)] max-w-4xl mx-auto bg-white/40 dark:bg-zinc-900/40 backdrop-blur-md rounded-3xl border border-zinc-200/50 dark:border-zinc-800/50 overflow-hidden shadow-2xl relative">
+        <div className="space-y-4 max-w-5xl mx-auto">
+            <AIInsightsCard compact />
+
+            <div className="flex flex-col h-[calc(100vh-260px)] min-h-[560px] max-h-[860px] bg-white/40 dark:bg-zinc-900/40 backdrop-blur-md rounded-3xl border border-zinc-200/50 dark:border-zinc-800/50 overflow-hidden shadow-2xl relative">
 
             {/* Header del Chat */}
             <div className="px-6 py-4 border-b border-zinc-200/50 dark:border-zinc-800/50 bg-white/60 dark:bg-zinc-900/60 backdrop-blur-sm flex items-center justify-between shrink-0">
@@ -427,6 +431,7 @@ export function ChatPage() {
                 </form>
             </div>
 
+            </div>
         </div>
     );
 }

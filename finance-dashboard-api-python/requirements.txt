@@ -22,3 +22,5 @@ pytest==8.2.2
 pytest-asyncio==0.23.7
 structlog==24.1.0
 sentry-sdk[fastapi]==1.45.0
+openpyxl==3.1.2
+reportlab==4.0.9

@@ -130,13 +130,13 @@ export function OnboardingTour() {
         <AnimatePresence>
             {visible && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                    {/* Backdrop */}
+                    {/* Backdrop — sin onClick. Forzamos cierre con el botón X o "Saltar"
+                        para que un toque accidental no descarte el tour entero. */}
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         className="absolute inset-0 bg-black/50 backdrop-blur-md"
-                        onClick={handleDismiss}
                     />
 
                     {/* Card */}

@@ -11,6 +11,8 @@ import {
     projectMonthEndSpend,
     calculateMonthlyBudgetTotal,
     calculateHistoricalMonthlyExpenseAverage,
+    generateTimeSeriesChartData,
+    recommendedGranularity,
 } from './calculations';
 
 describe('calculations', () => {
@@ -115,5 +117,73 @@ describe('calculations', () => {
         const now = new Date(2026, 4, 15);
         const txs = [{ amount: -1000, transactionDate: '2026-05-10' }];
         expect(calculateHistoricalMonthlyExpenseAverage(txs, now)).toBeNull();
+    });
+
+    describe('generateTimeSeriesChartData', () => {
+        const txs = [
+            { amount: 5000, transactionDate: '2026-05-01' },
+            { amount: -300, transactionDate: '2026-05-01' },
+            { amount: -200, transactionDate: '2026-05-02' },
+            { amount: -100, transactionDate: '2026-05-15' },
+        ];
+
+        it('granularidad diaria respeta el rango y emite buckets vacíos', () => {
+            const out = generateTimeSeriesChartData(txs, 'day', '2026-05-01', '2026-05-03');
+            // 3 buckets, uno por día, sin saltearse el 2026-05-03 aunque no tenga tx.
+            expect(out.length).toBe(3);
+            expect(out[0]).toMatchObject({ income: 5000, expenses: 300 });
+            expect(out[1]).toMatchObject({ income: 0, expenses: 200 });
+            expect(out[2]).toMatchObject({ income: 0, expenses: 0 });
+        });
+
+        it('granularidad semanal agrupa por semanas (lunes)', () => {
+            const out = generateTimeSeriesChartData(txs, 'week', '2026-05-01', '2026-05-15');
+            expect(out.length).toBeGreaterThan(0);
+            const totalExpenses = out.reduce((s, b) => s + b.expenses, 0);
+            expect(totalExpenses).toBe(600);
+        });
+
+        it('granularidad mensual junta un solo bucket cuando todo cae en un mes', () => {
+            const out = generateTimeSeriesChartData(txs, 'month', '2026-05-01', '2026-05-31');
+            expect(out.length).toBe(1);
+            expect(out[0].income).toBe(5000);
+            expect(out[0].expenses).toBe(600);
+        });
+
+        it('granularidad anual junta todo en un solo bucket si el rango es un año', () => {
+            const out = generateTimeSeriesChartData(txs, 'year', '2026-01-01', '2026-12-31');
+            expect(out.length).toBe(1);
+            expect(out[0].label).toBe('2026');
+        });
+
+        it('devuelve array vacío si no hay transacciones', () => {
+            expect(generateTimeSeriesChartData([], 'month')).toEqual([]);
+        });
+    });
+
+    describe('recommendedGranularity', () => {
+        it('día para rangos cortos', () => {
+            expect(recommendedGranularity(7)).toBe('day');
+            expect(recommendedGranularity(30)).toBe('day');
+        });
+
+        it('semana para rangos medianos', () => {
+            expect(recommendedGranularity(60)).toBe('week');
+            expect(recommendedGranularity(120)).toBe('week');
+        });
+
+        it('mes para rangos largos', () => {
+            expect(recommendedGranularity(365)).toBe('month');
+            expect(recommendedGranularity(730)).toBe('month');
+        });
+
+        it('año para rangos enormes', () => {
+            expect(recommendedGranularity(1500)).toBe('year');
+        });
+
+        it('null o 0 cae a mes', () => {
+            expect(recommendedGranularity(null)).toBe('month');
+            expect(recommendedGranularity(0)).toBe('month');
+        });
     });
 });

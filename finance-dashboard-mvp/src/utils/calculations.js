@@ -163,6 +163,128 @@ export const generateIncomeVsExpensesChartData = (transactions, months = 6) => {
     });
 };
 
+// ─── Series temporales configurables ───────────────────────────────────
+// granularity ∈ {'day', 'week', 'month', 'year'}
+// Devuelve un array ordenado de buckets { label, income, expenses } donde
+// `label` ya viene formateado en español. Si no se pasan start/end, infiere
+// el rango automáticamente a partir de las transacciones.
+
+const _MONTHS_AR = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+
+function _isoDate(d) {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function _parseDay(s) {
+    // Soporta 'yyyy-mm-dd' o ISO con tiempo
+    const [y, m, d] = s.split('T')[0].split('-').map(Number);
+    return new Date(y, m - 1, d);
+}
+
+// Lunes como inicio de semana (ISO). Retorna nuevo Date en local timezone.
+function _startOfWeek(d) {
+    const out = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const dow = out.getDay(); // 0=domingo, 1=lunes…
+    const diff = (dow + 6) % 7; // lunes=0
+    out.setDate(out.getDate() - diff);
+    return out;
+}
+
+function _bucketKey(date, granularity) {
+    const y = date.getFullYear();
+    const m = date.getMonth() + 1;
+    const d = date.getDate();
+    if (granularity === 'day') return _isoDate(date);
+    if (granularity === 'week') return _isoDate(_startOfWeek(date));
+    if (granularity === 'month') return `${y}-${String(m).padStart(2, '0')}`;
+    if (granularity === 'year') return String(y);
+    return _isoDate(date);
+}
+
+function _labelFor(key, granularity) {
+    if (granularity === 'day') {
+        const [y, m, d] = key.split('-').map(Number);
+        return `${d}/${String(m).padStart(2, '0')}`;
+    }
+    if (granularity === 'week') {
+        const [y, m, d] = key.split('-').map(Number);
+        return `Sem ${d}/${String(m).padStart(2, '0')}`;
+    }
+    if (granularity === 'month') {
+        const [, mm] = key.split('-').map(Number);
+        return _MONTHS_AR[mm - 1];
+    }
+    if (granularity === 'year') {
+        return key;
+    }
+    return key;
+}
+
+// Recomienda una granularidad razonable según la cantidad de días del rango.
+export function recommendedGranularity(rangeDays) {
+    if (!rangeDays || rangeDays <= 0) return 'month';
+    if (rangeDays <= 35) return 'day';
+    if (rangeDays <= 120) return 'week';
+    if (rangeDays <= 730) return 'month';
+    return 'year';
+}
+
+// Itera buckets contiguos en el rango — clave para no saltearse buckets vacíos.
+function _iterateBuckets(start, end, granularity, cb) {
+    const cur = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+    if (granularity === 'week') {
+        const w = _startOfWeek(cur);
+        cur.setTime(w.getTime());
+    } else if (granularity === 'month') {
+        cur.setDate(1);
+    } else if (granularity === 'year') {
+        cur.setMonth(0, 1);
+    }
+    while (cur <= end) {
+        cb(_bucketKey(cur, granularity));
+        if (granularity === 'day') cur.setDate(cur.getDate() + 1);
+        else if (granularity === 'week') cur.setDate(cur.getDate() + 7);
+        else if (granularity === 'month') cur.setMonth(cur.getMonth() + 1);
+        else if (granularity === 'year') cur.setFullYear(cur.getFullYear() + 1);
+        else break;
+    }
+}
+
+export function generateTimeSeriesChartData(transactions, granularity = 'month', startDate = null, endDate = null) {
+    if (!transactions || transactions.length === 0) {
+        return [];
+    }
+    // Inferir rango si no vino dado
+    const dates = transactions
+        .map(tx => _parseDay(tx.date || tx.transactionDate))
+        .filter(d => !isNaN(d.getTime()))
+        .sort((a, b) => a - b);
+    if (dates.length === 0) return [];
+    const start = startDate ? _parseDay(startDate) : dates[0];
+    const end = endDate ? _parseDay(endDate) : dates[dates.length - 1];
+
+    // Inicializar buckets vacíos en orden — así el chart muestra los huecos.
+    const buckets = {};
+    _iterateBuckets(start, end, granularity, (key) => {
+        buckets[key] = { key, label: _labelFor(key, granularity), income: 0, expenses: 0 };
+    });
+
+    transactions.forEach(tx => {
+        const d = _parseDay(tx.date || tx.transactionDate);
+        if (isNaN(d.getTime())) return;
+        if (d < start || d > end) return;
+        const key = _bucketKey(d, granularity);
+        if (!buckets[key]) {
+            buckets[key] = { key, label: _labelFor(key, granularity), income: 0, expenses: 0 };
+        }
+        const amount = Number(tx.amount);
+        if (amount > 0) buckets[key].income += amount;
+        else buckets[key].expenses += Math.abs(amount);
+    });
+
+    return Object.values(buckets).sort((a, b) => a.key.localeCompare(b.key));
+}
+
 /**
  * Calcula el cambio porcentual entre dos valores
  */

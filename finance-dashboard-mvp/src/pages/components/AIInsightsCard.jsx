@@ -1,13 +1,22 @@
 import React, { useEffect, useState } from 'react';
-import { Lightbulb, TrendingUp, AlertTriangle, Sparkles } from 'lucide-react';
+import { Lightbulb, TrendingUp, AlertTriangle, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
 import { useFinance } from '../../hooks/useFinance';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { formatCurrency } from '../../utils/formatters';
 
-export function AIInsightsCard() {
+/**
+ * Card de insights heurísticos.
+ *
+ * Props:
+ *   compact: true → renderiza un banner colapsable (1 línea cerrado). Ideal
+ *            para vivir arriba del chat sin robarle espacio.
+ *   defaultOpen: si compact=true, controla si arranca abierto o cerrado.
+ */
+export function AIInsightsCard({ compact = false, defaultOpen = false }) {
     const { t } = useLanguage();
     const { transactions, accounts, budgets } = useFinance();
     const [insights, setInsights] = useState([]);
+    const [open, setOpen] = useState(defaultOpen);
 
     useEffect(() => {
         // Here we build heuristic insights locally to save a request, since the data is all here.
@@ -88,8 +97,61 @@ export function AIInsightsCard() {
         setInsights(newInsights);
     }, [transactions, accounts, budgets]);
 
+    // Empty states
+    if (!insights.length && !transactions.length) return null;
+
+    // ─── COMPACT MODE: banner colapsable de una línea ──────────
+    if (compact) {
+        if (!insights.length) {
+            return (
+                <div className="bg-gradient-to-r from-purple-500/5 to-pink-500/5 border border-purple-500/15 rounded-2xl px-4 py-3 flex items-center gap-3">
+                    <Sparkles className="w-4 h-4 text-purple-500 shrink-0" />
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                        Seguí registrando movimientos para recibir sugerencias.
+                    </p>
+                </div>
+            );
+        }
+        return (
+            <div className="bg-gradient-to-r from-indigo-500/5 via-purple-500/5 to-pink-500/5 border border-purple-500/15 rounded-2xl overflow-hidden">
+                <button
+                    type="button"
+                    onClick={() => setOpen((v) => !v)}
+                    className="w-full px-4 py-3 flex items-center gap-3 hover:bg-purple-500/5 transition-colors"
+                    aria-expanded={open}
+                >
+                    <Lightbulb className="w-4 h-4 text-purple-500 shrink-0" />
+                    <p className="text-xs font-bold text-zinc-700 dark:text-zinc-200 flex-1 text-left">
+                        {insights.length} sugerencia{insights.length === 1 ? '' : 's'} de Aki para vos
+                    </p>
+                    {open
+                        ? <ChevronUp className="w-4 h-4 text-zinc-400" />
+                        : <ChevronDown className="w-4 h-4 text-zinc-400" />}
+                </button>
+                {open && (
+                    <div className="border-t border-purple-500/10 p-3 grid grid-cols-1 md:grid-cols-3 gap-2">
+                        {insights.map((insight, i) => (
+                            <div key={i} className="bg-white/60 dark:bg-zinc-900/60 rounded-xl p-3 border border-zinc-200/50 dark:border-zinc-800/50">
+                                <div className="flex items-start gap-2">
+                                    <insight.icon className={`w-4 h-4 mt-0.5 shrink-0 ${
+                                        insight.type === 'warning' ? 'text-amber-500' :
+                                        insight.type === 'success' ? 'text-emerald-500' : 'text-blue-500'
+                                    }`} />
+                                    <div className="min-w-0">
+                                        <h3 className="font-bold text-zinc-900 dark:text-white text-xs mb-0.5">{insight.title}</h3>
+                                        <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-snug">{insight.text}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    // ─── DEFAULT MODE: grilla completa (uso histórico) ─────────
     if (!insights.length) {
-        if (!transactions.length) return null;
         return (
             <div className="bg-gradient-to-br from-indigo-500/5 via-purple-500/5 to-pink-500/5 border border-purple-200/30 dark:border-purple-500/10 rounded-2xl p-6 flex items-center gap-4">
                 <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center shrink-0">

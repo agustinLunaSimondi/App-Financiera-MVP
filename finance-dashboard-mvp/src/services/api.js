@@ -108,6 +108,7 @@ const normalizeBudget = (b) => ({
     amount: Number(b.amount),
     category: typeof b.category === 'object' ? (b.category?.name || 'Sin categoría') : (b.category || 'Sin categoría'),
     categoryId: b.categoryId ?? b.category?.id ?? null,
+    color: b.color || null,
 });
 
 export const getBudgets = async () => {
@@ -183,6 +184,7 @@ export const addCategory = async (category) => {
         name: (category.name || '').trim(),
         type: (category.type || 'EXPENSE').toString().toUpperCase(),
         color: category.color || '#6B7280',
+        taxDeductible: !!category.taxDeductible,
     };
     if (category.icon) payload.icon = category.icon;
     const response = await client.post('/categories', payload);
@@ -420,5 +422,89 @@ export const getInflationContext = async () => {
 
 export const refreshAuthToken = async () => {
     const res = await client.post('/auth/refresh');
+    return res.data;
+};
+
+// ============= STREAKS (#62) =============
+
+export const getMyStreak = async () => {
+    const res = await client.get('/streaks/me');
+    return res.data;
+};
+
+// ============= BENCHMARK (#59) =============
+
+export const getBenchmarkPrefs = async () => {
+    const res = await client.get('/benchmark/prefs');
+    return res.data;
+};
+
+export const updateBenchmarkPrefs = async (prefs) => {
+    const res = await client.put('/benchmark/prefs', prefs);
+    return res.data;
+};
+
+export const getMyBenchmark = async () => {
+    const res = await client.get('/benchmark/me');
+    return res.data;
+};
+
+// ============= ENVELOPES (#60) =============
+
+export const getBudgetMode = async () => {
+    const res = await client.get('/budgets/mode');
+    return res.data.mode;
+};
+
+export const updateBudgetMode = async (mode) => {
+    const res = await client.put('/budgets/mode', { mode });
+    return res.data.mode;
+};
+
+export const getEnvelopes = async () => {
+    const res = await client.get('/budgets/envelopes');
+    return res.data;
+};
+
+// ============= TAX REPORT (#63) =============
+
+export const getDeductibleCategories = async () => {
+    const res = await client.get('/reports/deductible-categories');
+    return res.data;
+};
+
+export const generateTaxReport = async ({ startDate, endDate, categoryIds, format }) => {
+    const res = await client.post(
+        '/reports/tax-deductible',
+        { startDate, endDate, categoryIds, format },
+        { responseType: 'blob' }
+    );
+    return res;
+};
+
+// ============= WIDGETS (#64) =============
+
+export const listWidgets = async () => {
+    const res = await client.get('/widgets');
+    return res.data;
+};
+
+export const createWidget = async ({ type, config, expiresInDays }) => {
+    const res = await client.post('/widgets', { type, config, expiresInDays });
+    return res.data;
+};
+
+export const deleteWidget = async (id) => {
+    await client.delete(`/widgets/${id}`);
+    return true;
+};
+
+export const rotateWidgetToken = async (id) => {
+    const res = await client.post(`/widgets/${id}/rotate`);
+    return res.data;
+};
+
+export const getPublicWidget = async (token) => {
+    const res = await client.get(`/widgets/public/${token}`, { __skipAuthRedirect: true });
     return res.data;
 };

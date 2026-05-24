@@ -36,6 +36,7 @@ import { LandingPage } from './pages/LandingPage';
 import { PrivacyPage } from './pages/PrivacyPage';
 import { TermsPage } from './pages/TermsPage';
 import { ChatPage } from './pages/ChatPage';
+import { WidgetEmbedPage } from './pages/WidgetEmbedPage';
 
 // Guard for unauthenticated users — redirects to /login
 function RequireAuth() {
@@ -82,6 +83,8 @@ function App() {
                 <Route path="/register" element={<RegisterPage />} />
                 <Route path="/privacy" element={<PrivacyPage />} />
                 <Route path="/terms" element={<TermsPage />} />
+                {/* Widget embebible público (#64) — sin auth, sin layout */}
+                <Route path="/widget/:token" element={<WidgetEmbedPage />} />
 
                 {/* Onboarding — auth required, no sidebar */}
                 <Route element={<RequireAuth />}>

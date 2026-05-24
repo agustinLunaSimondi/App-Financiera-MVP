@@ -1,13 +1,71 @@
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy.orm import Session, joinedload
-from typing import List
+from typing import List, Literal
 from app.database import models
 from app.database.database import get_db
 from app.core.deps import get_current_user
 from app import schemas
 from app.core import posthog_client
+from app.modules.budgets.envelopes import envelope_status_for_category
 
 router = APIRouter(prefix="/budgets", tags=["budgets"])
+
+
+class BudgetModeUpdate(BaseModel):
+    mode: Literal["standard", "envelopes"]
+
+
+@router.get("/mode")
+def get_budget_mode(current_user: models.User = Depends(get_current_user)):
+    return {"mode": current_user.budget_mode or "standard"}
+
+
+@router.put("/mode")
+def update_budget_mode(
+    payload: BudgetModeUpdate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    current_user.budget_mode = payload.mode
+    db.commit()
+    db.refresh(current_user)
+    posthog_client.capture(current_user.id, "budget_mode_changed", {"mode": payload.mode})
+    return {"mode": current_user.budget_mode}
+
+
+@router.get("/envelopes")
+def list_envelopes(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Estado de cada sobre del mes corriente. Solo retorna budgets MONTHLY."""
+    budgets = (
+        db.query(models.Budget)
+        .filter(
+            models.Budget.user_id == current_user.id,
+            models.Budget.period == models.BudgetPeriod.MONTHLY,
+        )
+        .options(joinedload(models.Budget.category))
+        .all()
+    )
+    out = []
+    for b in budgets:
+        status = envelope_status_for_category(db, current_user.id, b.category_id)
+        if status is None:
+            continue
+        out.append({
+            "categoryId": b.category_id,
+            "categoryName": b.category.name if b.category else None,
+            "categoryIcon": b.category.icon if b.category else None,
+            "categoryColor": b.category.color if b.category else None,
+            "budget": float(status.budget),
+            "spent": float(status.spent),
+            "remaining": float(status.remaining),
+            "isEmpty": status.remaining <= 0,
+        })
+    out.sort(key=lambda e: e["remaining"])  # más vacíos primero
+    return {"mode": current_user.budget_mode or "standard", "envelopes": out}
 
 @router.get("/", response_model=List[schemas.Budget])
 def get_budgets(

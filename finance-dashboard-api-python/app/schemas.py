@@ -90,6 +90,7 @@ class CategoryBase(CamelModel):
     color: str = "#6B7280"
     icon: Optional[str] = None
     type: CategoryType
+    tax_deductible: bool = False
 
 class CategoryCreate(CategoryBase):
     pass
@@ -99,6 +100,7 @@ class CategoryUpdate(CamelModel):
     color: Optional[str] = None
     icon: Optional[str] = None
     type: Optional[CategoryType] = None
+    tax_deductible: Optional[bool] = None
 
 class Category(CategoryBase):
     id: str
@@ -142,6 +144,7 @@ class BudgetBase(CamelModel):
     amount: Decimal = Field(max_digits=12, decimal_places=2)
     period: BudgetPeriod = BudgetPeriod.MONTHLY
     start_date: date
+    color: Optional[str] = None
 
 class BudgetCreate(BudgetBase):
     pass
@@ -151,6 +154,7 @@ class BudgetUpdate(CamelModel):
     amount: Optional[Decimal] = None
     period: Optional[BudgetPeriod] = None
     start_date: Optional[date] = None
+    color: Optional[str] = None
 
 class Budget(BudgetBase):
     id: str

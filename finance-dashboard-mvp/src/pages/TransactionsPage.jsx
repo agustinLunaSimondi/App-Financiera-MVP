@@ -11,6 +11,8 @@ import { EmptyState } from '../features/common/components/EmptyState';
 import { PageHeader } from '../features/common/components/PageHeader';
 import { TransactionForm } from '../features/transactions/components/TransactionForm';
 import { AutoCategorizeModal } from '../features/transactions/components/AutoCategorizeModal';
+import { DateRangePicker } from '../features/common/components/DateRangePicker';
+import { InflationPanel } from '../features/dashboard/components/InflationPanel';
 import { Sparkles } from 'lucide-react';
 
 import { formatCurrency } from '../utils/formatters';
@@ -70,6 +72,11 @@ export function TransactionsPage() {
             startDate = new Date(now.getFullYear(), 0, 1).toISOString().split('T')[0];
             endDate = new Date(now.getFullYear(), 11, 31).toISOString().split('T')[0];
         }
+        updateFilters({ startDate, endDate });
+    };
+
+    const handleCustomRange = ({ startDate, endDate }) => {
+        setQuickDate('custom');
         updateFilters({ startDate, endDate });
     };
 
@@ -180,6 +187,9 @@ export function TransactionsPage() {
                     }
                 />
 
+                {/* Contexto macro AR — dólar blue + IPC */}
+                <InflationPanel />
+
                 {/* Filters & Search */}
                 <div className="space-y-3">
                     {/* Tipo + Quick date row */}
@@ -214,27 +224,43 @@ export function TransactionsPage() {
                                 );
                             })}
                         </div>
-                        <div className="flex bg-zinc-100 dark:bg-zinc-800/50 p-1 rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50 overflow-x-auto scrollbar-hide">
-                            {[
-                                { id: 'thisMonth', label: 'Este mes' },
-                                { id: 'last7Days', label: '7 días' },
-                                { id: 'year', label: 'Este año' },
-                                { id: 'all', label: 'Todo' },
-                            ].map(item => (
-                                <button
-                                    key={item.id}
-                                    type="button"
-                                    onClick={() => handleQuickDate(item.id)}
-                                    className={cn(
-                                        "px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap shrink-0",
-                                        quickDate === item.id
-                                            ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm"
-                                            : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300"
-                                    )}
-                                >
-                                    {item.label}
-                                </button>
-                            ))}
+                        <div className="flex items-center gap-2">
+                            <div className="flex bg-zinc-100 dark:bg-zinc-800/50 p-1 rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50 overflow-x-auto scrollbar-hide">
+                                {[
+                                    { id: 'thisMonth', label: 'Este mes' },
+                                    { id: 'last7Days', label: '7 días' },
+                                    { id: 'year', label: 'Este año' },
+                                    { id: 'all', label: 'Todo' },
+                                ].map(item => (
+                                    <button
+                                        key={item.id}
+                                        type="button"
+                                        onClick={() => handleQuickDate(item.id)}
+                                        className={cn(
+                                            "px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap shrink-0",
+                                            quickDate === item.id
+                                                ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm"
+                                                : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300"
+                                        )}
+                                    >
+                                        {item.label}
+                                    </button>
+                                ))}
+                            </div>
+                            <div className={cn(
+                                "rounded-2xl border p-1 shrink-0",
+                                quickDate === 'custom'
+                                    ? "bg-white dark:bg-zinc-700 border-zinc-200/50 dark:border-zinc-700/50 shadow-sm"
+                                    : "bg-zinc-100 dark:bg-zinc-800/50 border-zinc-200/50 dark:border-zinc-700/50"
+                            )}>
+                                <DateRangePicker
+                                    active={quickDate === 'custom'}
+                                    initialStart={quickDate === 'custom' ? filters?.startDate || '' : ''}
+                                    initialEnd={quickDate === 'custom' ? filters?.endDate || '' : ''}
+                                    onApply={handleCustomRange}
+                                    onClear={() => handleQuickDate('all')}
+                                />
+                            </div>
                         </div>
                     </div>
 
