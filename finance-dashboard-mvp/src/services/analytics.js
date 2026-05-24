@@ -154,6 +154,28 @@ export const analytics = {
 
     subscriptionsSuggestionConverted: (count) =>
         capture('subscriptions_suggestion_converted', { count }),
+
+    // #59 — Benchmark anónimo (teaser mientras no hay masa crítica)
+    benchmarkTeaserViewed: () =>
+        capture('benchmark_teaser_viewed'),
+
+    // #62 — Streaks "Día sin gasto"
+    streakViewed: ({ currentStreak, hasBadge, longestStreak }) =>
+        capture('streak_viewed', {
+            current_streak: currentStreak,
+            has_badge: !!hasBadge,
+            longest_streak: longestStreak,
+        }),
+
+    // #64 — Dashboard widget embed
+    widgetCreated: (type) =>
+        capture('widget_created', { type }),
+
+    widgetDeleted: () =>
+        capture('widget_deleted'),
+
+    widgetTokenRotated: () =>
+        capture('widget_token_rotated'),
 };
 
 // Util: rangos de monto para no enviar valores exactos

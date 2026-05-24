@@ -9,8 +9,7 @@ Dashboard financiero full-stack (MVP) para gestión de finanzas personales: ingr
 ```
 App-Financiera-MVP/
 ├── finance-dashboard-mvp/          # Frontend (React + Vite)
-├── finance-dashboard-api-python/   # Backend ACTIVO (FastAPI + Python)
-└── finance-dashboard-api/          # Backend legacy (Node.js/Prisma) — ignorar
+└── finance-dashboard-api-python/   # Backend ACTIVO (FastAPI + Python)
 ```
 
 ## Stack Tecnológico
@@ -97,10 +96,10 @@ uvicorn main:app --reload
 
 ## Bugs Conocidos (a resolver)
 
-1. **Dark mode roto** — El toggle no aplica correctamente las clases `dark:` de Tailwind. Revisar persistencia en AuthContext/FinanceContext y aplicación de clase en el root.
-2. **Savings — botón "Depositar" no funciona** — Falla la conexión al endpoint para actualizar `current_amount` o registrar la transacción asociada.
-3. **Google OAuth en producción** — Error `origin_mismatch` en Vercel/Render. Verificar orígenes autorizados en Google Console.
-4. **Responsividad móvil** — Sidebar y tarjetas no se adaptan 100% en pantallas pequeñas.
+1. ~~**Dark mode roto**~~ — **RESUELTO** (2026-05-24)
+2. ~~**Savings — botón "Depositar" no funciona**~~ — **RESUELTO** (2026-05-24)
+3. **Google OAuth en producción** — Error `origin_mismatch` en Vercel/Render. Verificar orígenes autorizados en Google Console. ⚠️ aún pendiente
+4. ~~**Responsividad móvil**~~ — **RESUELTO** (2026-05-24, iOS zoom + grid + safe-area)
 
 ## Reglas de Diseño
 
@@ -111,7 +110,6 @@ uvicorn main:app --reload
 
 ## Notas Importantes
 
-- **Backend legacy** (`finance-dashboard-api/`, Node.js): ignorar, no está en uso activo.
 - Los CORS del backend leen `FRONTEND_URL` del `.env` y siempre incluyen `localhost:5173`.
 - El scheduler de APScheduler procesa transacciones recurrentes cada hora automáticamente.
 - Al agregar migraciones de DB usar Alembic: `alembic revision --autogenerate -m "descripcion"` → `alembic upgrade head`.

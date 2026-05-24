@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Flame } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { getMyStreak } from '../../../services/api';
+import { analytics } from '../../../services/analytics';
 
 /**
  * Pill animado de streak (#62). Cuelga del sidebar. Si el endpoint falla
@@ -13,7 +14,16 @@ export function StreakPill() {
     useEffect(() => {
         let cancelled = false;
         getMyStreak()
-            .then((d) => { if (!cancelled) setData(d); })
+            .then((d) => {
+                if (!cancelled) {
+                    setData(d);
+                    analytics.streakViewed({
+                        currentStreak: d.currentStreak ?? 0,
+                        hasBadge: (d.badges || []).length > 0,
+                        longestStreak: d.longestStreak ?? 0,
+                    });
+                }
+            })
             .catch(() => { /* silent */ });
         return () => { cancelled = true; };
     }, []);
