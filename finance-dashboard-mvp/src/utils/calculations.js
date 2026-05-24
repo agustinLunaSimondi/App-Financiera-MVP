@@ -193,7 +193,6 @@ function _startOfWeek(d) {
 function _bucketKey(date, granularity) {
     const y = date.getFullYear();
     const m = date.getMonth() + 1;
-    const d = date.getDate();
     if (granularity === 'day') return _isoDate(date);
     if (granularity === 'week') return _isoDate(_startOfWeek(date));
     if (granularity === 'month') return `${y}-${String(m).padStart(2, '0')}`;
@@ -203,11 +202,11 @@ function _bucketKey(date, granularity) {
 
 function _labelFor(key, granularity) {
     if (granularity === 'day') {
-        const [y, m, d] = key.split('-').map(Number);
+        const [, m, d] = key.split('-').map(Number);
         return `${d}/${String(m).padStart(2, '0')}`;
     }
     if (granularity === 'week') {
-        const [y, m, d] = key.split('-').map(Number);
+        const [, m, d] = key.split('-').map(Number);
         return `Sem ${d}/${String(m).padStart(2, '0')}`;
     }
     if (granularity === 'month') {

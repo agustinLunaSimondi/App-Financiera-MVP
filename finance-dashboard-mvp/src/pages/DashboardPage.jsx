@@ -17,7 +17,6 @@ import {
     calculateTotalExpenses,
     calculateNetSavings,
     calculateTotalBalance,
-    generateIncomeVsExpensesChartData,
     generateTimeSeriesChartData,
     recommendedGranularity,
     groupTransactionsByCategory,

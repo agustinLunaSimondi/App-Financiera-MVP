@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { FileText, Download, Info, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
-    getDeductibleCategories, generateTaxReport, getCategories, updateCategory,
+    generateTaxReport, getCategories, updateCategory,
 } from '../../../services/api';
 import { parseApiError } from '../../../lib/apiErrors';
 
@@ -65,7 +65,7 @@ export function TaxReportSection() {
                 ? `${targets.length} ${targets.length === 1 ? 'categoría marcada' : 'categorías marcadas'} como deducibles`
                 : 'Categorías deducibles limpiadas'
             );
-        } catch (e) {
+        } catch {
             setCats(snapshot);
             toast.error('Algunos cambios fallaron — recargá la página');
         }

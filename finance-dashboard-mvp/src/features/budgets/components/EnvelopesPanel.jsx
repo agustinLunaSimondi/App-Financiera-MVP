@@ -41,7 +41,7 @@ export function EnvelopesPanel() {
             await updateBudgetMode(next);
             setMode(next);
             toast.success(next === 'envelopes' ? 'Modo Chanchito activado' : 'Modo estándar activado');
-        } catch (e) {
+        } catch {
             toast.error('No pudimos cambiar el modo');
         } finally {
             setSaving(false);

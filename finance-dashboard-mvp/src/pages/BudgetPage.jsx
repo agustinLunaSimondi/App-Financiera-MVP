@@ -24,25 +24,6 @@ export function BudgetPage() {
     const [confirmDeleteId, setConfirmDeleteId] = useState(null);
     const [deleting, setDeleting] = useState(false);
 
-    if (loading) {
-        return (
-            <div className="space-y-10">
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-                    <div className="space-y-3">
-                        <div className="h-4 w-28 bg-zinc-200/60 dark:bg-zinc-800/60 rounded-md animate-pulse" />
-                        <div className="h-9 w-60 bg-zinc-200/60 dark:bg-zinc-800/60 rounded-xl animate-pulse" />
-                    </div>
-                    <div className="h-14 w-full md:w-48 bg-zinc-200/60 dark:bg-zinc-800/60 rounded-2xl animate-pulse" />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-                    {[1, 2, 3].map(n => (
-                        <div key={n} className="h-52 bg-zinc-100 dark:bg-zinc-800/50 rounded-3xl animate-pulse" />
-                    ))}
-                </div>
-            </div>
-        );
-    }
-
     const expenseTransactions = transactions.filter(tx => tx.amount < 0);
     const expensesByCategory = groupTransactionsByCategory(expenseTransactions);
 
@@ -114,6 +95,25 @@ export function BudgetPage() {
     );
 
     const exceededCount = budgetWithActuals.filter(b => b.exceeded).length;
+
+    if (loading) {
+        return (
+            <div className="space-y-10">
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                    <div className="space-y-3">
+                        <div className="h-4 w-28 bg-zinc-200/60 dark:bg-zinc-800/60 rounded-md animate-pulse" />
+                        <div className="h-9 w-60 bg-zinc-200/60 dark:bg-zinc-800/60 rounded-xl animate-pulse" />
+                    </div>
+                    <div className="h-14 w-full md:w-48 bg-zinc-200/60 dark:bg-zinc-800/60 rounded-2xl animate-pulse" />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+                    {[1, 2, 3].map(n => (
+                        <div key={n} className="h-52 bg-zinc-100 dark:bg-zinc-800/50 rounded-3xl animate-pulse" />
+                    ))}
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-10">

@@ -39,7 +39,7 @@ export function WidgetsSection() {
             await createWidget({ type, config });
             toast.success('Widget creado');
             refresh();
-        } catch (e) {
+        } catch {
             toast.error('No pudimos crear el widget');
         }
     };
