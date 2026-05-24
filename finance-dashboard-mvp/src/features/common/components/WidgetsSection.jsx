@@ -5,6 +5,7 @@ import {
     listWidgets, createWidget, deleteWidget, rotateWidgetToken,
     getSavingsGoals,
 } from '../../../services/api';
+import { analytics } from '../../../services/analytics';
 
 /**
  * Sección "Widgets embebibles" (#64).
@@ -37,6 +38,7 @@ export function WidgetsSection() {
         try {
             const config = type === 'goal' ? { goalId } : {};
             await createWidget({ type, config });
+            analytics.widgetCreated(type);
             toast.success('Widget creado');
             refresh();
         } catch {
@@ -47,6 +49,7 @@ export function WidgetsSection() {
     const handleDelete = async (id) => {
         try {
             await deleteWidget(id);
+            analytics.widgetDeleted();
             toast.success('Widget eliminado');
             setWidgets((prev) => prev.filter((w) => w.id !== id));
         } catch {
@@ -57,6 +60,7 @@ export function WidgetsSection() {
     const handleRotate = async (id) => {
         try {
             const updated = await rotateWidgetToken(id);
+            analytics.widgetTokenRotated();
             setWidgets((prev) => prev.map((w) => (w.id === id ? updated : w)));
             toast.success('Token rotado — actualizá los embeds');
         } catch {

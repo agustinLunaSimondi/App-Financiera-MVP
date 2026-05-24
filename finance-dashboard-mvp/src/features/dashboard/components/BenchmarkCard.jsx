@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Users, Sparkles } from 'lucide-react';
+import { analytics } from '../../../services/analytics';
 
 /**
  * Tu lugar en el ranking (#59).
@@ -11,6 +12,8 @@ import { Users, Sparkles } from 'lucide-react';
  * volver al flujo de opt-in funcional reactivando getBenchmarkPrefs/getMyBenchmark.
  */
 export function BenchmarkCard() {
+    useEffect(() => { analytics.benchmarkTeaserViewed(); }, []);
+
     return (
         <div className="relative overflow-hidden rounded-3xl p-6 bg-gradient-to-br from-blue-500/5 via-transparent to-purple-500/5 border border-blue-500/15">
             <div className="absolute top-3 right-3">
