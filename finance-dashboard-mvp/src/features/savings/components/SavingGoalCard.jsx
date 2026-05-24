@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Card } from '../../common/components/Card';
 import { Target, TrendingUp, Calendar, MoreVertical, Trash2, Check, X, Zap } from 'lucide-react';
-import { cn } from '../../../lib/utils';
 import { motion } from 'framer-motion';
 import { formatCurrency } from '../../../utils/formatters';
 import { GoalRulesModal } from './GoalRulesModal';

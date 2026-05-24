@@ -40,7 +40,7 @@ export function AuthProvider({ children }) {
                         setUser(res.data);
                         identifyUser(res.data.id, { email: res.data.email, name: res.data.name });
                     }
-                } catch (error) {
+                } catch {
                     if (!checkAuthCancelledRef.current) {
                         clearToken();
                         setUser(null);
