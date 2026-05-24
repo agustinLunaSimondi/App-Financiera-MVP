@@ -49,6 +49,40 @@
   html {
     scroll-behavior: smooth;
   }
+
+  /* iOS Safari auto-zoom fix: forces font-size >=16px on form controls
+     in mobile to prevent involuntary zoom-in on focus. Previously inputs
+     using text-sm (14px) triggered viewport zoom that the user had to
+     manually undo. */
+  @media (max-width: 640px) {
+    input,
+    select,
+    textarea {
+      font-size: 16px !important;
+    }
+  }
+
+  /* Native date inputs: ensure consistent alignment and tap area on iOS.
+     Without this the value collapses or centers oddly on iPhone Safari. */
+  input[type="date"],
+  input[type="datetime-local"],
+  input[type="time"] {
+    min-height: 44px;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  input[type="date"]::-webkit-date-and-time-value {
+    text-align: left;
+  }
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    opacity: 0.6;
+    cursor: pointer;
+    padding: 4px;
+  }
+  .dark input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    opacity: 0.7;
+  }
 }
 
 @layer utilities {

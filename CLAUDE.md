@@ -115,3 +115,67 @@ uvicorn main:app --reload
 - Los CORS del backend leen `FRONTEND_URL` del `.env` y siempre incluyen `localhost:5173`.
 - El scheduler de APScheduler procesa transacciones recurrentes cada hora automáticamente.
 - Al agregar migraciones de DB usar Alembic: `alembic revision --autogenerate -m "descripcion"` → `alembic upgrade head`.
+
+<!-- code-review-graph MCP tools -->
+## MCP Tools: code-review-graph
+
+**IMPORTANT: This project has a knowledge graph. ALWAYS use the
+code-review-graph MCP tools BEFORE using Grep/Glob/Read to explore
+the codebase.** The graph is faster, cheaper (fewer tokens), and gives
+you structural context (callers, dependents, test coverage) that file
+scanning cannot.
+
+### When to use graph tools FIRST
+
+- **Exploring code**: `semantic_search_nodes` or `query_graph` instead of Grep
+- **Understanding impact**: `get_impact_radius` instead of manually tracing imports
+- **Code review**: `detect_changes` + `get_review_context` instead of reading entire files
+- **Finding relationships**: `query_graph` with callers_of/callees_of/imports_of/tests_for
+- **Architecture questions**: `get_architecture_overview` + `list_communities`
+
+Fall back to Grep/Glob/Read **only** when the graph doesn't cover what you need.
+
+### Key Tools
+
+| Tool | Use when |
+| ------ | ---------- |
+| `detect_changes` | Reviewing code changes — gives risk-scored analysis |
+| `get_review_context` | Need source snippets for review — token-efficient |
+| `get_impact_radius` | Understanding blast radius of a change |
+| `get_affected_flows` | Finding which execution paths are impacted |
+| `query_graph` | Tracing callers, callees, imports, tests, dependencies |
+| `semantic_search_nodes` | Finding functions/classes by name or keyword |
+| `get_architecture_overview` | Understanding high-level codebase structure |
+| `refactor_tool` | Planning renames, finding dead code |
+
+### Workflow
+
+1. The graph auto-updates on file changes (via hooks).
+2. Use `detect_changes` for code review.
+3. Use `get_affected_flows` to understand impact.
+4. Use `query_graph` pattern="tests_for" to check coverage.
+
+---
+
+## MCP Tools: token-savior (Symbol Navigation + Persistent Memory)
+
+**MANDATORY: Use token-savior FIRST for codebase navigation.** Indexes every symbol (functions, classes, imports, call graph) and maintains persistent memory across sessions (SQLite WAL + FTS5 + vector embeddings). Reduces injected characters by 97% vs raw file reads.
+
+### Tools & Patterns
+
+| Tool | Use when |
+| ------ | ---------- |
+| `find_symbol` | Locate function/class by name across both frontend + backend |
+| `get_function_source` | Retrieve function source + call context (who calls it, what it calls) |
+| `get_class_source` | Retrieve class definition + method list |
+| `get_dependencies` | Map module/file dependencies (imports, exports) |
+| `query_memory` | Search session history (bugfixes, decisions, patterns from prior sessions) |
+
+### Workflow
+
+1. **Symbol first**: `find_symbol("functionName")` before reading files
+2. **Context second**: `get_function_source()` returns source + callers/callees
+3. **Memory search**: Start session with `query_memory("prior decisions")` to load prior context
+4. **Fall back**: Use graph tools (`detect_changes`, `get_review_context`) only when symbol tools don't cover your need
+
+Token Savior auto-compacts session decisions, bugfixes, and architectural choices into searchable memory. Each session loads prior sessions' deltas at startup — no re-reading old conversations.

@@ -1,0 +1,32 @@
+{
+  "mcpServers": {
+    "code-review-graph": {
+      "command": "C:\\Users\\agust\\AppData\\Local\\Programs\\Python\\Python311\\python.exe",
+      "args": [
+        "-m",
+        "code_review_graph",
+        "serve"
+      ],
+      "cwd": "C:\\Users\\agust\\OneDrive\\Desktop\\App-Financiera-MVP",
+      "type": "stdio"
+    },
+    "supabase": {
+      "command": "npx",
+      "args": ["@supabase/mcp-server@latest"],
+      "type": "stdio"
+    },
+    "posthog": {
+      "command": "npx",
+      "args": ["@posthog/mcp-server@latest"],
+      "type": "stdio"
+    },
+    "token-savior": {
+      "command": "C:\\Users\\agust\\AppData\\Local\\Programs\\Python\\Python311\\Scripts\\token-savior",
+      "env": {
+        "WORKSPACE_ROOTS": "C:\\Users\\agust\\OneDrive\\Desktop\\App-Financiera-MVP",
+        "TOKEN_SAVIOR_CLIENT": "claude-code"
+      },
+      "type": "stdio"
+    }
+  }
+}

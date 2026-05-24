@@ -22,7 +22,7 @@ export function DateRangePicker({
     const [open, setOpen] = useState(false);
     const [start, setStart] = useState(initialStart);
     const [end, setEnd] = useState(initialEnd);
-    const [coords, setCoords] = useState({ top: 0, left: 0 });
+    const [coords, setCoords] = useState({ top: 0, left: 0, width: 288 });
     const buttonRef = useRef(null);
     const popoverRef = useRef(null);
 
@@ -32,18 +32,36 @@ export function DateRangePicker({
     }, [initialStart, initialEnd]);
 
     // Posicionar el popover relativo al botón cada vez que se abre o cambia el
-    // scroll/resize de la ventana. Width estimado del popover: 288px (w-72).
+    // scroll/resize de la ventana. En mobile (<=480px) ocupa todo el ancho menos
+    // 16px de margen y se ancla a la izquierda para no salirse de viewport.
     const updateCoords = () => {
         if (!buttonRef.current) return;
         const rect = buttonRef.current.getBoundingClientRect();
-        const POPOVER_WIDTH = 288;
         const margin = 8;
-        // Anclamos a la esquina inferior derecha del botón.
-        const left = Math.max(margin, Math.min(
-            rect.right - POPOVER_WIDTH,
-            window.innerWidth - POPOVER_WIDTH - margin,
-        ));
-        setCoords({ top: rect.bottom + 8, left });
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        const isMobile = vw <= 480;
+        const width = isMobile ? Math.min(vw - margin * 2, 360) : 288;
+
+        let left;
+        if (isMobile) {
+            left = (vw - width) / 2;
+        } else {
+            left = Math.max(margin, Math.min(
+                rect.right - width,
+                vw - width - margin,
+            ));
+        }
+
+        // Clamp top to viewport: si no entra abajo, abrir hacia arriba.
+        const ESTIMATED_HEIGHT = 260;
+        let top = rect.bottom + 8;
+        if (top + ESTIMATED_HEIGHT > vh - margin && rect.top - ESTIMATED_HEIGHT - 8 > margin) {
+            top = rect.top - ESTIMATED_HEIGHT - 8;
+        }
+        top = Math.max(margin, Math.min(top, vh - ESTIMATED_HEIGHT - margin));
+
+        setCoords({ top, left, width });
     };
 
     useLayoutEffect(() => {
@@ -115,7 +133,7 @@ export function DateRangePicker({
             {open && createPortal(
                 <div
                     ref={popoverRef}
-                    style={{ position: 'fixed', top: coords.top, left: coords.left, width: 288 }}
+                    style={{ position: 'fixed', top: coords.top, left: coords.left, width: coords.width }}
                     className="z-[100] p-4 rounded-2xl bg-white dark:bg-zinc-900 shadow-2xl border border-zinc-200 dark:border-zinc-700"
                 >
                     <div className="space-y-3">

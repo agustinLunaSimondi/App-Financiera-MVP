@@ -104,13 +104,34 @@ export function IntegrationsPage() {
 
     // Pre-fetch de la URL de autorización de MP cuando el usuario no está conectado.
     // Se ejecuta ANTES de que el usuario haga clic, evitando el await en el handler.
+    // En cold-start de Render el primer intento puede fallar/timeoutear: reintentamos
+    // hasta 3 veces con backoff, así el usuario en mobile no se queda con un botón
+    // que parece roto si llega antes de que el server despierte.
     useEffect(() => {
         if (mpStatus?.connected || prefetchingRef.current) return;
         if (mpStatus === null) return; // Esperar a que loadStatus() termine
         prefetchingRef.current = true;
-        api.getMercadoPagoAuthUrl()
-            .then(url => setMpAuthUrl(url))
-            .catch(() => { prefetchingRef.current = false; });
+
+        let cancelled = false;
+        const tryPrefetch = async (attempt = 0) => {
+            try {
+                const url = await api.getMercadoPagoAuthUrl();
+                if (!cancelled) setMpAuthUrl(url);
+            } catch (err) {
+                if (cancelled) return;
+                if (attempt < 2) {
+                    // Backoff: 1.5s, 3s
+                    setTimeout(() => tryPrefetch(attempt + 1), 1500 * (attempt + 1));
+                } else {
+                    // Liberamos el guard para que un click manual pueda reintentar
+                    prefetchingRef.current = false;
+                    console.warn('No se pudo pre-fetch URL MP tras 3 intentos:', err);
+                }
+            }
+        };
+        tryPrefetch();
+
+        return () => { cancelled = true; };
     }, [mpStatus]);
 
     // Manejo del callback de OAuth (con guard para evitar doble-fire en StrictMode)
@@ -176,15 +197,39 @@ export function IntegrationsPage() {
         setSyncing(true);
         setSyncResult(null);
         setError(null);
+        const attempt = async () => api.syncMercadoPago();
         try {
-            const result = await api.syncMercadoPago();
+            let result;
+            try {
+                result = await attempt();
+            } catch (err) {
+                // Retry una vez en fallos transitorios típicos de Render cold-start
+                // o de la API de MP (timeout/5xx). 401 = token expirado, no reintentar.
+                const status = err?.response?.status;
+                if (status && status !== 401 && status !== 404) {
+                    await new Promise(r => setTimeout(r, 2000));
+                    result = await attempt();
+                } else {
+                    throw err;
+                }
+            }
             setSyncResult(result);
             analytics.mpSynced(result?.transactions_imported ?? 0);
             // Refrescar balance Y todas las transacciones en el contexto
             await Promise.all([loadBalance(), refreshData()]);
             setTimeout(() => setSyncResult(null), 8000);
         } catch (err) {
-            setError(err.response?.data?.detail || 'Error al sincronizar');
+            const detail = err?.response?.data?.detail;
+            const status = err?.response?.status;
+            let msg;
+            if (status === 401) {
+                msg = 'Tu sesión con Mercado Pago expiró. Desconectá y volvé a conectar.';
+            } else if (status === 404) {
+                msg = 'No hay conexión activa con Mercado Pago.';
+            } else {
+                msg = typeof detail === 'string' ? detail : 'Error al sincronizar. Reintentá en unos segundos.';
+            }
+            setError(msg);
         } finally {
             setSyncing(false);
         }
