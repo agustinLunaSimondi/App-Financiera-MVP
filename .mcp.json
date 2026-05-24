@@ -19,6 +19,14 @@
       "command": "npx",
       "args": ["@posthog/mcp-server@latest"],
       "type": "stdio"
+    },
+    "token-savior": {
+      "command": "C:\\Users\\agust\\AppData\\Local\\Programs\\Python\\Python311\\Scripts\\token-savior",
+      "env": {
+        "WORKSPACE_ROOTS": "C:\\Users\\agust\\OneDrive\\Desktop\\App-Financiera-MVP",
+        "TOKEN_SAVIOR_CLIENT": "claude-code"
+      },
+      "type": "stdio"
     }
   }
 }

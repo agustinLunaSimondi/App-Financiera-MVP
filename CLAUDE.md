@@ -154,3 +154,28 @@ Fall back to Grep/Glob/Read **only** when the graph doesn't cover what you need.
 2. Use `detect_changes` for code review.
 3. Use `get_affected_flows` to understand impact.
 4. Use `query_graph` pattern="tests_for" to check coverage.
+
+---
+
+## MCP Tools: token-savior (Symbol Navigation + Persistent Memory)
+
+**MANDATORY: Use token-savior FIRST for codebase navigation.** Indexes every symbol (functions, classes, imports, call graph) and maintains persistent memory across sessions (SQLite WAL + FTS5 + vector embeddings). Reduces injected characters by 97% vs raw file reads.
+
+### Tools & Patterns
+
+| Tool | Use when |
+| ------ | ---------- |
+| `find_symbol` | Locate function/class by name across both frontend + backend |
+| `get_function_source` | Retrieve function source + call context (who calls it, what it calls) |
+| `get_class_source` | Retrieve class definition + method list |
+| `get_dependencies` | Map module/file dependencies (imports, exports) |
+| `query_memory` | Search session history (bugfixes, decisions, patterns from prior sessions) |
+
+### Workflow
+
+1. **Symbol first**: `find_symbol("functionName")` before reading files
+2. **Context second**: `get_function_source()` returns source + callers/callees
+3. **Memory search**: Start session with `query_memory("prior decisions")` to load prior context
+4. **Fall back**: Use graph tools (`detect_changes`, `get_review_context`) only when symbol tools don't cover your need
+
+Token Savior auto-compacts session decisions, bugfixes, and architectural choices into searchable memory. Each session loads prior sessions' deltas at startup — no re-reading old conversations.
