@@ -9,6 +9,16 @@
       ],
       "cwd": "C:\\Users\\agust\\OneDrive\\Desktop\\App-Financiera-MVP",
       "type": "stdio"
+    },
+    "supabase": {
+      "command": "npx",
+      "args": ["@supabase/mcp-server@latest"],
+      "type": "stdio"
+    },
+    "posthog": {
+      "command": "npx",
+      "args": ["@posthog/mcp-server@latest"],
+      "type": "stdio"
     }
   }
 }

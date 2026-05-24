@@ -36,3 +36,56 @@ Fall back to Grep/Glob/Read **only** when the graph doesn't cover what you need.
 2. Use `detect_changes` for code review.
 3. Use `get_affected_flows` to understand impact.
 4. Use `query_graph` pattern="tests_for" to check coverage.
+
+---
+
+## Claude Code: Development Workflow
+
+**Session startup:** Run `/caveman full` to enable terse output mode (60% token savings).
+
+**Before exploring code:** Call `detect_changes` or `semantic_search_nodes` — never raw Grep on unknown territory.
+
+**Large files (>5KB):** Use `ctx_execute` or `ctx_execute_file` to process in sandbox; raw Read wastes context.
+
+**Multi-step tasks:** Use `ctx_batch_execute` with `concurrency: 4-8` for parallel I/O (git, API calls, file reads).
+
+**Session memory:** Run `ctx_search(queries: [...], sort: "timeline")` before asking basic questions — prior sessions indexed and searchable.
+
+**Token reporting:** `ctx stats` shows session savings; `ctx doctor` diagnoses MCP/graph health.
+
+### IDE Shortcuts (VS Code + Claude Code)
+
+- `Cmd+K` → Inline chat (quick linting, format checks)
+- `Cmd+I` → Focus mode (deep code reviews, complex refactors)
+- `Cmd+Shift+P` → "Claude Code: Build Code Graph" (after major refactors or branch switches)
+
+### Parallel Work Patterns
+
+```
+For bug fixes:
+  1. detect_changes (risk + impact)
+  2. get_review_context (source snippets)
+  3. Fix locally + test
+  4. Atomic commit (small)
+  5. Verify deployed endpoint
+
+For features:
+  1. get_architecture_overview (where fits?)
+  2. semantic_search_nodes (related code)
+  3. Spike → PR → review
+
+For code review:
+  1. detect_changes on branch
+  2. get_affected_flows (execution paths)
+  3. query_graph(pattern="tests_for") on changed functions
+  4. Check coverage before merge
+```
+
+### Context-Mode Commands
+
+- `ctx stats` — Token savings this session
+- `ctx doctor` — MCP server + graph health
+- `ctx upgrade` — Update to latest context-mode
+- `ctx search(queries: [...])` — Query indexed session memory + captures
+
+Never: raw `Read` for analysis, `grep` for architecture, batch-read large files. Sandbox tools included.
