@@ -217,11 +217,32 @@ export function Layout({ children }) {
         didInitialSyncRef.current = true;
     }, [settings.darkMode]);
 
+    // Sincronización entre tabs (storage event) y entre componentes en la misma tab
+    // vía un custom event `darkmode:changed`. Lo necesita SettingsPage cuando el user
+    // togglea desde ahí — sin esto el toggle del header queda desincronizado.
+    useEffect(() => {
+        const onCustom = (e) => {
+            if (typeof e.detail === 'boolean') setIsDark(e.detail);
+        };
+        const onStorage = (e) => {
+            if (e.key === 'darkMode' && e.newValue !== null) {
+                setIsDark(e.newValue === 'true');
+            }
+        };
+        window.addEventListener('darkmode:changed', onCustom);
+        window.addEventListener('storage', onStorage);
+        return () => {
+            window.removeEventListener('darkmode:changed', onCustom);
+            window.removeEventListener('storage', onStorage);
+        };
+    }, []);
+
     const handleToggleDark = async () => {
         const next = !isDark;
         setIsDark(next); // el useEffect([isDark]) aplica la clase
         try {
             localStorage.setItem('darkMode', String(next));
+            window.dispatchEvent(new CustomEvent('darkmode:changed', { detail: next }));
         } catch { /* noop */ }
         try {
             await updateSettings({ darkMode: next });

@@ -1,5 +1,4 @@
 import React from 'react';
-import { Layout } from './Layout';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 
 export class ErrorBoundary extends React.Component {
@@ -28,7 +27,7 @@ export class ErrorBoundary extends React.Component {
                             Algo salió mal
                         </h1>
                         <p className="text-zinc-500 dark:text-zinc-400 mb-8">
-                            Ha ocurrido un error inesperado. Por favor, intentá recargar la página via tu cuenta.
+                            Ha ocurrido un error inesperado. Por favor, intentá recargar la página.
                         </p>
                         <div className="bg-zinc-100 dark:bg-zinc-800 p-4 rounded-xl text-left mb-8 overflow-auto max-h-32">
                             <code className="text-xs font-mono text-rose-500">

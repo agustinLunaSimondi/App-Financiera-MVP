@@ -34,9 +34,12 @@ export function SettingsPage() {
 
     const handleToggleDarkMode = async () => {
         const next = !settings.darkMode;
-        // Aplicar inmediatamente para UX, sincronizar con backend en paralelo
+        // Aplicar inmediatamente para UX, sincronizar con backend en paralelo.
+        // El custom event mantiene el `isDark` interno del Layout sincronizado —
+        // sin esto, el toggle del header quedaba con estado stale.
         document.documentElement.classList.toggle('dark', next);
         localStorage.setItem('darkMode', String(next));
+        window.dispatchEvent(new CustomEvent('darkmode:changed', { detail: next }));
         try {
             await updateSettings({ darkMode: next });
         } catch (err) {

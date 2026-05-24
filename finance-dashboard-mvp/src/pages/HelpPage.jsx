@@ -6,7 +6,7 @@ import {
     HelpCircle, MessageSquare, Search,
     X, ChevronDown, ChevronUp, LayoutDashboard,
     PiggyBank, Code, Flame, FileText, Users, Sparkles,
-    Wallet, PieChart, Link2, Receipt,
+    PieChart, Link2, Receipt,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { tutorials } from '../data/tutorials';
@@ -81,7 +81,7 @@ const faqGroups = [
         icon: Link2,
         accent: 'blue',
         items: [
-            { q: '¿Cómo conecto Mercado Pago?', a: 'En "Integraciones" tocá "Conectar Mercado Pago". Te redirigimos al login de MP, autorizás, y al volver importamos los últimos 30 días de movimientos. Después sincroniza solo cada 24h.' },
+            { q: '¿Cómo conecto Mercado Pago?', a: 'En "Integraciones" tocá "Conectar Mercado Pago". Te redirigimos al login de MP, autorizás, y al volver importamos los últimos 90 días de movimientos. Después sincroniza solo cada 24h.' },
             { q: '¿Mis tokens de MP están seguros?', a: 'Sí. Se guardan cifrados con Fernet en la base, no en plaintext. Podés desconectar cuando quieras desde la misma página.' },
         ],
     },
@@ -374,21 +374,29 @@ const FAQSection = () => {
                 </div>
             ) : (
                 <div className="space-y-3">
-                    {visibleItems.map((it) => (
-                        <div key={it._key} className="space-y-1">
-                            {(activeGroup === 'all' || query) && (
-                                <span className="text-[10px] uppercase tracking-widest font-black text-zinc-400 px-1">
-                                    {it._groupLabel}
-                                </span>
-                            )}
-                            <FAQItem
-                                q={it.q}
-                                a={it.a}
-                                isOpen={openItems.has(it._key)}
-                                onToggle={() => toggleItem(it._key)}
-                            />
-                        </div>
-                    ))}
+                    {visibleItems.map((it, idx) => {
+                        // Solo mostramos el header de categoría cuando arranca un grupo nuevo
+                        // (cuando estamos viendo "Todas" o buscando). Si no, se repetía arriba
+                        // de cada FAQ y se veían títulos de categoría duplicados.
+                        const showGroupHeader =
+                            (activeGroup === 'all' || query) &&
+                            (idx === 0 || visibleItems[idx - 1]._groupId !== it._groupId);
+                        return (
+                            <React.Fragment key={it._key}>
+                                {showGroupHeader && (
+                                    <span className={`block text-[10px] uppercase tracking-widest font-black text-zinc-400 px-1 ${idx === 0 ? '' : 'pt-3'}`}>
+                                        {it._groupLabel}
+                                    </span>
+                                )}
+                                <FAQItem
+                                    q={it.q}
+                                    a={it.a}
+                                    isOpen={openItems.has(it._key)}
+                                    onToggle={() => toggleItem(it._key)}
+                                />
+                            </React.Fragment>
+                        );
+                    })}
                 </div>
             )}
         </motion.div>
