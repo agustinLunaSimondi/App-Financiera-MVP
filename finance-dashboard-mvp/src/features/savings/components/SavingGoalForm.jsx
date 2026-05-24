@@ -1,4 +1,19 @@
 import React, { useState, useEffect } from 'react';
+import { Check } from 'lucide-react';
+
+// Paleta unificada con BudgetForm — 10 colores curados para light + dark.
+const COLOR_PRESETS = [
+    '#10B981', // emerald
+    '#3B82F6', // blue
+    '#8B5CF6', // violet
+    '#F59E0B', // amber
+    '#EF4444', // red
+    '#EC4899', // pink
+    '#06B6D4', // cyan
+    '#14B8A6', // teal
+    '#F97316', // orange
+    '#64748B', // slate
+];
 
 export function SavingGoalForm({ goal, onSubmit, onCancel }) {
     const [formData, setFormData] = useState({
@@ -18,6 +33,16 @@ export function SavingGoalForm({ goal, onSubmit, onCancel }) {
                 deadline: goal.deadline ? goal.deadline.split('T')[0] : '',
                 color: goal.color || '#10B981'
             });
+        } else {
+            // Reset al estado limpio si se reabre el modal en modo "crear"
+            // (sin esto, los datos de la última meta editada persisten).
+            setFormData({
+                name: '',
+                targetAmount: '',
+                currentAmount: '',
+                deadline: '',
+                color: '#10B981',
+            });
         }
     }, [goal]);
 
@@ -34,15 +59,6 @@ export function SavingGoalForm({ goal, onSubmit, onCancel }) {
         };
         onSubmit(payload);
     };
-
-    const colors = [
-        '#10B981', // Emerald
-        '#3B82F6', // Blue
-        '#8B5CF6', // Violet
-        '#F59E0B', // Amber
-        '#EF4444', // Red
-        '#EC4899', // Pink
-    ];
 
     return (
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -98,16 +114,35 @@ export function SavingGoalForm({ goal, onSubmit, onCancel }) {
 
             <div className="space-y-3">
                 <label className="text-sm font-bold text-zinc-700 dark:text-zinc-300 uppercase tracking-widest text-[10px]">Color Distintivo</label>
-                <div className="flex gap-3">
-                    {colors.map(c => (
+                <div className="flex flex-wrap gap-2">
+                    {COLOR_PRESETS.map((preset) => (
                         <button
-                            key={c}
+                            key={preset}
                             type="button"
-                            onClick={() => setFormData({ ...formData, color: c })}
-                            className={`w-8 h-8 rounded-full border-2 transition-transform ${formData.color === c ? 'scale-125 border-zinc-900 dark:border-white' : 'border-transparent hover:scale-110'}`}
-                            style={{ backgroundColor: c }}
-                        />
+                            onClick={() => setFormData({ ...formData, color: preset })}
+                            aria-label={`Color ${preset}`}
+                            aria-pressed={formData.color === preset}
+                            className="relative w-8 h-8 rounded-full transition-transform hover:scale-110 active:scale-95 ring-offset-2 ring-offset-white dark:ring-offset-zinc-900"
+                            style={{
+                                backgroundColor: preset,
+                                boxShadow: formData.color === preset ? `0 0 0 2px ${preset}` : undefined,
+                            }}
+                        >
+                            {formData.color === preset && (
+                                <Check className="w-4 h-4 text-white absolute inset-0 m-auto" />
+                            )}
+                        </button>
                     ))}
+                    <label className="relative w-8 h-8 rounded-full overflow-hidden cursor-pointer border-2 border-dashed border-zinc-300 dark:border-zinc-600 hover:border-emerald-500 transition-colors">
+                        <input
+                            type="color"
+                            value={formData.color}
+                            onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            aria-label="Color personalizado"
+                        />
+                        <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-zinc-400">+</span>
+                    </label>
                 </div>
             </div>
 

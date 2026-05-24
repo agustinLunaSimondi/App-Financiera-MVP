@@ -103,7 +103,7 @@ export function GoalRulesModal({ goal, isOpen, onClose }) {
     const catName = (id) => categories.find(c => c.id === id)?.name || 'Categoría';
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title={`Reglas — ${goal.name}`}>
+        <Modal isOpen={isOpen} onClose={onClose} title={`Reglas — ${goal.name}`} size="lg">
             <div className="space-y-5">
                 <p className="text-xs text-zinc-500 dark:text-zinc-400">
                     Cuando entre una transacción en la categoría que elijas, se va a depositar
@@ -181,7 +181,7 @@ export function GoalRulesModal({ goal, isOpen, onClose }) {
                             </p>
                         )}
                     </div>
-                    <div className="flex bg-zinc-100 dark:bg-zinc-800/50 p-1 rounded-xl border border-zinc-200/50 dark:border-zinc-700/50 self-start">
+                    <div className="inline-flex bg-zinc-100 dark:bg-zinc-800/50 p-1 rounded-xl border border-zinc-200/50 dark:border-zinc-700/50">
                         {[
                             { id: 'percentage', label: 'Porcentaje' },
                             { id: 'fixed', label: 'Monto fijo' },

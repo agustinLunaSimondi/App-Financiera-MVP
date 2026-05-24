@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useId } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 const FOCUSABLE_SELECTOR = [
@@ -97,9 +98,12 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }) {
         '2xl': 'sm:max-w-2xl',
     }[size] || 'sm:max-w-md';
 
-    return (
+    // Portal a document.body — clave para que ningún Card con `motion.div`
+    // (transform / overflow-hidden) cree un containing block que tape o
+    // contenga el modal. Si no, el modal queda clipeado dentro de la card.
+    return createPortal(
         <div
-            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm sm:p-4 transition-opacity"
+            className="fixed inset-0 z-[1000] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm sm:p-4 transition-opacity"
             onClick={handleBackdropClick}
             role="dialog"
             aria-modal="true"
@@ -108,7 +112,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }) {
         >
             <div
                 ref={modalRef}
-                className={`bg-white dark:bg-zinc-900 rounded-t-3xl sm:rounded-2xl shadow-2xl w-full ${sizeClass} max-h-[92dvh] flex flex-col transform transition-all animate-in fade-in zoom-in duration-200`}
+                className={`bg-white dark:bg-zinc-900 rounded-t-3xl sm:rounded-2xl shadow-2xl w-full ${sizeClass} max-h-[92dvh] flex flex-col animate-in fade-in zoom-in duration-200`}
                 style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
             >
                 {/* Drag handle en móvil */}
@@ -133,6 +137,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }) {
                     {children}
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }

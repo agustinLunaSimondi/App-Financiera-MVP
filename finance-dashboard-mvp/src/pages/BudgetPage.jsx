@@ -10,6 +10,7 @@ import { ConfirmDeleteModal } from '../features/common/components/ConfirmDeleteM
 import { EmptyState } from '../features/common/components/EmptyState';
 import { PageHeader } from '../features/common/components/PageHeader';
 import { BudgetForm } from '../features/budgets/components/BudgetForm';
+import { EnvelopesPanel } from '../features/budgets/components/EnvelopesPanel';
 import { Plus, AlertCircle, Trash2, PieChart, Edit2, TrendingUp } from 'lucide-react';
 import { BTN_PRIMARY } from '../lib/formClasses';
 import { groupTransactionsByCategory, calculateBudgetUsage } from '../utils/calculations';
@@ -140,12 +141,19 @@ export function BudgetPage() {
                     }
                 />
 
+                {/* Envelopes mode (#60) */}
+                <EnvelopesPanel />
+
                 {/* Budgets Grid */}
                 {budgetWithActuals.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
                         {budgetWithActuals.map((budget, index) => {
                             const categoryInfo = categories.find(c => c.name === budget.categoryName);
-                            const color = categoryInfo?.color || '#6366f1';
+                            // Priorizamos el color del presupuesto; si está vacío caemos al de la categoría.
+                            const color = budget.color || categoryInfo?.color || '#6366f1';
+                            const periodLabel = budget.period === 'WEEKLY' ? 'Semanal'
+                                : budget.period === 'YEARLY' ? 'Anual'
+                                : 'Mensual';
 
                             return (
                                 <Card key={budget.id} className="group relative overflow-hidden" delay={index * 0.1}>
@@ -161,7 +169,7 @@ export function BudgetPage() {
                                                 <h4 className="font-bold text-zinc-900 dark:text-white text-lg tracking-tight">{budget.categoryName}</h4>
                                                 <div className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400 text-xs mt-1">
                                                     <TrendingUp className="w-3 h-3" />
-                                                    <span>{budget.period === 'MONTHLY' ? 'Mensual' : 'Semanal'}</span>
+                                                    <span>{periodLabel}</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -205,12 +213,10 @@ export function BudgetPage() {
                                                 initial={{ width: 0 }}
                                                 animate={{ width: `${Math.min(budget.percentage, 100)}%` }}
                                                 transition={{ duration: 1, delay: index * 0.1 + 0.3, ease: "easeOut" }}
-                                                className={cn(
-                                                    "absolute top-0 left-0 h-full rounded-full",
-                                                    budget.exceeded ? "bg-rose-500" : "bg-emerald-500"
-                                                )}
+                                                className="absolute top-0 left-0 h-full rounded-full"
                                                 style={{
-                                                    boxShadow: budget.exceeded ? '0 0 12px #f43f5e40' : '0 0 12px #10b98140'
+                                                    backgroundColor: budget.exceeded ? '#f43f5e' : color,
+                                                    boxShadow: `0 0 12px ${budget.exceeded ? '#f43f5e' : color}40`,
                                                 }}
                                             />
                                         </div>

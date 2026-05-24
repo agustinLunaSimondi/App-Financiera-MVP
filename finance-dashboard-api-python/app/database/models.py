@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, Numeric, Date, Enum as SQLEnum, UniqueConstraint
+from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, Numeric, Date, Integer, Text, Enum as SQLEnum, UniqueConstraint
 from sqlalchemy.orm import relationship, DeclarativeBase
 from sqlalchemy.sql import func
 import enum
@@ -51,6 +51,12 @@ class User(Base):
     # Preferencias de email (#51 #52). Default True — el user opt-out desde settings.
     email_weekly_snapshot = Column(Boolean, default=True, nullable=False, server_default="true")
     email_smart_alerts = Column(Boolean, default=True, nullable=False, server_default="true")
+    # Engagement: modo de presupuesto (#60 envelopes). 'standard' | 'envelopes'.
+    budget_mode = Column(String, default="standard", nullable=False, server_default="standard")
+    # Engagement: opt-in para benchmark anonimizado (#59) + datos demográficos.
+    benchmark_opt_in = Column(Boolean, default=False, nullable=False, server_default="false")
+    age_range = Column(String, nullable=True)  # '18-24' | '25-34' | '35-44' | '45-54' | '55+'
+    geo_region = Column(String, nullable=True)  # 'AR-CABA' | 'AR-GBA' | 'AR-Norte' | 'AR-Cuyo' | 'AR-Sur' | 'AR-Centro' | 'Otro'
     # JWTs emitidos antes de esta marca son rechazados (revocación granular: logout total, cambio de contraseña, etc.)
     tokens_invalidated_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -89,6 +95,8 @@ class Category(Base):
     icon = Column(String, nullable=True)
     type = Column(_categorytype_pg, nullable=False)
     is_default = Column(Boolean, default=False)
+    # AFIP report (#63): el user marca cuáles categorías son deducibles.
+    tax_deductible = Column(Boolean, default=False, nullable=False, server_default="false")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("User", back_populates="categories")
@@ -126,6 +134,8 @@ class Budget(Base):
     amount = Column(Numeric(12, 2), nullable=False)
     period = Column(_budgetperiod_pg, default=BudgetPeriod.MONTHLY)
     start_date = Column(Date, nullable=False)
+    # Color custom — si es null, el frontend cae al color de la categoría.
+    color = Column(String, nullable=True)
 
     user = relationship("User", back_populates="budgets")
     category = relationship("Category", back_populates="budgets")
@@ -240,4 +250,60 @@ class WaitlistEmail(Base):
     email = Column(String, unique=True, nullable=False, index=True)
     source = Column(String, nullable=True)  # ej: 'landing', 'hero', 'pricing'
     referrer = Column(String, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+# ───────────────────────────────────────────────────────────────
+# Engagement layer (#59 / #60 / #62 / #63 / #64)
+# ───────────────────────────────────────────────────────────────
+
+
+class UserStreak(Base):
+    """Streak de días sin gasto no esencial (#62).
+    `current_streak`: días consecutivos hasta `last_evaluated_on`.
+    `longest_streak`: récord histórico. `last_zero_day_at`: último día sin gasto manual.
+    """
+    __tablename__ = "user_streaks"
+
+    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    current_streak = Column(Integer, default=0, nullable=False, server_default="0")
+    longest_streak = Column(Integer, default=0, nullable=False, server_default="0")
+    last_zero_day_at = Column(Date, nullable=True)
+    last_evaluated_on = Column(Date, nullable=True)
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
+
+
+class BenchmarkAggregate(Base):
+    """Agregado anónimo (#59). 1 fila por bucket (age_range × geo_region × category × period).
+    Solo se publica si `sample_size >= 50`. Guardamos percentiles para mostrar 'tu lugar en el ranking'."""
+    __tablename__ = "benchmark_aggregates"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    age_range = Column(String, nullable=False)
+    geo_region = Column(String, nullable=False)
+    category_name = Column(String, nullable=False)  # nombre normalizado (no FK porque cruza users)
+    period = Column(String, nullable=False, default="monthly")  # 'monthly'
+    sample_size = Column(Integer, nullable=False)
+    p25 = Column(Numeric(14, 2), nullable=False)
+    p50 = Column(Numeric(14, 2), nullable=False)
+    p75 = Column(Numeric(14, 2), nullable=False)
+    avg = Column(Numeric(14, 2), nullable=False)
+    computed_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (
+        UniqueConstraint("age_range", "geo_region", "category_name", "period", name="_benchmark_bucket_uc"),
+    )
+
+
+class PublicWidget(Base):
+    """Widget público embebible (#64). Token rotable. type ∈ {'balance','goal','month_spend'}.
+    config_json puede incluir { goal_id, currency_symbol, theme }."""
+    __tablename__ = "public_widgets"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    token = Column(String, unique=True, nullable=False, index=True)
+    type = Column(String, nullable=False)
+    config_json = Column(Text, nullable=True)
+    expires_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

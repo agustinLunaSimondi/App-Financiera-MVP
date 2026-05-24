@@ -2,7 +2,7 @@
 
 > Backlog de ideas de producto identificadas en la auditoría del 2026-05-22.
 > Numeración mantiene la del audit original (#51-65) para trazabilidad.
-> Última actualización: 2026-05-23.
+> Última actualización: 2026-05-23 (post-engagement).
 
 ---
 
@@ -84,8 +84,85 @@
   `Network Error` cuando Vite salta de puerto.
 - **Email infra**: adapter `app/core/email.py` con Resend, fallback log-only
   para dev sin `RESEND_API_KEY`.
-- **Migración Alembic** `f4a5b6c7d8e9_diferenciadores_reales` lista —
-  **PENDIENTE de aplicar** (`alembic upgrade head`).
+- **Migración Alembic** `f4a5b6c7d8e9_diferenciadores_reales` aplicada.
+
+---
+
+## 💡 Engagement / producto — **shipeado 2026-05-23**
+
+Bloque completo movido a producción tras esta tanda (5 features, 45 tests
+nuevos). Migración `a7b8c9d0e1f2_engagement_layer` aplicada.
+
+### #62 — Streaks "Día sin gasto" ✅
+- Lógica pura en `app/modules/streaks/logic.py` (StreakState + evaluate_day).
+  Reglas: gastos manuales rompen la racha; suscripciones recurrentes e
+  ingresos no la rompen.
+- Tabla `user_streaks` (current/longest/last_zero_day/last_evaluated_on).
+- Endpoint `GET /api/streaks/me` con catch-up greedy de hasta 7 días.
+- Job APScheduler `nightly_streaks` cron 9 UTC (6am ART).
+- Frontend: `StreakPill.jsx` en el sidebar, con badges 🌱 7d / 🌳 30d /
+  🏆 90d y contador de "faltan X para el próximo".
+- Tests: 10 casos (zero-day, recurring ignored, badges, processor, endpoint).
+
+### #59 — Benchmark anónimo ✅
+- Tabla `benchmark_aggregates` (age_range × geo_region × category, period
+  monthly). `MIN_BUCKET_SIZE=50` para k-anonymity.
+- Columnas nuevas en `users`: `benchmark_opt_in`, `age_range`, `geo_region`.
+- Endpoints: `GET/PUT /api/benchmark/prefs`, `GET /api/benchmark/me`
+  (devuelve hasta 6 comparaciones con percentiles 25/50/75 + posición
+  above/below/average).
+- Job APScheduler `daily_benchmark` 10:30 UTC.
+- Frontend: `BenchmarkCard.jsx` en el dashboard — si no opt-in, form de
+  activación pidiendo age/geo; si opt-in, lista de categorías comparadas.
+- Tests: 9 casos (percentiles, k-anonymity, demo invalida, endpoints).
+
+### #60 — Modo envelopes (Dave Ramsey) ✅
+- Columna `users.budget_mode` con valores `'standard'` (default) | `'envelopes'`.
+- Lógica en `app/modules/budgets/envelopes.py` (pura, testeable).
+- Endpoints nuevos: `GET/PUT /api/budgets/mode` y `GET /api/budgets/envelopes`
+  (estado de cada sobre del mes).
+- Hook en `create_transaction`: si el user está en `envelopes` y el monto
+  excede el remanente del mes para esa categoría, retorna **409 con
+  `code: envelope_empty`** y el frontend muestra el mensaje del backend
+  (parser ya soporta `detail.message`).
+- Frontend: `EnvelopesPanel.jsx` en `/budget` con toggle de modo + grid de
+  chips por sobre (vacíos en rojo, llenos en violeta).
+- Tests: 8 casos (status, charge ok/bloqueado, ingreso ignorado, endpoint 409,
+  toggle mode).
+
+### #63 — Reporte AFIP (PDF + Excel) ✅
+- Columna nueva `categories.tax_deductible` (default false).
+- `app/modules/reports/tax_report.py`:
+  - `collect_deductible_transactions` filtra solo categorías marcadas.
+  - `render_pdf_summary` con reportlab (resumen agrupado por categoría +
+    total + nota legal).
+  - `render_excel_detail` con openpyxl (columnas Fecha/Descripción/Categoría/
+    Total + CUIT/Neto/IVA 21%/Otros vacías para el contador).
+- Endpoints: `GET /api/reports/deductible-categories`, `POST
+  /api/reports/tax-deductible` (devuelve Response con `Content-Disposition`).
+- Frontend: `TaxReportSection.jsx` en Settings — checkbox por categoría de
+  gasto + selector fecha + formato PDF/Excel + descarga automática.
+- Evento PostHog `tax_report_generated` con `{format, tx_count}`.
+- Tests: 9 casos (collect, filter, PDF magic bytes, Excel magic bytes,
+  endpoints, validación de rango).
+
+### #64 — Dashboard widget embed ✅
+- Tabla `public_widgets` (token URL-safe 24 bytes, rotable, expiración opt).
+- Tipos: `balance` (total de cuentas), `goal` (progreso meta específica),
+  `month_spend` (gasto del mes actual).
+- Endpoints autenticados: `GET/POST /api/widgets`, `DELETE /api/widgets/{id}`,
+  `POST /api/widgets/{id}/rotate`.
+- Endpoint público: `GET /api/widgets/public/{token}` — sin auth, expone solo
+  agregados (nunca tx individuales).
+- Ruta frontend pública `/widget/:token` (sin sidebar, sin layout) renderiza
+  3 mockups según tipo.
+- Frontend: `WidgetsSection.jsx` en Settings — crear/listar/rotar/eliminar
+  + snippet copiable `<iframe src="…">`.
+- Tests: 9 casos (create, ownership, públicos por tipo, rotación, expiración).
+
+---
+
+## ✅ Bloque anterior
 
 ---
 
@@ -181,7 +258,11 @@ podés ser su reemplazo + budget + savings + AI.
 
 ---
 
-## 💡 Engagement / producto — esfuerzo bajo-medio
+## 💡 Engagement / producto — bloque shipeado, ver sección arriba ✅
+
+> Las cinco features de esta sección (#59, #60, #62, #63, #64) están en
+> producción tras la tanda 2026-05-23. Las specs originales se mantienen
+> abajo para referencia histórica.
 
 ### #59 — Análisis comparativo anonimizado
 
@@ -312,6 +393,13 @@ Eventos ya tracked (post 2026-05-23):
 Próximos a sumar: tracking de Aki proactivo (open de email vía pixel + click
 en CTA), uso del filtro tipo en TX, modal de auto-categorización.
 
+Eventos del bloque engagement (2026-05-23):
+- `budget_mode_changed` (#60)
+- `tax_report_generated` (#63)
+- Streaks (#62), benchmark (#59) y widgets (#64) todavía sin eventos
+  PostHog dedicados — agregar en próxima tanda cuando definamos qué
+  funnel queremos medir.
+
 ---
 
 ## 🚫 Lo que dejé fuera (intencionalmente)
@@ -333,11 +421,16 @@ en CTA), uso del filtro tipo en TX, modal de auto-categorización.
    por bajo esfuerzo y altísimo engagement diario, o ir directo al
    monetizable **#63 AFIP** si querés cerrar el primer tier Premium.
 
-**Estado actual del repo (post-2026-05-23):**
-- 32/32 tests backend ✓
-- 13/13 tests frontend ✓
-- Build OK
+**Estado actual del repo (post-engagement 2026-05-23):**
+- **77/77 tests backend ✓** (45 nuevos: 10 streaks, 9 benchmark, 8 envelopes,
+  9 tax_report, 9 widgets).
+- 13/13 tests frontend ✓.
+- Build Vite OK (1.4 MB bundle — chunking pendiente).
+- Migración `a7b8c9d0e1f2_engagement_layer` aplicada.
 - Quick wins #54 + #61 ✅
 - Diferenciadores reales #51, #52, #55, #56 ✅
+- Engagement #59, #60, #62, #63, #64 ✅
 - Pendientes en quick wins: #53 (toggle inflación) — decisión abierta sobre datos IPC.
+- Big bets pendientes: #58 Splitwise lite, #57 Conectores adicionales,
+  #65 modo viaje.
 - Sin deuda técnica nueva.

@@ -102,7 +102,7 @@ export function RecurringPage() {
 
                 {loading ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {[1, 2, 3].map(n => <div key={n} className="h-48 bg-zinc-100 dark:bg-zinc-800 rounded-3xl animate-pulse" />)}
+                        {[1, 2, 3].map(n => <div key={n} className="h-48 bg-zinc-100 dark:bg-zinc-800/50 rounded-3xl animate-pulse" />)}
                     </div>
                 ) : recurringTransactions.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

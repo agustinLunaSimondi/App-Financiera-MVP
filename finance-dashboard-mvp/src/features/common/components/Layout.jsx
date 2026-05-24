@@ -4,7 +4,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
     LayoutDashboard, Wallet, CreditCard, PieChart, Settings,
     LogOut, Menu, PiggyBank, Clock, GraduationCap,
-    Link2, HelpCircle, X, Sun, Moon, MessageSquare
+    Link2, HelpCircle, X, Sun, Moon, MessageSquare, Bug
 } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -14,6 +14,7 @@ import { useFinance } from '../../../hooks/useFinance';
 import { OnboardingTour } from './OnboardingTour';
 import { BottomNav } from './BottomNav';
 import { Modal } from './Modal';
+import { StreakPill } from './StreakPill';
 import { TransactionForm } from '../../transactions/components/TransactionForm';
 
 // ─── Dark Mode Toggle Button ───────────────────────────────────
@@ -138,6 +139,11 @@ function SidebarContent({ onMobileNavClick }) {
                 </div>
             </nav>
 
+            {/* Streak pill (#62) */}
+            <div className="px-4 mt-6">
+                <StreakPill />
+            </div>
+
             {/* Profile Section */}
             <div className="px-4 mt-auto pt-6 border-t border-zinc-200/50 dark:border-zinc-800/50">
                 <div className="p-4 rounded-2xl bg-zinc-100/50 dark:bg-zinc-800/40 space-y-4">
@@ -150,7 +156,15 @@ function SidebarContent({ onMobileNavClick }) {
                             <p className="text-[10px] text-zinc-400 dark:text-zinc-500 truncate">{user?.email}</p>
                         </div>
                     </div>
-                    <button 
+                    <a
+                        href="mailto:agustinluna760@gmail.com?subject=Vuelto%20beta%20—%20Feedback"
+                        className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-[11px] font-bold text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800/50 transition-colors"
+                        title="Mandar feedback o reportar un bug"
+                    >
+                        <Bug className="w-3.5 h-3.5" />
+                        Reportar / Feedback
+                    </a>
+                    <button
                         onClick={handleLogout}
                         className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-black text-rose-500 hover:bg-rose-500/10 transition-colors border border-rose-500/10"
                     >

@@ -54,7 +54,7 @@ export function IncomeExpenseChart({ data }) {
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" strokeOpacity={0.08} />
                 <XAxis
-                    dataKey="month"
+                    dataKey={(d) => d.label ?? d.month}
                     axisLine={false}
                     tickLine={false}
                     tick={{ fill: '#71717A', fontSize: 11, fontWeight: 500 }}

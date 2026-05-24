@@ -18,6 +18,8 @@ import {
     calculateNetSavings,
     calculateTotalBalance,
     generateIncomeVsExpensesChartData,
+    generateTimeSeriesChartData,
+    recommendedGranularity,
     groupTransactionsByCategory,
     projectMonthEndSpend,
     calculateMonthlyBudgetTotal,
@@ -25,16 +27,41 @@ import {
 } from '../utils/calculations';
 import { formatCurrency, formatCompactCurrency } from '../utils/formatters';
 import { useLanguage } from '../contexts/LanguageContext';
-import { AIInsightsCard } from './components/AIInsightsCard';
-import { InflationPanel } from '../features/dashboard/components/InflationPanel';
 import { ProjectionCard } from '../features/dashboard/components/ProjectionCard';
+import { DateRangePicker } from '../features/common/components/DateRangePicker';
 
 export function DashboardPage() {
     const { transactions, accounts, budgets, categories, loading, filters, updateFilters, clearFilters } = useFinance();
     const { t } = useLanguage();
 
-    const [quickFilter, setQuickFilter] = React.useState('thisMonth');
+    // Inferimos el quickFilter inicial a partir del filtro real del context —
+    // así si volvés al Dashboard tras filtrar en Transactions, el toggle refleja
+    // el estado real en lugar de un default que mienta.
+    const inferQuickFilter = React.useCallback((f) => {
+        if (!f?.startDate && !f?.endDate) return 'all';
+        if (!f.startDate || !f.endDate) return 'custom';
+        const now = new Date();
+        const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        const firstOfMonth = iso(new Date(now.getFullYear(), now.getMonth(), 1));
+        const lastOfMonth = iso(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+        if (f.startDate === firstOfMonth && f.endDate === lastOfMonth) return 'thisMonth';
+        const yearStart = iso(new Date(now.getFullYear(), 0, 1));
+        const yearEnd = iso(new Date(now.getFullYear(), 11, 31));
+        if (f.startDate === yearStart && f.endDate === yearEnd) return 'year';
+        const last7 = new Date(); last7.setDate(last7.getDate() - 7);
+        if (f.startDate === iso(last7) && f.endDate === iso(now)) return 'last7Days';
+        return 'custom';
+    }, []);
+
+    const [quickFilter, setQuickFilter] = React.useState(() => inferQuickFilter(filters));
+    const [granularity, setGranularity] = React.useState(null); // null = auto según rango
     const [detailModal, setDetailModal] = React.useState({ open: false, type: null });
+
+    // Si los filtros del context cambian desde afuera (otra página o clearFilters),
+    // re-derivamos el quickFilter para mantener consistencia visual.
+    React.useEffect(() => {
+        setQuickFilter(inferQuickFilter(filters));
+    }, [filters?.startDate, filters?.endDate, inferQuickFilter]);
 
     const openDetail = (type) => setDetailModal({ open: true, type });
     const closeDetail = () => setDetailModal({ open: false, type: null });
@@ -64,6 +91,11 @@ export function DashboardPage() {
             endDate = new Date(now.getFullYear(), 11, 31).toISOString().split('T')[0];
         }
 
+        updateFilters({ startDate, endDate });
+    };
+
+    const handleCustomRange = ({ startDate, endDate }) => {
+        setQuickFilter('custom');
         updateFilters({ startDate, endDate });
     };
 
@@ -176,13 +208,36 @@ export function DashboardPage() {
 
     const activeKPI = detailModal.type ? kpiData.find(k => k.type === detailModal.type) : null;
 
-    // Proyección fin de mes (#54) — solo cuando vemos el mes actual sin filtro custom.
-    const projectionData = quickFilter === 'thisMonth' ? projectMonthEndSpend(transactions) : null;
+    // Proyección fin de mes (#54) — la mostramos si el rango activo cubre el
+    // mes en curso (vía quickFilter "thisMonth" o vía custom range que matchee
+    // el mes actual). Si el rango es "todo" o un período distinto, no aplica.
+    const showProjection = (() => {
+        if (quickFilter === 'thisMonth') return true;
+        if (quickFilter === 'custom' && filters?.startDate && filters?.endDate) {
+            const now = new Date();
+            const firstOfMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+            const lastOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+            const lastIso = `${lastOfMonth.getFullYear()}-${String(lastOfMonth.getMonth() + 1).padStart(2, '0')}-${String(lastOfMonth.getDate()).padStart(2, '0')}`;
+            return filters.startDate === firstOfMonth && filters.endDate === lastIso;
+        }
+        return false;
+    })();
+    const projectionData = showProjection ? projectMonthEndSpend(transactions) : null;
     const monthlyBudgetTotal = calculateMonthlyBudgetTotal(budgets);
     const historicalAverage = calculateHistoricalMonthlyExpenseAverage(transactions);
 
-    // Generar datos para gráficos
-    const incomeVsExpensesData = generateIncomeVsExpensesChartData(transactions, 6);
+    // Generar datos para gráficos.
+    // Inferimos el rango activo a partir de filters o el quickFilter actual y
+    // dejamos que el usuario sobrescriba la granularidad si quiere.
+    const rangeStart = filters?.startDate || null;
+    const rangeEnd = filters?.endDate || null;
+    const rangeDays = (rangeStart && rangeEnd)
+        ? Math.max(1, Math.round((new Date(rangeEnd) - new Date(rangeStart)) / (1000 * 60 * 60 * 24)) + 1)
+        : null;
+    const effectiveGranularity = granularity || recommendedGranularity(rangeDays);
+    const incomeVsExpensesData = generateTimeSeriesChartData(
+        transactions, effectiveGranularity, rangeStart, rangeEnd,
+    );
 
     // Gastos por categoría
     const expenseTransactions = transactions.filter(tx => tx.amount < 0);
@@ -300,26 +355,42 @@ export function DashboardPage() {
                                 <Download className="w-4 h-4" />
                                 {t('dashboard.download')}
                             </button>
-                            <div className="flex bg-zinc-100 dark:bg-zinc-800/50 p-1 rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50 overflow-x-auto scrollbar-hide">
-                                {[
-                                    { id: 'thisMonth', label: t('dashboard.thisMonth') },
-                                    { id: 'last7Days', label: t('dashboard.last7Days') },
-                                    { id: 'year', label: t('dashboard.thisYear') },
-                                    { id: 'all', label: t('dashboard.allTime') }
-                                ].map((item) => (
-                                    <button
-                                        key={item.id}
-                                        onClick={() => handleQuickFilter(item.id)}
-                                        className={cn(
-                                            "px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap shrink-0",
-                                            quickFilter === item.id
-                                                ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm"
-                                                : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300"
-                                        )}
-                                    >
-                                        {item.label}
-                                    </button>
-                                ))}
+                            <div className="flex items-center gap-2">
+                                <div className="flex bg-zinc-100 dark:bg-zinc-800/50 p-1 rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50 overflow-x-auto scrollbar-hide">
+                                    {[
+                                        { id: 'thisMonth', label: t('dashboard.thisMonth') },
+                                        { id: 'last7Days', label: t('dashboard.last7Days') },
+                                        { id: 'year', label: t('dashboard.thisYear') },
+                                        { id: 'all', label: t('dashboard.allTime') }
+                                    ].map((item) => (
+                                        <button
+                                            key={item.id}
+                                            onClick={() => handleQuickFilter(item.id)}
+                                            className={cn(
+                                                "px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap shrink-0",
+                                                quickFilter === item.id
+                                                    ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm"
+                                                    : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300"
+                                            )}
+                                        >
+                                            {item.label}
+                                        </button>
+                                    ))}
+                                </div>
+                                <div className={cn(
+                                    "rounded-2xl border p-1 shrink-0",
+                                    quickFilter === 'custom'
+                                        ? "bg-white dark:bg-zinc-700 border-zinc-200/50 dark:border-zinc-700/50 shadow-sm"
+                                        : "bg-zinc-100 dark:bg-zinc-800/50 border-zinc-200/50 dark:border-zinc-700/50"
+                                )}>
+                                    <DateRangePicker
+                                        active={quickFilter === 'custom'}
+                                        initialStart={quickFilter === 'custom' ? filters?.startDate || '' : ''}
+                                        initialEnd={quickFilter === 'custom' ? filters?.endDate || '' : ''}
+                                        onApply={handleCustomRange}
+                                        onClear={() => handleQuickFilter('all')}
+                                    />
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -347,10 +418,6 @@ export function DashboardPage() {
                         historicalAverage={historicalAverage}
                     />
                 )}
-
-                <InflationPanel />
-
-                <AIInsightsCard />
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="flex items-center justify-between bg-white dark:bg-zinc-800/50 border border-zinc-200/50 dark:border-zinc-700/50 rounded-2xl px-5 py-4 shadow-sm">
@@ -391,7 +458,41 @@ export function DashboardPage() {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <Card title="Evolución mensual" className="lg:col-span-2" subtitle="Ingresos vs. gastos en los últimos meses" delay={0.4}>
+                    <Card
+                        title="Evolución"
+                        className="lg:col-span-2"
+                        subtitle={
+                            effectiveGranularity === 'day' ? 'Ingresos vs. gastos por día'
+                            : effectiveGranularity === 'week' ? 'Ingresos vs. gastos por semana'
+                            : effectiveGranularity === 'year' ? 'Ingresos vs. gastos por año'
+                            : 'Ingresos vs. gastos por mes'
+                        }
+                        delay={0.4}
+                    >
+                        <div className="flex justify-end mb-3 -mt-2">
+                            <div className="inline-flex bg-zinc-100 dark:bg-zinc-800/50 p-0.5 rounded-lg border border-zinc-200/50 dark:border-zinc-700/50">
+                                {[
+                                    { id: 'day', label: 'Días' },
+                                    { id: 'week', label: 'Sem' },
+                                    { id: 'month', label: 'Meses' },
+                                    { id: 'year', label: 'Años' },
+                                ].map((g) => (
+                                    <button
+                                        key={g.id}
+                                        type="button"
+                                        onClick={() => setGranularity(g.id)}
+                                        className={cn(
+                                            'px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider transition-all',
+                                            effectiveGranularity === g.id
+                                                ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm'
+                                                : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300'
+                                        )}
+                                    >
+                                        {g.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                         <div className="h-[300px]">
                             <IncomeExpenseChart data={incomeVsExpensesData} />
                         </div>

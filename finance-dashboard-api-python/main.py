@@ -23,6 +23,12 @@ from app.modules.waitlist import waitlist_routes
 from app.modules.chat import chat_routes
 from app.modules.recurring.recurring_processor import process_recurring_transactions
 from app.modules.notifications.processor import run_daily_smart_alerts, run_weekly_snapshots
+from app.modules.streaks import streak_routes
+from app.modules.streaks.processor import run_nightly_streaks
+from app.modules.benchmark import benchmark_routes
+from app.modules.benchmark.aggregator import run_daily_benchmark_aggregation
+from app.modules.reports import report_routes
+from app.modules.widgets import widget_routes
 from app.database.database import SessionLocal
 
 load_dotenv()
@@ -43,6 +49,10 @@ scheduler.add_job(process_recurring_transactions, 'interval', hours=1)
 scheduler.add_job(run_daily_smart_alerts, 'cron', hour=12, minute=0, id='daily_smart_alerts')
 # Snapshot semanal (#52): domingos 10am ART (13 UTC).
 scheduler.add_job(run_weekly_snapshots, 'cron', day_of_week='sun', hour=13, minute=0, id='weekly_snapshot')
+# Streaks nocturno (#62): 6am ART (9 UTC) — evalúa el día de ayer.
+scheduler.add_job(run_nightly_streaks, 'cron', hour=9, minute=0, id='nightly_streaks')
+# Benchmark anonimizado (#59): diario 7am ART (10 UTC) — recalcula buckets.
+scheduler.add_job(run_daily_benchmark_aggregation, 'cron', hour=10, minute=30, id='daily_benchmark')
 
 @asynccontextmanager
 async def lifespan(app):
@@ -100,6 +110,10 @@ app.include_router(analytics_routes.router, prefix="/api")
 app.include_router(mp_routes.router, prefix="/api")
 app.include_router(waitlist_routes.router, prefix="/api")
 app.include_router(chat_routes.router, prefix="/api")
+app.include_router(streak_routes.router, prefix="/api")
+app.include_router(benchmark_routes.router, prefix="/api")
+app.include_router(report_routes.router, prefix="/api")
+app.include_router(widget_routes.router, prefix="/api")
 
 @app.get("/")
 def read_root():

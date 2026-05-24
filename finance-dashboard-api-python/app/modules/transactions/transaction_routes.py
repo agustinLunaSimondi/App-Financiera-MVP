@@ -12,6 +12,7 @@ from app import schemas
 from app.core import posthog_client
 from app.modules.savings.auto_deposit import apply_auto_deposit_rules
 from app.modules.transactions.embeddings import suggest_categories_for_user
+from app.modules.budgets.envelopes import can_charge_to_envelope
 
 router = APIRouter(prefix="/transactions", tags=["transactions"])
 
@@ -88,6 +89,21 @@ def create_transaction(
     account = _lock_account_for_update(db, tx_in.account_id, current_user.id)
     if not account:
         raise HTTPException(status_code=404, detail="Cuenta no encontrada")
+
+    # Envelopes (#60): rechazar si el sobre del mes está vacío.
+    ok, env_status, reason = can_charge_to_envelope(
+        db, current_user, tx_in.category_id, Decimal(str(tx_in.amount)), tx_in.transaction_date,
+    )
+    if not ok:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "envelope_empty",
+                "message": reason,
+                "remaining": float(env_status.remaining) if env_status else None,
+                "budget": float(env_status.budget) if env_status else None,
+            },
+        )
 
     new_tx = models.Transaction(**tx_in.model_dump())
     db.add(new_tx)
