@@ -23,12 +23,22 @@ const looksLikeId = (segment) => {
 // Regla: solo agregar slash a rutas de colección (un único segmento no-ID, ej. /transactions).
 // Rutas con dos segmentos no-ID (ej. /auth/me, /mercadopago/status) están definidas SIN
 // trailing slash en el backend — agregarla causaría el redirect que rompe el auth en iOS.
+//
+// Excepción: endpoints de un solo segmento definidos en el backend con `@router.post("")`
+// (sin slash) — ej. /chat, /waitlist. La heurística los trataría como colección y agregaría
+// slash, provocando el 307 → strip de Authorization en iOS → 401 → logout. Se excluyen.
+const NO_TRAILING_SLASH = [
+    /^\/?chat$/i,
+    /^\/?waitlist$/i,
+];
+
 client.interceptors.request.use(
     (config) => {
         if (config.url && !config.url.endsWith('/') && !config.url.includes('?')) {
+            const isNoSlashRoute = NO_TRAILING_SLASH.some(rx => rx.test(config.url));
             const segments = config.url.split('/').filter(Boolean);
             const lastSegment = segments[segments.length - 1];
-            if (!looksLikeId(lastSegment)) {
+            if (!isNoSlashRoute && !looksLikeId(lastSegment)) {
                 const nonIdSegments = segments.filter(s => !looksLikeId(s));
                 if (nonIdSegments.length <= 1) {
                     config.url += '/';

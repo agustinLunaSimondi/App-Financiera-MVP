@@ -28,3 +28,6 @@ Thumbs.db
 .env.*.local
 # Added by code-review-graph
 .code-review-graph/
+
+# token-savior cache
+.token-savior-cache.json

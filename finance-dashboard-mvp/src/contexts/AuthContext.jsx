@@ -40,9 +40,15 @@ export function AuthProvider({ children }) {
                         setUser(res.data);
                         identifyUser(res.data.id, { email: res.data.email, name: res.data.name });
                     }
-                } catch {
+                } catch (err) {
                     if (!checkAuthCancelledRef.current) {
-                        clearToken();
+                        // Solo borramos el token si el backend lo rechazó explícitamente (401).
+                        // En cold-start de Render el request puede expirar (timeout) o fallar por
+                        // red/5xx con el token aún válido — borrarlo forzaría un re-login innecesario.
+                        // Conservándolo, un refresh recupera la sesión cuando el server despierta.
+                        if (err?.response?.status === 401) {
+                            clearToken();
+                        }
                         setUser(null);
                     }
                 }
