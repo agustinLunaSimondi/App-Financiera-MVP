@@ -6,6 +6,7 @@ import { ErrorBoundary } from './features/common/components/ErrorBoundary';
 import { Toaster } from 'sonner';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { Layout } from './features/common/components/Layout';
+import { PWAUpdatePrompt } from './features/common/components/PWAUpdatePrompt';
 import { analytics } from './services/analytics';
 
 // Trackea page_viewed en PostHog en cada cambio de ruta
@@ -116,6 +117,7 @@ function App() {
                     ariaProps: { role: 'alert', 'aria-live': 'polite' },
                 }}
               />
+              <PWAUpdatePrompt />
             </FinanceProvider>
           </AuthProvider>
         </Router>

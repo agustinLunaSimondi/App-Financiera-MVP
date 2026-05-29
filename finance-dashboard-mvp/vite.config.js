@@ -9,7 +9,11 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
-      registerType: 'autoUpdate',
+      // 'prompt' (no 'autoUpdate'): el SW nuevo espera y avisamos al usuario con
+      // un toast "Recargar". iOS standalone no chequea updates solo de forma
+      // confiable; con prompt + registration.update() periódico, el celular deja
+      // de quedar pegado a un bundle viejo sin que el user se entere.
+      registerType: 'prompt',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
       manifest: {
         name: 'Vuelto — Tu plata, en serio',
