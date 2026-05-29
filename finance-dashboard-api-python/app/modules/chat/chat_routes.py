@@ -398,8 +398,15 @@ async def chat_with_agent(
 
     gemini_key = os.getenv("GEMINI_API_KEY", "").strip()
 
-    # --- FALLBACK: Si no hay API Key de Gemini configurada ---
-    if not gemini_key:
+    # Proxy de Gemini en Vercel (US). Render tiene la IP de egress geo-bloqueada por
+    # Gemini ("User location is not supported"), así que en producción se enruta vía
+    # el proxy. En local, si no hay proxy, se llama a Gemini directo con la key.
+    proxy_url = os.getenv("GEMINI_PROXY_URL", "").strip()
+    proxy_secret = os.getenv("GEMINI_PROXY_SECRET", "").strip()
+    use_proxy = bool(proxy_url and proxy_secret)
+
+    # --- FALLBACK: Si no hay forma de hablar con Gemini (ni proxy ni key directa) ---
+    if not use_proxy and not gemini_key:
         logger.warning("GEMINI_API_KEY no configurada. Retornando respuesta mock de demostración.")
         
         lower_msg = message.lower()
@@ -444,7 +451,14 @@ async def chat_with_agent(
         "La fecha de hoy es: " + str(date.today())
     )
 
-    headers = {"Content-Type": "application/json"}
+    # Destino y headers según se use proxy (prod) o llamada directa (local).
+    if use_proxy:
+        gemini_target = proxy_url
+        headers = {"Content-Type": "application/json", "x-proxy-secret": proxy_secret}
+    else:
+        gemini_target = f"{GEMINI_API_URL}?key={gemini_key}"
+        headers = {"Content-Type": "application/json"}
+
     payload = {
         "contents": formatted_contents,
         "systemInstruction": {
@@ -463,11 +477,11 @@ async def chat_with_agent(
         async with httpx.AsyncClient(timeout=30.0) as client:
             # Primera llamada a Gemini
             response = await client.post(
-                f"{GEMINI_API_URL}?key={gemini_key}",
+                gemini_target,
                 json=payload,
                 headers=headers
             )
-            
+
             if response.status_code != 200:
                 logger.error(f"Error de Gemini API: {response.status_code} - {response.text}")
                 raise HTTPException(status_code=502, detail="Error de comunicación con el servicio de IA.")
@@ -519,7 +533,7 @@ async def chat_with_agent(
                 # Removemos tools en la segunda llamada para acelerar respuesta o forzar a texto
                 
                 response2 = await client.post(
-                    f"{GEMINI_API_URL}?key={gemini_key}",
+                    gemini_target,
                     json=payload,
                     headers=headers
                 )
