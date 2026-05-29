@@ -5,7 +5,32 @@ import { toast } from 'sonner';
 import {
     generateTaxReport, getCategories, updateCategory,
 } from '../../../services/api';
-import { parseApiError } from '../../../lib/apiErrors';
+import { parseApiError, parseBlobError } from '../../../lib/apiErrors';
+
+/**
+ * Descarga un blob de forma robusta cross-plataforma.
+ * iOS Safari ignora el atributo `download` en URLs blob: y bloquea `window.open`
+ * fuera de un gesto directo (acá venimos de un `await`). Navegar la pestaña al
+ * blob abre el visor nativo, desde donde el usuario hace "Compartir → Guardar
+ * en Archivos". En desktop/Android el anchor con `download` funciona normal.
+ */
+function triggerBlobDownload(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent)
+        || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+    if (isIOS) {
+        window.location.href = url;
+    } else {
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
 
 /**
  * Sección "Reporte para contador" (#63).
@@ -79,20 +104,15 @@ export function TaxReportSection() {
         }
         setGenerating(true);
         try {
-            const res = await generateTaxReport({ startDate, endDate, format });
-            const blob = res.data;
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
+            // Pasamos categoryIds explícitos: el reporte respeta exactamente lo
+            // tildado en la UI, sin depender solo del flag tax_deductible en DB.
+            const res = await generateTaxReport({ startDate, endDate, categoryIds: selectedIds, format });
             const ext = format === 'pdf' ? 'pdf' : 'xlsx';
-            a.download = `vuelto-deducibles-${startDate}-${endDate}.${ext}`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+            triggerBlobDownload(res.data, `vuelto-deducibles-${startDate}-${endDate}.${ext}`);
             toast.success('Reporte generado');
         } catch (e) {
-            toast.error(parseApiError(e, 'No se pudo generar el reporte'));
+            // responseType:'blob' → el error del backend viene en un Blob; parseBlobError lo lee.
+            toast.error(await parseBlobError(e, 'No se pudo generar el reporte'));
         } finally {
             setGenerating(false);
         }

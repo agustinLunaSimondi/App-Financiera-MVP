@@ -79,6 +79,50 @@ export function AuthProvider({ children }) {
         return () => window.removeEventListener(AUTH_INVALID_EVENT, onInvalid);
     }, []);
 
+    // Refresh proactivo del token. El access token expira a los 180min y no hay
+    // refresh-token de larga vida (/auth/refresh exige un token AÚN válido). En
+    // sesiones largas —típico de la PWA en el celular, que queda "abierta" días—
+    // el token vence en background y la próxima acción (ej. abrir/usar Aki) da
+    // 401 → logout. Acá lo renovamos mientras sigue vivo: al volver el foco
+    // (throttle 5min) y cada 60min.
+    useEffect(() => {
+        if (!user) return;
+        let lastRefresh = Date.now();
+        const COOLDOWN_MS = 5 * 60 * 1000;
+
+        const refreshSession = async () => {
+            if (!getToken()) return;
+            try {
+                // __skipAuthRedirect: si el token YA expiró, este 401 no debe
+                // disparar el logout; dejamos que lo haga el próximo request real.
+                const res = await client.post('/auth/refresh', null, { __skipAuthRedirect: true });
+                if (res?.data?.token) {
+                    setToken(res.data.token);
+                    if (res.data.user) setUser(res.data.user);
+                }
+                lastRefresh = Date.now();
+            } catch {
+                // timeout/red/5xx → token sigue válido, reintentamos en el próximo foco.
+            }
+        };
+
+        const onVisible = () => {
+            if (document.visibilityState === 'visible' && Date.now() - lastRefresh > COOLDOWN_MS) {
+                refreshSession();
+            }
+        };
+
+        const intervalId = setInterval(refreshSession, 60 * 60 * 1000);
+        document.addEventListener('visibilitychange', onVisible);
+        window.addEventListener('focus', onVisible);
+
+        return () => {
+            clearInterval(intervalId);
+            document.removeEventListener('visibilitychange', onVisible);
+            window.removeEventListener('focus', onVisible);
+        };
+    }, [user?.id]);
+
     const login = useCallback(async (email, password) => {
         checkAuthCancelledRef.current = true;
         const res = await client.post('/auth/login', { email, password });
