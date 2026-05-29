@@ -46,6 +46,29 @@ export function parseApiError(error, fallback = 'Ocurrió un error inesperado. I
 }
 
 /**
+ * Igual que `parseApiError`, pero soporta respuestas con `responseType: 'blob'`.
+ * Cuando una request espera un blob (descarga de PDF/Excel) pero el backend
+ * responde con error, axios mete el cuerpo JSON del error DENTRO de un Blob, y
+ * `parseApiError` no puede leer `.detail`. Acá lo deserializamos primero.
+ */
+export async function parseBlobError(error, fallback = 'Ocurrió un error inesperado. Intentá nuevamente.') {
+    const data = error?.response?.data;
+    if (data instanceof Blob) {
+        try {
+            const text = await data.text();
+            const json = JSON.parse(text);
+            return parseApiError(
+                { ...error, response: { ...error.response, data: json } },
+                fallback,
+            );
+        } catch {
+            // El blob no era JSON legible — caemos al parser normal.
+        }
+    }
+    return parseApiError(error, fallback);
+}
+
+/**
  * Extrae errores de validación por campo (útil para forms con react-hook-form o similares).
  * Devuelve un objeto { fieldName: errorMessage } o null si no hay errores estructurados.
  */
