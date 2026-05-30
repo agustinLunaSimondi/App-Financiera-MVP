@@ -113,14 +113,24 @@ def _is_expense(payment: dict, mp_user_id: str) -> bool:
     """
     Determina si un pago de MP es un egreso para el usuario.
 
-    Fuente de verdad: payer.id. Si el usuario es el pagador, es un egreso.
-    Fallback cuando payer.id no está: heurística por operation_type.
+    Fuente de verdad: collector_id / payer.id contra mp_user_id.
+    - collector_id == mp_user_id  -> el usuario cobró  -> ingreso
+    - payer.id    == mp_user_id  -> el usuario pagó   -> egreso
+    Fallback cuando faltan ambos ids: solo salidas explícitas son egreso
+    (la búsqueda de MP devuelve mayormente cobros).
     """
+    uid = str(mp_user_id or "")
+    collector_id = str(payment.get("collector_id", "") or "")
     payer_id = str(payment.get("payer", {}).get("id", "") or "")
-    if payer_id and mp_user_id:
-        return payer_id == str(mp_user_id)
+
+    if uid:
+        if collector_id and collector_id == uid:
+            return False  # cobro = ingreso
+        if payer_id and payer_id == uid:
+            return True   # pago = egreso
+
     return payment.get("operation_type", "") in (
-        "regular_payment", "payment", "pos_payment", "off_platform_payment"
+        "money_transfer", "withdrawal", "money_exchange"
     )
 
 
@@ -303,6 +313,21 @@ def sync_payments_to_transactions(
     for payment in payments:
         mp_payment_id = str(payment.get("id", ""))
 
+        expense = _is_expense(payment, mp_user_id)
+        logger.info(
+            "MP classify id=%s op_type=%s status=%s amount=%s "
+            "collector_id=%s payer_id=%s mp_user_id=%s description=%r -> %s",
+            mp_payment_id,
+            payment.get("operation_type"),
+            payment.get("status"),
+            payment.get("transaction_amount"),
+            payment.get("collector_id"),
+            payment.get("payer", {}).get("id"),
+            mp_user_id,
+            payment.get("description", ""),
+            "EGRESO" if expense else "INGRESO",
+        )
+
         if payment.get("status", "") != "approved":
             skipped += 1
             continue
@@ -317,7 +342,6 @@ def sync_payments_to_transactions(
         raw_amount = Decimal(str(payment.get("transaction_amount", 0)))
         description_parts = []
 
-        expense = _is_expense(payment, mp_user_id)
         if expense:
             amount = -abs(raw_amount)
             description_parts.append("[MP Pago]")

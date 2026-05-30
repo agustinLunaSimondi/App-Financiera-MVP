@@ -73,5 +73,15 @@ export const es = {
     "chat.suggest.balance": "¿Cuál es mi saldo total?",
     "chat.suggest.gasto": "Anotar gasto de $1200 en Cafetería hoy",
     "chat.suggest.presupuesto": "Crear un presupuesto de $15000 en Comida",
-    "chat.suggest.meta": "Crear meta de ahorro 'Vacaciones' de $50000"
+    "chat.suggest.meta": "Crear meta de ahorro 'Vacaciones' de $50000",
+
+    // Naming contest para Aki
+    "aki.name.title": "¿Cómo lo llamarías?",
+    "aki.name.subtitle": "Estamos buscando nombre para nuestro asistente. ¡Proponé el tuyo!",
+    "aki.name.placeholder": "Tu propuesta de nombre...",
+    "aki.name.submit": "Enviar",
+    "aki.name.submitted": "¡Gracias! Ya registramos tu idea.",
+    "aki.name.recent": "Últimas propuestas",
+    "aki.name.error": "No se pudo enviar. Intentá de nuevo.",
+    "aki.name.invalid": "Solo letras, números y espacios (2-30 caracteres)."
 };
