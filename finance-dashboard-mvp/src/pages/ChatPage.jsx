@@ -7,6 +7,7 @@ import {
 import { useLanguage } from '../contexts/LanguageContext';
 import { useFinance } from '../hooks/useFinance';
 import { sendMessageToAgent } from '../services/chat';
+import { submitAkiName, getRecentAkiNames } from '../services/akiName';
 import { formatCurrency } from '../utils/formatters';
 import { parseApiError, isTimeoutError } from '../lib/apiErrors';
 import { AIInsightsCard } from './components/AIInsightsCard';
@@ -81,6 +82,16 @@ export function ChatPage() {
 
     const messagesEndRef = useRef(null);
     const inputRef = useRef(null);
+
+    const [nameInput, setNameInput] = useState('');
+    const [nameSubmitting, setNameSubmitting] = useState(false);
+    const [nameSubmitted, setNameSubmitted] = useState(false);
+    const [nameError, setNameError] = useState('');
+    const [recentNames, setRecentNames] = useState([]);
+
+    useEffect(() => {
+        getRecentAkiNames().then(setRecentNames).catch(() => {});
+    }, []);
 
     useEffect(() => {
         setMessages([
@@ -180,6 +191,26 @@ export function ChatPage() {
 
     const handleSuggestClick = (suggestionText) => {
         handleSend(suggestionText);
+    };
+
+    const handleNameSubmit = async (e) => {
+        e.preventDefault();
+        const trimmed = nameInput.trim();
+        if (!trimmed || nameSubmitting) return;
+        setNameError('');
+        setNameSubmitting(true);
+        try {
+            await submitAkiName(trimmed);
+            setNameSubmitted(true);
+            setRecentNames(prev => [{ name: trimmed }, ...prev].slice(0, 20));
+        } catch (err) {
+            const detail = err?.response?.data?.detail;
+            setNameError(
+                typeof detail === 'string' ? detail : t('aki.name.error')
+            );
+        } finally {
+            setNameSubmitting(false);
+        }
     };
 
     const renderActionResultCard = (actionResult) => {
@@ -432,6 +463,75 @@ export function ChatPage() {
             </div>
 
             </div>
+
+        {/* Naming contest — bautizá al asistente */}
+        <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+            className="bg-white/40 dark:bg-zinc-900/40 backdrop-blur-md rounded-3xl border border-zinc-200/50 dark:border-zinc-800/50 shadow-lg p-6"
+        >
+            <div className="flex items-start gap-3 mb-5">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-500 to-pink-500 flex items-center justify-center text-white shadow-md shadow-purple-500/20 shrink-0">
+                    <Sparkles size={18} />
+                </div>
+                <div>
+                    <h2 className="font-black text-zinc-900 dark:text-white text-sm">{t('aki.name.title')}</h2>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{t('aki.name.subtitle')}</p>
+                </div>
+            </div>
+
+            {nameSubmitted ? (
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400 font-bold"
+                >
+                    <CheckCircle size={16} />
+                    {t('aki.name.submitted')}
+                </motion.div>
+            ) : (
+                <form onSubmit={handleNameSubmit} className="flex gap-2">
+                    <input
+                        type="text"
+                        value={nameInput}
+                        onChange={(e) => { setNameInput(e.target.value); setNameError(''); }}
+                        placeholder={t('aki.name.placeholder')}
+                        maxLength={30}
+                        className="flex-1 px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/80 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-colors text-zinc-900 dark:text-white"
+                    />
+                    <button
+                        type="submit"
+                        disabled={nameSubmitting || !nameInput.trim()}
+                        className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm font-bold hover:scale-105 active:scale-95 transition-all shadow-md disabled:opacity-50 disabled:scale-100 shrink-0"
+                    >
+                        {nameSubmitting ? '...' : t('aki.name.submit')}
+                    </button>
+                </form>
+            )}
+
+            {nameError && (
+                <p className="mt-2 text-xs text-rose-500 font-medium">{nameError}</p>
+            )}
+
+            {recentNames.length > 0 && (
+                <div className="mt-5">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-500 mb-2.5">
+                        {t('aki.name.recent')}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                        {recentNames.map((entry, i) => (
+                            <span
+                                key={i}
+                                className="px-3 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 text-xs font-bold text-zinc-600 dark:text-zinc-400 border border-zinc-200/70 dark:border-zinc-700/70"
+                            >
+                                {entry.name}
+                            </span>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </motion.div>
         </div>
     );
 }

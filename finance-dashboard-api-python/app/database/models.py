@@ -307,3 +307,12 @@ class PublicWidget(Base):
     config_json = Column(Text, nullable=True)
     expires_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class AkiNameSuggestion(Base):
+    """Nombres propuestos por usuarios para el asistente Aki. Público, sin auth."""
+    __tablename__ = "aki_name_suggestions"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    name = Column(String(50), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)

@@ -73,5 +73,15 @@ export const en = {
     "chat.suggest.balance": "What is my total balance?",
     "chat.suggest.gasto": "Record expense of $1200 in Coffee today",
     "chat.suggest.presupuesto": "Create a budget of $15000 in Food",
-    "chat.suggest.meta": "Create saving goal 'Vacation' of $50000"
+    "chat.suggest.meta": "Create saving goal 'Vacation' of $50000",
+
+    // Naming contest for Aki
+    "aki.name.title": "What would you call it?",
+    "aki.name.subtitle": "We're looking for a name for our assistant. Submit your idea!",
+    "aki.name.placeholder": "Your name suggestion...",
+    "aki.name.submit": "Submit",
+    "aki.name.submitted": "Thanks! We've registered your idea.",
+    "aki.name.recent": "Recent suggestions",
+    "aki.name.error": "Could not submit. Please try again.",
+    "aki.name.invalid": "Letters, numbers and spaces only (2-30 characters)."
 };
