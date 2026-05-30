@@ -1,9 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import select
 from decimal import Decimal
-from typing import List, Optional
+from typing import Optional
 from datetime import date
 from app.database import models
 from app.database.database import get_db

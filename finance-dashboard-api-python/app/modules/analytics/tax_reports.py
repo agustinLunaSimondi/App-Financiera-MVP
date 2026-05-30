@@ -12,7 +12,7 @@ from typing import List, Dict, Any, Optional
 
 try:
     from openpyxl import Workbook
-    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side, numbers
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
     HAS_OPENPYXL = True
 except ImportError:
     HAS_OPENPYXL = False

@@ -5,7 +5,7 @@ Maneja el intercambio OAuth, refresh de tokens y sincronización de pagos.
 import httpx
 import os
 import logging
-from datetime import datetime, timedelta, timezone, date
+from datetime import datetime, timezone, date
 from decimal import Decimal
 from typing import Optional
 from sqlalchemy.orm import Session

@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends, Query
-from sqlalchemy.orm import Session, joinedload
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
 from sqlalchemy import func
-from typing import Optional, List
+from typing import Optional
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 import asyncio
@@ -11,7 +11,6 @@ import httpx
 from app.database import models
 from app.database.database import get_db
 from app.core.deps import get_current_user
-from app import schemas
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/analytics", tags=["analytics"])

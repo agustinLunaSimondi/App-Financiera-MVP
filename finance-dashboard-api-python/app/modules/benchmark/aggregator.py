@@ -12,7 +12,6 @@ from collections import defaultdict
 from datetime import date, timedelta
 from decimal import Decimal
 from statistics import mean
-from typing import Iterable
 
 from sqlalchemy import text
 from sqlalchemy.orm import Session

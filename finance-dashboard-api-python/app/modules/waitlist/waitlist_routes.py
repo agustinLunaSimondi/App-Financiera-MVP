@@ -2,7 +2,7 @@
 Endpoint público para capturar emails de la landing page (waitlist).
 No requiere autenticación.
 """
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from pydantic import BaseModel, EmailStr

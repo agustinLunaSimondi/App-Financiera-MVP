@@ -8,7 +8,6 @@ Create Date: 2026-05-22
 - Añadimos índices que faltaban en columnas de búsqueda frecuente.
 """
 from alembic import op
-import sqlalchemy as sa
 
 revision = "e1c2d3a4b5f6"
 down_revision = "a2b3c4d5e6f7"

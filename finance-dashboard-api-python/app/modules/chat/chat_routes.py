@@ -1,11 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from datetime import date, datetime
-from typing import List, Optional, Dict, Any
+from typing import Optional, Dict, Any
 import httpx
 import os
-import json
 import logging
 from app.database import models
 from app.database.database import get_db
@@ -184,7 +183,6 @@ def execute_create_transaction(db: Session, user_id: str, amount: float, descrip
             "status": "error_account_not_found",
             "message": f"No se encontró ninguna cuenta con el nombre '{account_name}'. Las cuentas disponibles del usuario son: {account_names}. Consultale al usuario cuál desea usar."
         }
-    account_used_name = account.name
 
     # 2. Validar o buscar categoría
     # Solo categorías del usuario actual. `is_default` se setea por-usuario al registrarse,

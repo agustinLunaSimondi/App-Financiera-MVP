@@ -2,7 +2,6 @@ import os
 import sys
 import uuid
 import datetime
-from sqlalchemy.orm import Session
 
 # Add the parent directory to sys.path so we can import app modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -114,7 +113,7 @@ def seed_data():
         print("========================================")
         print("Database successfully seeded!")
         print(f"Email: {email}")
-        print(f"Password: demo123")
+        print("Password: demo123")
         print("========================================")
 
     except Exception as e:

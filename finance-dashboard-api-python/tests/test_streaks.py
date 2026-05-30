@@ -4,7 +4,7 @@ from decimal import Decimal
 
 from app.database import models
 from app.modules.streaks.logic import (
-    BADGES, StreakState, TxLite, evaluate_day, is_zero_day, next_badge, unlocked_badges,
+    StreakState, TxLite, evaluate_day, is_zero_day, next_badge, unlocked_badges,
 )
 from app.modules.streaks.processor import evaluate_user_streak
 

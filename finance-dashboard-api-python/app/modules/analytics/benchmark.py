@@ -5,9 +5,7 @@ Compara el gasto del usuario por categoría contra el promedio de todos los
 usuarios de la plataforma. Si hay menos de 50 usuarios, usa promedios
 históricos del propio usuario como referencia + rangos AR típicos.
 """
-from decimal import Decimal
 from typing import List, Dict, Any, Optional
-from datetime import date, timedelta
 import logging
 
 logger = logging.getLogger(__name__)

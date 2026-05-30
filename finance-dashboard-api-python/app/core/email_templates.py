@@ -7,7 +7,6 @@ estilos son inline porque la mayoría de los clientes de mail no soportan <style
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import List, Optional
 
 
 def _fmt_money(amount) -> str:
