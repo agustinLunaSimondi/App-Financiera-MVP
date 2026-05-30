@@ -113,31 +113,25 @@ def _is_expense(payment: dict, mp_user_id: str) -> bool:
     """
     Determina si un pago de MP es un egreso para el usuario.
 
-    Fuente de verdad: collector_id / payer.id contra mp_user_id.
-    - collector_id == mp_user_id  -> el usuario cobró  -> ingreso
-    - payer.id    == mp_user_id  -> el usuario pagó   -> egreso
-    Fallback cuando faltan ambos ids: solo salidas explícitas son egreso
-    (la búsqueda de MP devuelve mayormente cobros).
+    Fuente de verdad: collector_id. MP solo lo puebla cuando el usuario es el
+    cobrador, así que:
+      - collector_id == mp_user_id -> dinero entra -> INGRESO
+        (transfers recibidas + account_fund / carga de saldo Debin)
+      - collector_id nulo o de otro -> operación saliente -> EGRESO
+        (compras, recargas, reservas, transfers enviadas)
+
+    payer.id no es confiable: viene nulo en las operaciones salientes, que es
+    justo donde lo necesitaríamos.
     """
     uid = str(mp_user_id or "")
     collector_id = str(payment.get("collector_id", "") or "")
-    payer_id = str(payment.get("payer", {}).get("id", "") or "")
-
-    if uid:
-        if collector_id and collector_id == uid:
-            return False  # cobro = ingreso
-        if payer_id and payer_id == uid:
-            return True   # pago = egreso
-
-    return payment.get("operation_type", "") in (
-        "money_transfer", "withdrawal", "money_exchange"
-    )
+    return not (uid and collector_id and collector_id == uid)
 
 
 async def fetch_account_balance(access_token: str, mp_user_id: str = None) -> dict:
     """
     Obtiene el saldo e ingresos/egresos del mes de la cuenta Mercado Pago.
-    Usa payer.id para distinguir correctamente egresos de ingresos.
+    Usa collector_id para distinguir correctamente egresos de ingresos.
     """
     try:
         async with httpx.AsyncClient(timeout=15.0) as client:
