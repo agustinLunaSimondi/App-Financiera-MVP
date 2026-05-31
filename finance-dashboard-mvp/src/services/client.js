@@ -72,8 +72,16 @@ client.interceptors.response.use(
         const status = error?.response?.status;
         const config = error?.config;
 
-        // Auto-retry para errores transitorios (cold start típico)
-        if (config && !config.__noRetry && (RETRY_STATUS.has(status) || error.code === 'ECONNABORTED')) {
+        // Auto-retry para errores transitorios (cold start típico).
+        // 502/503/504 = el gateway respondió sin que el server procese el request → safe reintentar cualquier método.
+        // ECONNABORTED = timeout del cliente: el server PUDO haber procesado. Reintentar un POST/PUT/DELETE
+        // duplicaría el efecto (ej: doble transacción). Por eso el timeout solo se reintenta en métodos idempotentes.
+        const method = (config?.method || 'get').toLowerCase();
+        const isIdempotent = method === 'get' || method === 'head' || method === 'options';
+        const isTimeout = error.code === 'ECONNABORTED';
+        const retriable = RETRY_STATUS.has(status) || (isTimeout && isIdempotent);
+
+        if (config && !config.__noRetry && retriable) {
             if (!config.__retryCount) config.__retryCount = 0;
             if (config.__retryCount < 1) {
                 config.__retryCount += 1;
