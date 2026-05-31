@@ -20,11 +20,13 @@ hotfix/*      → fix urgente → PR → main → backmerge → develop
 
 | Entorno | Branch | Frontend URL | Backend URL | DB |
 |---------|--------|-------------|-------------|-----|
-| **Local** | cualquiera | localhost:5173 | localhost:8000 | Supabase (schema dev) |
-| **Staging** | develop | Vercel Preview URL | finance-api-staging.onrender.com | Supabase (schema dev) |
-| **Producción** | main | app.dominio.com | finance-api-prod.onrender.com | Supabase (schema prod) |
+| **Local** | cualquiera | localhost:5173 | localhost:8000 | Supabase (compartida) |
+| **Staging** | develop | app-financiera-mvp-jteg-git-develop-agustinlunasimondis-projects.vercel.app | finance-api-staging.onrender.com | Supabase (compartida) |
+| **Producción** | main | app-financiera-mvp-jteg.vercel.app | finance-api-9fe5.onrender.com | Supabase (compartida) |
 
 > UAT no necesario todavía. `develop` + Vercel Preview URL cumple esa función. Agregar entorno UAT separado cuando haya QA externo o stakeholders que necesiten aprobar features antes de prod.
+
+> **DB compartida (MVP):** staging y prod usan la misma instancia Supabase por ahora. No correr seeds destructivos desde staging. Separar en schemas/instancias cuando haya plan pago.
 
 ---
 
@@ -52,19 +54,21 @@ En Project Settings → Git:
 Variables de entorno en Vercel (separadas por environment):
 ```
 # Production
-VITE_API_URL = https://finance-api-prod.onrender.com/api
+VITE_API_URL = https://finance-api-9fe5.onrender.com/api
 
 # Preview (staging + feature branches)
 VITE_API_URL = https://finance-api-staging.onrender.com/api
 ```
 
+> Cambios de env var en Vercel solo aplican a deploys NUEVOS. Tras editar una variable, redeployar el branch afectado.
+
 ### Render
 
-Crear 2 services:
-- `finance-api-staging` → auto-deploy on push to `develop`
-- `finance-api-prod` → auto-deploy on push to `main` (o manual deploy para mayor control)
+2 services (ya creados):
+- `finance-api-staging` (`finance-api-staging.onrender.com`) → auto-deploy on push to `develop`
+- `finance-dashboard-api` (`finance-api-9fe5.onrender.com`) → auto-deploy on push to `main`
 
-Cada service tiene sus propias env vars apuntando a la DB correcta.
+Cada service tiene sus propias env vars. `JWT_SECRET` distinto por service; `ENCRYPTION_KEY` igual (para leer tokens MP cifrados). `FRONTEND_URL` en staging = `*` (acepta cualquier preview URL).
 
 ---
 
