@@ -14,6 +14,7 @@ from dateutil.relativedelta import relativedelta
 from decimal import Decimal
 from app.database import models
 from app.database.database import SessionLocal
+from app.modules.savings.auto_deposit import apply_auto_deposit_rules
 
 logger = logging.getLogger(__name__)
 
@@ -93,6 +94,11 @@ def process_recurring_transactions():
                 )
                 db.add(new_tx)
                 account.balance = (account.balance or Decimal("0")) + Decimal(str(rt.amount))
+
+                # Auto-depósito en metas (#56): un ingreso recurrente (ej. sueldo) también
+                # debe disparar las reglas. flush() para que new_tx.account resuelva antes.
+                db.flush()
+                apply_auto_deposit_rules(db, new_tx)
 
                 rt.next_date = get_next_date(rt.next_date, rt.frequency)
 
