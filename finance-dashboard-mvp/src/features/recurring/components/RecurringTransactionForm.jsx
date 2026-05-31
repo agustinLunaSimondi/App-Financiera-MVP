@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useFinance } from '../../../hooks/useFinance';
+import { cn } from '../../../lib/utils';
 
 export function RecurringTransactionForm({ rt, onSubmit, onCancel }) {
     const { accounts, categories } = useFinance();
     const [formData, setFormData] = useState({
         description: '',
         amount: '',
+        type: 'EXPENSE',
         frequency: 'MONTHLY',
         accountId: '',
         categoryId: '',
@@ -19,6 +21,8 @@ export function RecurringTransactionForm({ rt, onSubmit, onCancel }) {
             setFormData({
                 description: rt.description || '',
                 amount: Math.abs(rt.amount) || '',
+                // El signo del monto guardado define el tipo: negativo = gasto, positivo = ingreso.
+                type: rt.amount < 0 ? 'EXPENSE' : 'INCOME',
                 frequency: rt.frequency || 'MONTHLY',
                 accountId: rt.accountId || (accounts[0]?.id || ''),
                 categoryId: rt.categoryId || (categories[0]?.id || ''),
@@ -37,16 +41,49 @@ export function RecurringTransactionForm({ rt, onSubmit, onCancel }) {
 
     const handleSubmit = (e) => {
         e.preventDefault();
+        // `type` es solo de UI; el backend infiere gasto/ingreso por el signo del monto.
+        const { type, ...payload } = formData;
+        const magnitude = Math.abs(parseFloat(formData.amount));
         // endDate vacía rompe la validación Pydantic (Optional[date]); convertir a null
         onSubmit({
-            ...formData,
-            amount: parseFloat(formData.amount),
+            ...payload,
+            amount: type === 'EXPENSE' ? -magnitude : magnitude,
             endDate: formData.endDate ? formData.endDate : null
         });
     };
 
     return (
         <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-2">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Tipo</label>
+                <div className="grid grid-cols-2 gap-2 p-1 bg-zinc-100 dark:bg-zinc-900/50 rounded-2xl">
+                    <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, type: 'EXPENSE' })}
+                        className={cn(
+                            "px-4 py-3 rounded-xl font-bold text-sm transition-all active:scale-95",
+                            formData.type === 'EXPENSE'
+                                ? "bg-rose-500 text-white shadow-lg shadow-rose-500/20"
+                                : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                        )}
+                    >
+                        Gasto
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, type: 'INCOME' })}
+                        className={cn(
+                            "px-4 py-3 rounded-xl font-bold text-sm transition-all active:scale-95",
+                            formData.type === 'INCOME'
+                                ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20"
+                                : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                        )}
+                    >
+                        Ingreso
+                    </button>
+                </div>
+            </div>
+
             <div className="space-y-2">
                 <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Descripción</label>
                 <input
