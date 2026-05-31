@@ -50,7 +50,7 @@ export function RecurringTransactionCard({ rt, onEdit, onDelete, onToggle, delay
                 <div className="flex items-baseline gap-1 flex-wrap">
                     <span className={cn(
                         "text-2xl font-black",
-                        rt.amount > 0 ? "text-emerald-500" : "text-zinc-900 dark:text-white"
+                        rt.amount > 0 ? "text-emerald-500" : "text-rose-500"
                     )}>
                         {rt.amount > 0 ? '+' : ''}{formatCurrency(rt.amount)}
                     </span>
