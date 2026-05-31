@@ -1,0 +1,23 @@
+# Ruff config for CI lint
+# Lints runtime code only — excludes seed scripts, tests, alembic migrations
+
+line-length = 120
+
+extend-exclude = [
+    "alembic/",
+    "tests/",
+    "scripts/",
+    "seed_demo_user.py",
+    "seed_subscriptions_test_user.py",
+    ".venv/",
+    "venv/",
+]
+
+[lint]
+# E = pycodestyle errors, F = pyflakes (undefined names, unused imports)
+select = ["E", "F"]
+ignore = [
+    "E501",  # line too long (handled by formatter)
+    "E402",  # module level import not at top (needed for path setup)
+    "E702",  # multiple statements on one line
+]

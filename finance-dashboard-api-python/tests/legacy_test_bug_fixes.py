@@ -86,7 +86,7 @@ def main():
     goal_empty_deadline = res.json()
     assert goal_empty_deadline["deadline"] is None, \
         f"deadline='' debió convertirse a None, obtuve {goal_empty_deadline['deadline']}"
-    print(f"  ✓ deadline='' se convirtió a null correctamente")
+    print("  ✓ deadline='' se convirtió a null correctamente")
 
     # ─── 5. Crear meta con deadline válida ───
     step("Crear SavingGoal con deadline válida")
@@ -149,7 +149,7 @@ def main():
     assert_status(res, 200, "POST /recurring (endDate='')")
     rec = res.json()
     assert rec["endDate"] is None, f"endDate='' debería ser null, obtuve {rec['endDate']}"
-    print(f"  ✓ endDate='' convertido a null")
+    print("  ✓ endDate='' convertido a null")
 
     # ─── 10. Crear transacción ───
     step("Crear transacción (smoke test del flujo completo)")
@@ -161,7 +161,7 @@ def main():
         "transactionDate": "2026-05-10"
     })
     assert_status(res, 200, "POST /transactions")
-    print(f"  ✓ transacción creada")
+    print("  ✓ transacción creada")
 
     # ─── 11. Bug: PUT a /savings-goals/{id} con UUID en path NO debe redirigir ───
     step("Verificar que PUT a path con UUID no devuelve 307")
@@ -173,9 +173,9 @@ def main():
     )
     assert res.status_code in (200, 307), f"unexpected status {res.status_code}"
     if res.status_code == 200:
-        print(f"  ✓ PUT directo (no redirect) OK")
+        print("  ✓ PUT directo (no redirect) OK")
     else:
-        print(f"  ⚠ recibí 307 — el cliente axios sigue redirects, no es un bug fatal")
+        print("  ⚠ recibí 307 — el cliente axios sigue redirects, no es un bug fatal")
 
     print("\n🎉 Todos los tests de fixes QA pasaron!")
 

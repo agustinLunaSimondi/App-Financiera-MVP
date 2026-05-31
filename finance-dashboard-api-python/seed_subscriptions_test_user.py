@@ -161,7 +161,7 @@ print(f"  Email:    {EMAIL}")
 print(f"  Password: {PASSWORD}")
 print()
 print("Datos sembrados:")
-print(f"  - 1 cuenta (Cuenta principal)")
+print("  - 1 cuenta (Cuenta principal)")
 print(f"  - {len(cats)} categorías de gasto")
 print(f"  - {len(subscription_patterns)} patrones de suscripción esperables:")
 for desc, amt, _, n in subscription_patterns:

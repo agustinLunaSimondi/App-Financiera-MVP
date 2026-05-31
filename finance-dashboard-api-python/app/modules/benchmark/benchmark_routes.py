@@ -1,5 +1,5 @@
 """Endpoints para benchmark anonimizado (#59)."""
-from datetime import date, timedelta
+from datetime import date
 from decimal import Decimal
 from typing import Optional
 
