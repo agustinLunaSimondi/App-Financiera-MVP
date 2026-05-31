@@ -156,7 +156,7 @@ export const generateIncomeVsExpensesChartData = (transactions, months = 6) => {
         const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 
         return {
-            month: monthNames[parseInt(monthNum) - 1],
+            month: monthNames[parseInt(monthNum, 10) - 1],
             income: month.income,
             expenses: month.expenses
         };

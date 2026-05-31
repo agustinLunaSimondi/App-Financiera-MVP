@@ -76,3 +76,22 @@ def test_inactive_rule_skipped(db_session, user):
     db_session.add(tx); db_session.flush()
     affected = apply_auto_deposit_rules(db_session, tx)
     assert affected == []
+
+
+def test_no_account_does_not_deposit(db_session, user):
+    """Regresión: tx sin cuenta no debe matchear reglas. Antes, el ternario inline
+    `user_id == tx.account.user_id if tx.account else None` degeneraba en
+    `filter(None, ...)` y podía aplicar reglas de cualquier usuario (cross-user)."""
+    acc, cat_in, cat_out, goal = _setup(db_session, user)
+    rule = models.GoalRule(user_id=user.id, goal_id=goal.id, trigger_category_id=cat_in.id, percentage=Decimal("10"))
+    db_session.add(rule); db_session.commit()
+
+    # Transacción de ingreso pero sin cuenta resoluble (tx.account is None).
+    tx = models.Transaction(
+        account_id=None, category_id=cat_in.id, amount=Decimal("500000"),
+        description="Sueldo huérfano", transaction_date=date.today(),
+    )
+    affected = apply_auto_deposit_rules(db_session, tx)
+    db_session.refresh(goal)
+    assert affected == []
+    assert goal.current_amount == Decimal("0")

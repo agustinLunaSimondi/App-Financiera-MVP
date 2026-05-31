@@ -64,6 +64,12 @@ def update_saving_goal(
         raise HTTPException(status_code=404, detail="Meta no encontrada")
     
     update_data = goal_update.model_dump(exclude_unset=True)
+
+    # Una meta de ahorro no puede tener saldo negativo (depósito/retiro mal calculado en el cliente).
+    if "current_amount" in update_data and update_data["current_amount"] is not None:
+        if Decimal(str(update_data["current_amount"])) < 0:
+            raise HTTPException(status_code=422, detail="El monto ahorrado no puede ser negativo.")
+
     for key, value in update_data.items():
         setattr(goal, key, value)
 
