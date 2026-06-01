@@ -77,18 +77,30 @@ def can_charge_to_envelope(
 ) -> tuple[bool, Optional[EnvelopeStatus], Optional[str]]:
     """
     Retorna (ok, status, reason).
-    - Solo aplica si user.budget_mode == 'envelopes'.
+    - Modo chanchito per-budget: bloquea solo si el budget mensual de la categoría
+      tiene `is_strict == True` (independiente del budget_mode global del usuario).
     - Solo aplica a gastos (amount < 0) dentro del mes corriente.
-    - Si la categoría no tiene budget mensual, deja pasar (no es un sobre).
+    - Si la categoría no tiene budget mensual o no es estricto, deja pasar.
     """
-    if user.budget_mode != "envelopes":
-        return True, None, None
     if amount >= 0:
         return True, None, None
 
     today = date.today()
     month_start, next_month_start = _month_window(today)
     if not (month_start <= tx_date < next_month_start):
+        return True, None, None
+
+    budget = (
+        db.query(models.Budget)
+        .filter(
+            models.Budget.user_id == user.id,
+            models.Budget.category_id == category_id,
+            models.Budget.period == models.BudgetPeriod.MONTHLY,
+        )
+        .first()
+    )
+    # Solo bloquea si existe el presupuesto y tiene el modo chanchito activo.
+    if not budget or not budget.is_strict:
         return True, None, None
 
     status = envelope_status_for_category(db, user.id, category_id, today=today)
@@ -98,6 +110,7 @@ def can_charge_to_envelope(
     requested = abs(amount)
     if requested > status.remaining:
         return False, status, (
-            f"Sobre lleno: te quedan ${status.remaining:.2f} de ${status.budget:.2f} en este mes."
+            f"Modo chanchito activo: te quedan ${status.remaining:.2f} "
+            f"de ${status.budget:.2f} en '{budget.category.name if budget.category else 'esta categoría'}' este mes."
         )
     return True, status, None

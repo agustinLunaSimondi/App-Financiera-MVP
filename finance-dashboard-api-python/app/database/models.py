@@ -136,6 +136,8 @@ class Budget(Base):
     start_date = Column(Date, nullable=False)
     # Color custom — si es null, el frontend cae al color de la categoría.
     color = Column(String, nullable=True)
+    # Modo chanchito (per-budget): si True, bloquea gastos que superen este presupuesto.
+    is_strict = Column(Boolean, default=False, nullable=False, server_default="false")
 
     user = relationship("User", back_populates="budgets")
     category = relationship("Category", back_populates="budgets")

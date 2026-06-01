@@ -74,6 +74,16 @@ export function BudgetPage() {
         }
     };
 
+    const handleToggleStrict = async (budget) => {
+        const next = !budget.isStrict;
+        try {
+            await updateBudget(budget.id, { isStrict: next });
+            toast.success(next ? '🐷 Modo chanchito activado' : 'Modo chanchito desactivado');
+        } catch (err) {
+            toast.error(parseApiError(err, 'No se pudo actualizar el modo chanchito'));
+        }
+    };
+
     const handleDelete = (id) => setConfirmDeleteId(id);
 
     const handleConfirmDelete = async () => {
@@ -234,6 +244,32 @@ export function BudgetPage() {
                                                 </div>
                                             )}
                                             <span className="text-zinc-400">Restan {formatCompactCurrency(budget.remaining)}</span>
+                                        </div>
+
+                                        {/* Modo chanchito per-budget (#chanchito): bloquea gastos que superen el límite */}
+                                        <div className="pt-3 mt-1 border-t border-zinc-200/50 dark:border-zinc-800/50 flex items-center justify-between">
+                                            <span
+                                                className="text-xs font-bold text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5"
+                                                title="Cuando está activo, los gastos que superen este presupuesto serán bloqueados automáticamente."
+                                            >
+                                                🐷 Modo chanchito
+                                            </span>
+                                            <button
+                                                type="button"
+                                                role="switch"
+                                                aria-checked={!!budget.isStrict}
+                                                aria-label="Activar o desactivar modo chanchito"
+                                                onClick={() => handleToggleStrict(budget)}
+                                                className={cn(
+                                                    "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-900",
+                                                    budget.isStrict ? "bg-emerald-500" : "bg-zinc-300 dark:bg-zinc-700"
+                                                )}
+                                            >
+                                                <span className={cn(
+                                                    "inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform",
+                                                    budget.isStrict ? "translate-x-6" : "translate-x-1"
+                                                )} />
+                                            </button>
                                         </div>
                                     </div>
 

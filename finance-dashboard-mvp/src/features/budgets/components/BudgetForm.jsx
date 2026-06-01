@@ -22,6 +22,7 @@ export function BudgetForm({ onSubmit, onCancel, initialData = null, categories 
         period: 'MONTHLY',
         startDate: new Date().toISOString().split('T')[0],
         color: COLOR_PRESETS[0],
+        isStrict: false,
     });
 
     useEffect(() => {
@@ -33,6 +34,7 @@ export function BudgetForm({ onSubmit, onCancel, initialData = null, categories 
                 period: initialData.period || 'MONTHLY',
                 startDate: initialData.startDate ? initialData.startDate.split('T')[0] : new Date().toISOString().split('T')[0],
                 color: initialData.color || COLOR_PRESETS[0],
+                isStrict: initialData.isStrict || false,
             });
         }
     }, [initialData]);
@@ -186,6 +188,22 @@ export function BudgetForm({ onSubmit, onCancel, initialData = null, categories 
                         <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-zinc-400">+</span>
                     </label>
                 </div>
+            </div>
+
+            <div className="flex items-start gap-3 p-3 rounded-lg bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700">
+                <input
+                    id="budget-is-strict"
+                    type="checkbox"
+                    checked={formData.isStrict}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, isStrict: e.target.checked }))}
+                    className="mt-0.5 w-4 h-4 accent-emerald-600 cursor-pointer"
+                />
+                <label htmlFor="budget-is-strict" className="text-sm text-zinc-700 dark:text-zinc-300 cursor-pointer select-none">
+                    <span className="font-medium">🐷 Modo chanchito</span>
+                    <span className="block text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                        Bloquea automáticamente los gastos que superen este presupuesto.
+                    </span>
+                </label>
             </div>
 
             <div className="flex gap-3 pt-4">
