@@ -116,6 +116,11 @@ export function FinanceProvider({ children }) {
                 transaction.category || 'unknown',
                 amountRange(Math.abs(Number(transaction.amount || 0)))
             );
+            // Refrescar metas de ahorro: si el ingreso disparó una regla de auto-depósito,
+            // el backend ya actualizó current_amount. Sin este fetch el UI muestra stale.
+            if (Number(transaction.amount) > 0) {
+                api.getSavingsGoals().then(setSavingsGoals).catch(() => {});
+            }
             return newTx;
         } catch (err) {
             setError(err.message);
