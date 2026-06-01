@@ -348,3 +348,120 @@ class MercadoPagoSyncResult(CamelModel):
     transactions_skipped: int = 0
     message: str = ""
 
+
+# ===== Events Schemas (gastos compartidos en grupo) =====
+class EventMemberCreate(CamelModel):
+    display_name: str
+    email: Optional[str] = None
+
+    @field_validator("email", mode="before")
+    @classmethod
+    def _email_empty(cls, v):
+        return _empty_str_to_none(v)
+
+
+class EventExpenseSplitOut(CamelModel):
+    id: str
+    member_id: str
+    member_name: str
+    share_amount: Decimal
+    is_paid: bool
+
+
+class EventExpenseCreate(CamelModel):
+    paid_by_member_id: str
+    description: str
+    amount: Decimal = Field(max_digits=12, decimal_places=2)
+    expense_date: date
+    split_mode: str = "equal"
+    # Si split_mode == "custom": [{ memberId, shareAmount }]
+    custom_splits: Optional[List[dict]] = None
+
+
+class EventExpenseOut(CamelModel):
+    id: str
+    paid_by_member_id: str
+    paid_by_name: str
+    description: str
+    amount: Decimal
+    expense_date: date
+    receipt_url: Optional[str] = None
+    receipt_filename: Optional[str] = None
+    split_mode: str
+    splits: List[EventExpenseSplitOut] = []
+    created_at: datetime
+
+
+class EventMemberOut(CamelModel):
+    id: str
+    display_name: str
+    email: Optional[str] = None
+    role: str
+    user_id: Optional[str] = None
+    total_paid: Decimal       # suma de gastos que pagó
+    total_owed: Decimal       # suma de splits que le corresponden
+    net_balance: Decimal      # total_paid - total_owed (>0 le deben, <0 debe)
+
+
+class EventSettlementOut(CamelModel):
+    from_member_id: str
+    from_member_name: str
+    to_member_id: str
+    to_member_name: str
+    amount: Decimal
+
+
+class EventCreate(CamelModel):
+    name: str
+    description: Optional[str] = None
+    event_date: Optional[date] = None
+    currency: str = "ARS"
+    cover_emoji: Optional[str] = None
+
+    @field_validator("event_date", "description", "cover_emoji", mode="before")
+    @classmethod
+    def _blank_to_none(cls, v):
+        return _empty_str_to_none(v)
+
+
+class EventUpdate(CamelModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    event_date: Optional[date] = None
+    cover_emoji: Optional[str] = None
+
+    @field_validator("event_date", "description", "cover_emoji", mode="before")
+    @classmethod
+    def _blank_to_none(cls, v):
+        return _empty_str_to_none(v)
+
+
+class EventListItem(CamelModel):
+    id: str
+    name: str
+    description: Optional[str] = None
+    event_date: Optional[date] = None
+    currency: str
+    status: str
+    cover_emoji: Optional[str] = None
+    owner_id: str
+    member_count: int
+    total_amount: Decimal
+    created_at: datetime
+
+
+class EventOut(CamelModel):
+    id: str
+    name: str
+    description: Optional[str] = None
+    event_date: Optional[date] = None
+    currency: str
+    status: str
+    cover_emoji: Optional[str] = None
+    owner_id: str
+    members: List[EventMemberOut] = []
+    expenses: List[EventExpenseOut] = []
+    settlements: List[EventSettlementOut] = []
+    total_amount: Decimal
+    created_at: datetime
+

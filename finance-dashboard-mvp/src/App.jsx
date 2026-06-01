@@ -38,6 +38,8 @@ import { PrivacyPage } from './pages/PrivacyPage';
 import { TermsPage } from './pages/TermsPage';
 import { ChatPage } from './pages/ChatPage';
 import { WidgetEmbedPage } from './pages/WidgetEmbedPage';
+import { EventsPage } from './pages/EventsPage';
+import { EventDetailPage } from './pages/EventDetailPage';
 
 // Guard for unauthenticated users — redirects to /login
 function RequireAuth() {
@@ -99,6 +101,8 @@ function App() {
                   <Route path="/budget" element={<BudgetPage />} />
                   <Route path="/savings" element={<SavingsPage />} />
                   <Route path="/recurring" element={<RecurringPage />} />
+                  <Route path="/events" element={<EventsPage />} />
+                  <Route path="/events/:eventId" element={<EventDetailPage />} />
                   <Route path="/cards" element={<CardsPage />} />
                   <Route path="/integrations" element={<IntegrationsPage />} />
                   {/* Alias para el redirect de OAuth de Mercado Pago */}
