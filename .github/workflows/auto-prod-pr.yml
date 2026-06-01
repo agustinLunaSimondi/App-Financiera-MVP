@@ -1,0 +1,83 @@
+name: Auto Prod PR
+
+# Crea (o actualiza) un PR rolling develop → main cada vez que develop recibe cambios.
+# El PR acumula todos los commits desde el último merge a main. Vos solo revisás y mergeás.
+
+on:
+  push:
+    branches: [develop]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  sync-prod-pr:
+    name: Create or update develop → main PR
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # necesario para git log entre branches
+
+      - name: Build changelog since last merge to main
+        id: changelog
+        run: |
+          # Lista de commits en develop que aún no están en main
+          LOG=$(git log origin/main..origin/develop --oneline --no-merges 2>/dev/null | head -30)
+          if [ -z "$LOG" ]; then
+            echo "empty=true" >> "$GITHUB_OUTPUT"
+          else
+            # Guardar en archivo para evitar problemas de escaping en env vars
+            echo "$LOG" > /tmp/changelog.txt
+            echo "empty=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Skip if develop == main
+        if: steps.changelog.outputs.empty == 'true'
+        run: echo "develop está al día con main — nada que hacer." && exit 0
+
+      - name: Create or update PR
+        if: steps.changelog.outputs.empty == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          CHANGELOG=$(cat /tmp/changelog.txt)
+          COMMIT_COUNT=$(echo "$CHANGELOG" | wc -l | tr -d ' ')
+
+          PR_BODY="## Staging → Producción
+
+          **${COMMIT_COUNT} commit(s) listos para producción:**
+
+          \`\`\`
+          ${CHANGELOG}
+          \`\`\`
+
+          ## Checklist pre-prod
+          - [ ] Staging funcionando sin errores
+          - [ ] Flujo principal probado: login → transacción → presupuesto
+          - [ ] Verificar Preview URL desde celular
+          - [ ] Sin \`console.log\` de debug
+          - [ ] Si hay migración DB: aplicada en Supabase prod
+
+          > PR actualizado automáticamente al último push de \`develop\`."
+
+          # Buscar PR abierto develop → main
+          EXISTING=$(gh pr list --base main --head develop --state open --json number --jq '.[0].number' 2>/dev/null)
+
+          if [ -z "$EXISTING" ] || [ "$EXISTING" = "null" ]; then
+            # Crear PR nuevo
+            gh pr create \
+              --base main \
+              --head develop \
+              --title "🚀 Release: staging → producción (${COMMIT_COUNT} cambios)" \
+              --body "$PR_BODY"
+            echo "PR creado."
+          else
+            # Actualizar body + título del PR existente
+            gh pr edit "$EXISTING" \
+              --title "🚀 Release: staging → producción (${COMMIT_COUNT} cambios)" \
+              --body "$PR_BODY"
+            echo "PR #${EXISTING} actualizado."
+          fi

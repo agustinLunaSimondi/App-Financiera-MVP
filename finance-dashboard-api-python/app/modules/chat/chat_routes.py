@@ -10,6 +10,7 @@ from app.database import models
 from app.database.database import get_db
 from app.core.deps import get_current_user
 from app.core.rate_limit import limiter
+from app.modules.savings.auto_deposit import apply_auto_deposit_rules
 
 logger = logging.getLogger(__name__)
 
@@ -231,10 +232,15 @@ def execute_create_transaction(db: Session, user_id: str, amount: float, descrip
         source="AI Chat"
     )
     db.add(new_tx)
-    
+
     # Actualizar balance de la cuenta
     account.balance += amount
-    
+
+    # Auto-depósito en metas (#56): un ingreso por chat también debe disparar las reglas.
+    # flush() para que new_tx.account resuelva antes de evaluar las reglas.
+    db.flush()
+    apply_auto_deposit_rules(db, new_tx)
+
     db.commit()
     db.refresh(new_tx)
 

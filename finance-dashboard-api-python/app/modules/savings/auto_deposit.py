@@ -30,8 +30,15 @@ def apply_auto_deposit_rules(db: Session, tx: models.Transaction) -> List[models
     if Decimal(str(tx.amount)) <= 0:
         return []
 
+    # Sin cuenta no podemos resolver el dueño. Cortar acá evita que el ternario
+    # inline degenere en `filter(None, ...)`, que en SQLAlchemy matchearía las
+    # reglas de TODOS los usuarios (auto-depósito cross-user).
+    if tx.account is None:
+        return []
+    owner_id = tx.account.user_id
+
     rules = db.query(models.GoalRule).filter(
-        models.GoalRule.user_id == tx.account.user_id if tx.account else None,
+        models.GoalRule.user_id == owner_id,
         models.GoalRule.trigger_category_id == tx.category_id,
         models.GoalRule.is_active == True,  # noqa: E712
     ).all()
