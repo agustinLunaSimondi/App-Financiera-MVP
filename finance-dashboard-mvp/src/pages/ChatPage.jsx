@@ -165,12 +165,16 @@ export function ChatPage() {
         } catch (error) {
             console.error("Error al enviar mensaje:", error);
             const isTimeout = isTimeoutError(error);
+            // 502/503/504 → IA ocupada o pensando; mensaje amigable en vez del error crudo.
+            const isServerBusy = error?.response?.status >= 502;
             const errorMsg = {
                 id: `error-${Date.now()}`,
                 role: 'model',
                 content: isTimeout
                     ? 'Aki tardó demasiado en responder. Puede ser que el servidor esté frío, intentá de nuevo.'
-                    : parseApiError(error, 'No pude procesar tu mensaje. Reintentá en un momento.'),
+                    : isServerBusy
+                        ? 'Aki está pensando... intentá de nuevo en un momento 🤔'
+                        : parseApiError(error, 'No pude procesar tu mensaje. Reintentá en un momento.'),
                 timestamp: new Date(),
                 isError: true,
                 canRetry: true,
