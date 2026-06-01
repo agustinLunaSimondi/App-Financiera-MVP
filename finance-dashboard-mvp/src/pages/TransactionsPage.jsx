@@ -36,6 +36,10 @@ export function TransactionsPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const [autoCatOpen, setAutoCatOpen] = useState(false);
 
+    // Orden de la tabla. Default: fecha descendente (igual que el backend).
+    const [sortBy, setSortBy] = useState('transaction_date'); // 'transaction_date' | 'amount' | 'description'
+    const [sortDir, setSortDir] = useState('desc'); // 'asc' | 'desc'
+
     const itemsPerPage = 10;
 
     // ── Hooks (siempre antes de cualquier return condicional) ──
@@ -51,6 +55,38 @@ export function TransactionsPage() {
             || (typeFilter === 'expense' && amount < 0);
         return matchesSearch && matchesCategory && matchesType;
     }), [transactions, searchQuery, categoryFilter, typeFilter]);
+
+    // Orden client-side sobre el set ya filtrado. Instantáneo, sin refetch global.
+    const sortedTransactions = useMemo(() => {
+        const dir = sortDir === 'asc' ? 1 : -1;
+        const arr = [...filteredTransactions];
+        arr.sort((a, b) => {
+            let cmp = 0;
+            if (sortBy === 'amount') {
+                cmp = Number(a.amount) - Number(b.amount);
+            } else if (sortBy === 'description') {
+                cmp = (a.description || a.name || '').localeCompare(
+                    b.description || b.name || '', 'es', { sensitivity: 'base' }
+                );
+            } else { // transaction_date — strings ISO YYYY-MM-DD comparan bien lexicográficamente
+                const da = a.transactionDate || a.date || '';
+                const db = b.transactionDate || b.date || '';
+                cmp = da < db ? -1 : da > db ? 1 : 0;
+            }
+            return cmp * dir;
+        });
+        return arr;
+    }, [filteredTransactions, sortBy, sortDir]);
+
+    const handleSort = (column) => {
+        if (sortBy === column) {
+            setSortDir(prev => (prev === 'desc' ? 'asc' : 'desc'));
+        } else {
+            setSortBy(column);
+            setSortDir('desc');
+        }
+        setCurrentPage(1);
+    };
 
     // Quick date filter — usa el filter del FinanceContext (server-side, igual que dashboard).
     const handleQuickDate = (type) => {
@@ -85,8 +121,8 @@ export function TransactionsPage() {
         if (!filters?.startDate && !filters?.endDate && quickDate !== 'all') setQuickDate('all');
     }, [filters?.startDate, filters?.endDate]);  // eslint-disable-line react-hooks/exhaustive-deps
 
-    const totalPages = Math.max(1, Math.ceil(filteredTransactions.length / itemsPerPage));
-    const paginatedTransactions = filteredTransactions.slice(
+    const totalPages = Math.max(1, Math.ceil(sortedTransactions.length / itemsPerPage));
+    const paginatedTransactions = sortedTransactions.slice(
         (currentPage - 1) * itemsPerPage,
         currentPage * itemsPerPage
     );
@@ -410,10 +446,28 @@ export function TransactionsPage() {
                         <table className="w-full text-sm text-left">
                             <thead className="text-[10px] text-zinc-400 dark:text-zinc-500 uppercase tracking-widest font-black border-b border-zinc-200/50 dark:border-zinc-800/50">
                                 <tr>
-                                    <th className="px-8 py-5">Descripción</th>
+                                    <th
+                                        className="px-8 py-5 cursor-pointer select-none hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                                        onClick={() => handleSort('description')}
+                                        aria-sort={sortBy === 'description' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
+                                    >
+                                        Descripción {sortBy === 'description' && (sortDir === 'desc' ? '↓' : '↑')}
+                                    </th>
                                     <th className="px-8 py-5">Categoría</th>
-                                    <th className="px-8 py-5">Fecha</th>
-                                    <th className="px-8 py-5 text-right">Monto</th>
+                                    <th
+                                        className="px-8 py-5 cursor-pointer select-none hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                                        onClick={() => handleSort('transaction_date')}
+                                        aria-sort={sortBy === 'transaction_date' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
+                                    >
+                                        Fecha {sortBy === 'transaction_date' && (sortDir === 'desc' ? '↓' : '↑')}
+                                    </th>
+                                    <th
+                                        className="px-8 py-5 text-right cursor-pointer select-none hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                                        onClick={() => handleSort('amount')}
+                                        aria-sort={sortBy === 'amount' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
+                                    >
+                                        Monto {sortBy === 'amount' && (sortDir === 'desc' ? '↓' : '↑')}
+                                    </th>
                                     <th className="px-8 py-5 text-right">Acciones</th>
                                 </tr>
                             </thead>
