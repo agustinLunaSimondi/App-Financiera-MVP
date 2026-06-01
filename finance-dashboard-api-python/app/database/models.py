@@ -316,3 +316,83 @@ class AkiNameSuggestion(Base):
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     name = Column(String(50), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+
+# ─── Eventos (gastos compartidos en grupo) ───────────────────────────────
+# status/role se guardan como String (no PG enum) para evitar crear tipos
+# nuevos en la DB compartida de Supabase. Valores válidos se validan en la capa
+# de aplicación. status ∈ {'ACTIVE','CLOSED'} · role ∈ {'OWNER','MEMBER'}.
+class Event(Base):
+    __tablename__ = "events"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    owner_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    name = Column(String, nullable=False)
+    description = Column(String, nullable=True)
+    event_date = Column(Date, nullable=True)
+    currency = Column(String, nullable=False, default="ARS", server_default="ARS")
+    status = Column(String, nullable=False, default="ACTIVE", server_default="ACTIVE")
+    cover_emoji = Column(String, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
+
+    owner = relationship("User", foreign_keys=[owner_id])
+    members = relationship("EventMember", back_populates="event", cascade="all, delete-orphan")
+    expenses = relationship("EventExpense", back_populates="event", cascade="all, delete-orphan")
+
+
+class EventMember(Base):
+    __tablename__ = "event_members"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    event_id = Column(String, ForeignKey("events.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=True)  # null = participante externo
+    display_name = Column(String, nullable=False)
+    email = Column(String, nullable=True)
+    role = Column(String, nullable=False, default="MEMBER", server_default="MEMBER")
+    joined_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    event = relationship("Event", back_populates="members")
+    user = relationship("User", foreign_keys=[user_id])
+    paid_expenses = relationship(
+        "EventExpense",
+        back_populates="paid_by_member",
+        foreign_keys="EventExpense.paid_by_member_id",
+    )
+
+    __table_args__ = (UniqueConstraint("event_id", "email", name="_event_member_email_uc"),)
+
+
+class EventExpense(Base):
+    __tablename__ = "event_expenses"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    event_id = Column(String, ForeignKey("events.id", ondelete="CASCADE"), nullable=False, index=True)
+    paid_by_member_id = Column(String, ForeignKey("event_members.id", ondelete="RESTRICT"), nullable=False)
+    description = Column(String, nullable=False)
+    amount = Column(Numeric(12, 2), nullable=False)
+    expense_date = Column(Date, nullable=False)
+    receipt_url = Column(String, nullable=True)
+    receipt_filename = Column(String, nullable=True)
+    # 'equal' = partes iguales entre todos | 'custom' = montos definidos por gasto
+    split_mode = Column(String, nullable=False, default="equal", server_default="equal")
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    event = relationship("Event", back_populates="expenses")
+    paid_by_member = relationship(
+        "EventMember", back_populates="paid_expenses", foreign_keys=[paid_by_member_id]
+    )
+    splits = relationship("EventExpenseSplit", back_populates="expense", cascade="all, delete-orphan")
+
+
+class EventExpenseSplit(Base):
+    __tablename__ = "event_expense_splits"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    expense_id = Column(String, ForeignKey("event_expenses.id", ondelete="CASCADE"), nullable=False, index=True)
+    member_id = Column(String, ForeignKey("event_members.id", ondelete="CASCADE"), nullable=False)
+    share_amount = Column(Numeric(12, 2), nullable=False)
+    is_paid = Column(Boolean, nullable=False, default=False, server_default="false")
+
+    expense = relationship("EventExpense", back_populates="splits")
+    member = relationship("EventMember")

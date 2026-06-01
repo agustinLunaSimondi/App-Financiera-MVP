@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 from slowapi.errors import RateLimitExceeded
 from slowapi import _rate_limit_exceeded_handler
@@ -22,6 +23,7 @@ from app.modules.mercadopago import mp_routes
 from app.modules.waitlist import waitlist_routes
 from app.modules.chat import chat_routes
 from app.modules.aki_name import aki_name_routes
+from app.modules.events import event_routes
 from app.modules.recurring.recurring_processor import process_recurring_transactions
 from app.modules.notifications.processor import run_daily_smart_alerts, run_weekly_snapshots
 from app.modules.streaks import streak_routes
@@ -116,6 +118,13 @@ app.include_router(benchmark_routes.router, prefix="/api")
 app.include_router(report_routes.router, prefix="/api")
 app.include_router(widget_routes.router, prefix="/api")
 app.include_router(aki_name_routes.router, prefix="/api")
+app.include_router(event_routes.router, prefix="/api")
+
+# Static para recibos de eventos subidos localmente (dev/fallback).
+# En prod se usa Supabase Storage; este dir es efímero en Render.
+_UPLOADS_DIR = os.path.join(os.path.dirname(__file__), "uploads")
+os.makedirs(_UPLOADS_DIR, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=_UPLOADS_DIR), name="uploads")
 
 @app.get("/")
 def read_root():

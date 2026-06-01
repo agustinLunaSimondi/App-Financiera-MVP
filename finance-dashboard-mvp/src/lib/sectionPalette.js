@@ -108,6 +108,15 @@ const palettes = {
         gradientFrom: 'from-amber-500',
         gradientTo: 'to-amber-400',
     },
+    events: {
+        accent: 'orange',
+        iconBg: 'bg-orange-500/10 dark:bg-orange-500/15',
+        iconText: 'text-orange-600 dark:text-orange-400',
+        badge: 'bg-orange-500/10 text-orange-600 dark:text-orange-400',
+        ring: 'focus-visible:ring-orange-500/40',
+        gradientFrom: 'from-orange-500',
+        gradientTo: 'to-orange-400',
+    },
 };
 
 export function getSectionPalette(section) {
