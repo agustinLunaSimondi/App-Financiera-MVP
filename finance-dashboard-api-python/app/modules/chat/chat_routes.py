@@ -5,6 +5,7 @@ from datetime import date, datetime
 from typing import Optional, Dict, Any
 import httpx
 import os
+import asyncio
 import logging
 from app.database import models
 from app.database.database import get_db
@@ -17,6 +18,41 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/chat", tags=["chat"])
 
 GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
+
+# Reintentos ante errores transitorios de Gemini (429/5xx) — mitiga 502 intermitentes.
+MAX_GEMINI_RETRIES = 2
+GEMINI_RETRY_DELAY = 2.0  # segundos (base del backoff exponencial)
+
+
+async def call_gemini_with_retry(client, url, payload, headers):
+    """Llama a Gemini reintentando ante 429/500/502/503 con backoff exponencial.
+
+    Devuelve el httpx.Response del último intento. Propaga httpx.TimeoutException
+    cuando se agotan los reintentos por timeout, para que el caller responda 504.
+    """
+    response = None
+    for attempt in range(MAX_GEMINI_RETRIES + 1):
+        try:
+            response = await client.post(url, json=payload, headers=headers)
+            if response.status_code in (429, 500, 502, 503) and attempt < MAX_GEMINI_RETRIES:
+                wait = GEMINI_RETRY_DELAY * (2 ** attempt)
+                logger.warning(
+                    f"Gemini devolvió {response.status_code}, reintento "
+                    f"{attempt + 1}/{MAX_GEMINI_RETRIES} en {wait}s"
+                )
+                await asyncio.sleep(wait)
+                continue
+            return response
+        except httpx.TimeoutException:
+            if attempt < MAX_GEMINI_RETRIES:
+                wait = GEMINI_RETRY_DELAY * (2 ** attempt)
+                logger.warning(
+                    f"Timeout en Gemini, reintento {attempt + 1}/{MAX_GEMINI_RETRIES} en {wait}s"
+                )
+                await asyncio.sleep(wait)
+                continue
+            raise
+    return response
 
 # Definición de herramientas (Tools) para Gemini
 FUNCTIONS_SCHEMA = [
@@ -478,13 +514,12 @@ async def chat_with_agent(
     action_result = None
 
     try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            # Primera llamada a Gemini
-            response = await client.post(
-                gemini_target,
-                json=payload,
-                headers=headers
-            )
+        # Timeouts separados (connect/read/write/pool) en vez de uno único de 30s.
+        # Cada turno de Gemini puede tardar 10-15s; con function calling son dos turnos.
+        timeout_config = httpx.Timeout(connect=10.0, read=50.0, write=10.0, pool=5.0)
+        async with httpx.AsyncClient(timeout=timeout_config) as client:
+            # Primera llamada a Gemini (con reintentos ante 429/5xx transitorios)
+            response = await call_gemini_with_retry(client, gemini_target, payload, headers)
 
             if response.status_code != 200:
                 logger.error(f"Error de Gemini API: {response.status_code} - {response.text}")
@@ -536,11 +571,7 @@ async def chat_with_agent(
                 payload["contents"] = formatted_contents
                 # Removemos tools en la segunda llamada para acelerar respuesta o forzar a texto
                 
-                response2 = await client.post(
-                    gemini_target,
-                    json=payload,
-                    headers=headers
-                )
+                response2 = await call_gemini_with_retry(client, gemini_target, payload, headers)
                 
                 if response2.status_code != 200:
                     logger.error(f"Error de Gemini API en segundo turno: {response2.status_code} - {response2.text}")
@@ -575,6 +606,12 @@ async def chat_with_agent(
                     "actionResult": None
                 }
                 
+    except httpx.TimeoutException as exc:
+        logger.error(f"Timeout en Gemini tras reintentos: {str(exc)}")
+        raise HTTPException(
+            status_code=504,
+            detail="Aki tardó demasiado en responder. Intentalo de nuevo en unos segundos.",
+        )
     except httpx.RequestError as exc:
         logger.error(f"Error de red al conectar con Gemini: {str(exc)}")
         raise HTTPException(status_code=503, detail="Servicio de IA temporalmente no disponible.")
