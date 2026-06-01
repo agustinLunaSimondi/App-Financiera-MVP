@@ -145,6 +145,7 @@ class BudgetBase(CamelModel):
     period: BudgetPeriod = BudgetPeriod.MONTHLY
     start_date: date
     color: Optional[str] = None
+    is_strict: bool = False
 
 class BudgetCreate(BudgetBase):
     pass
@@ -155,6 +156,7 @@ class BudgetUpdate(CamelModel):
     period: Optional[BudgetPeriod] = None
     start_date: Optional[date] = None
     color: Optional[str] = None
+    is_strict: Optional[bool] = None
 
 class Budget(BudgetBase):
     id: str
