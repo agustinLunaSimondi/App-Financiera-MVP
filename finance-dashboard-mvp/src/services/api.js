@@ -14,6 +14,8 @@ export const getTransactions = async (filters = {}) => {
     if (filters.endDate) params.endDate = filters.endDate;
     if (filters.category) params.categoryId = filters.category;
     if (filters.search) params.search = filters.search;
+    if (filters.sortBy) params.sortBy = filters.sortBy;
+    if (filters.sortDir) params.sortDir = filters.sortDir;
 
     const response = await client.get('/transactions', { params });
     return response.data.transactions.map(tx => ({
@@ -32,6 +34,8 @@ export const getTransactionsPage = async (filters = {}, page = 1, limit = 50) =>
     if (filters.endDate) params.endDate = filters.endDate;
     if (filters.category) params.categoryId = filters.category;
     if (filters.search) params.search = filters.search;
+    if (filters.sortBy) params.sortBy = filters.sortBy;
+    if (filters.sortDir) params.sortDir = filters.sortDir;
 
     const response = await client.get('/transactions', { params });
     return {

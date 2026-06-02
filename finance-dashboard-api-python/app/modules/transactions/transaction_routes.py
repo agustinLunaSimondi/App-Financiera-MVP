@@ -18,6 +18,14 @@ router = APIRouter(prefix="/transactions", tags=["transactions"])
 # Tope defensivo. Evita que un cliente pida 1M de filas por error o malicia.
 MAX_PAGE_LIMIT = 200
 
+# Columnas permitidas para ordenar. Whitelist explícita: evita inyección vía el
+# nombre de columna recibido del cliente y limita el orden a campos indexables.
+ALLOWED_SORT_COLUMNS = {
+    "transaction_date": models.Transaction.transaction_date,
+    "amount": models.Transaction.amount,
+    "description": models.Transaction.description,
+}
+
 
 def _lock_account_for_update(db: Session, account_id: str, user_id: str) -> Optional[models.Account]:
     """Lockea la fila de Account para evitar lost-updates en balance. Solo dentro de una tx abierta."""
@@ -36,6 +44,8 @@ def get_transactions(
     type: Optional[str] = None,
     categoryId: Optional[str] = None,
     search: Optional[str] = None,
+    sortBy: Optional[str] = "transaction_date",
+    sortDir: Optional[str] = "desc",
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
@@ -61,10 +71,15 @@ def get_transactions(
         query = query.filter(models.Transaction.description.ilike(f"%{search}%"))
 
     total = query.count()
+
+    # Orden dinámico con whitelist. id como desempate => paginación determinística.
+    sort_col = ALLOWED_SORT_COLUMNS.get(sortBy or "transaction_date", models.Transaction.transaction_date)
+    primary = sort_col.asc() if (sortDir or "desc").lower() == "asc" else sort_col.desc()
+
     transactions = query.options(
         joinedload(models.Transaction.category),
         joinedload(models.Transaction.account)
-    ).order_by(models.Transaction.transaction_date.desc()).offset((page-1)*limit).limit(limit).all()
+    ).order_by(primary, models.Transaction.id.desc()).offset((page-1)*limit).limit(limit).all()
 
     serialized = [schemas.Transaction.model_validate(tx).model_dump(by_alias=True) for tx in transactions]
     return {

@@ -92,6 +92,7 @@ def create_budget(
     if existing:
         existing.amount = budget_in.amount
         existing.start_date = budget_in.start_date
+        existing.is_strict = budget_in.is_strict
         db.commit()
         db.refresh(existing)
         return existing

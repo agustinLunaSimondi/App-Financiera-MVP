@@ -1,6 +1,8 @@
 import client from './client';
 
-const DEFAULT_TIMEOUT_MS = 30000; // 30s — Gemini 2.5 Flash + nuestro round-trip
+// 75s — el backend usa read=50s por turno + reintentos con backoff (2s/4s) ante 429/5xx.
+// El cliente debe superar ese techo para no abortar respuestas que el backend sí completaría.
+const DEFAULT_TIMEOUT_MS = 75000;
 
 /**
  * Chat Service - Envía mensajes al Asistente Inteligente (Aki).
