@@ -25,7 +25,8 @@ def get_auth_url(current_user: models.User = Depends(get_current_user)):
         url = mp_service.get_auth_url()
         return {"authUrl": url}
     except ValueError as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error al generar auth-url de Mercado Pago: {e}")
+        raise HTTPException(status_code=500, detail="No se pudo iniciar la conexión con Mercado Pago.")
 
 
 @router.post("/callback", response_model=schemas.MercadoPagoStatus)
@@ -205,7 +206,8 @@ async def sync_transactions(
             except ValueError:
                 raise HTTPException(status_code=401, detail="Token expirado. Reconectá tu cuenta.")
         else:
-            raise HTTPException(status_code=500, detail=str(e))
+            logger.error(f"Error al sincronizar pagos de Mercado Pago: {e}")
+            raise HTTPException(status_code=500, detail="No se pudieron sincronizar los pagos. Intentalo de nuevo.")
     
     # Obtener o crear cuenta y categorías de MP
     mp_account = mp_service.get_or_create_mp_account(db, current_user)

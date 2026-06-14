@@ -186,14 +186,26 @@ def create_recurring_from_suggestion(
         db.flush()  # asegurar rt.id antes de linkear las históricas.
 
         if item.transaction_ids:
-            (
-                db.query(models.Transaction)
+            # Solo enlazamos transacciones del PROPIO usuario. Sin este filtro un
+            # atacante podría pasar IDs de transacciones ajenas y vincularlas a su
+            # regla recurrente (IDOR de escritura — C1). Transaction→Account→user_id.
+            owned_ids = [
+                row[0] for row in db.query(models.Transaction.id)
+                .join(models.Account)
                 .filter(
                     models.Transaction.id.in_(item.transaction_ids),
-                    models.Transaction.recurring_id.is_(None),
+                    models.Account.user_id == current_user.id,
+                ).all()
+            ]
+            if owned_ids:
+                (
+                    db.query(models.Transaction)
+                    .filter(
+                        models.Transaction.id.in_(owned_ids),
+                        models.Transaction.recurring_id.is_(None),
+                    )
+                    .update({"recurring_id": rt.id}, synchronize_session=False)
                 )
-                .update({"recurring_id": rt.id}, synchronize_session=False)
-            )
         created.append(rt)
 
     db.commit()
