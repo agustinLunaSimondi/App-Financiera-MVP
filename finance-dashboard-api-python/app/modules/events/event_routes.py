@@ -14,6 +14,7 @@ import uuid as uuidlib
 from decimal import Decimal, ROUND_HALF_UP
 
 import httpx
+import logging
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy import or_
 from sqlalchemy.orm import Session, joinedload
@@ -23,6 +24,7 @@ from app.database.database import get_db
 from app.core.deps import get_current_user
 
 router = APIRouter(prefix="/events", tags=["events"])
+logger = logging.getLogger(__name__)
 
 # ─── Storage de recibos ──────────────────────────────────────────────────
 SUPABASE_URL = os.getenv("SUPABASE_URL", "").strip().rstrip("/")
@@ -60,13 +62,63 @@ async def _store_receipt(content: bytes, filename: str, content_type: str) -> st
                 status_code=502,
                 detail=f"No se pudo subir el recibo al storage ({resp.status_code}).",
             )
-        return f"{SUPABASE_URL}/storage/v1/object/public/{object_path}"
+        # Guardamos el object path (privado), NO la URL pública: se firma al servir (B1).
+        return object_path
 
     # Fallback local (dev) — efímero en Render; en prod configurar Supabase Storage.
     os.makedirs(LOCAL_UPLOADS_DIR, exist_ok=True)
     with open(os.path.join(LOCAL_UPLOADS_DIR, safe_name), "wb") as fh:
         fh.write(content)
     return f"/uploads/event-receipts/{safe_name}"
+
+
+def _sign_receipt_url(receipt_url: str | None, expires_in: int = 600) -> str | None:
+    """Convierte la referencia almacenada del recibo en una URL servible y efímera (B1).
+
+    Los recibos ya no se exponen como URL pública permanente:
+    - Objetos en Supabase Storage: se devuelve una *signed URL* de corta duración.
+      Requiere que el bucket sea PRIVADO; así el recibo solo es accesible para quien
+      obtiene el evento (autenticado + _require_access) y la URL caduca.
+    - Paths locales (/uploads/...): se devuelven tal cual (fallback de dev).
+
+    Si la firma falla, devuelve None (fail-safe: nunca cae de vuelta a una URL pública).
+    """
+    if not receipt_url:
+        return receipt_url
+    # Fallback local de dev — servido por StaticFiles.
+    if receipt_url.startswith("/"):
+        return receipt_url
+    if not (SUPABASE_URL and SUPABASE_SERVICE_KEY):
+        return receipt_url
+
+    # Resolver el object path ("{bucket}/{name}") tanto para filas nuevas (path
+    # relativo) como legacy (URL pública completa previa al fix).
+    object_path = receipt_url
+    if receipt_url.startswith("http"):
+        marker = "/storage/v1/object/public/"
+        idx = receipt_url.find(marker)
+        if idx == -1:
+            return receipt_url
+        object_path = receipt_url[idx + len(marker):]
+
+    try:
+        sign_endpoint = f"{SUPABASE_URL}/storage/v1/object/sign/{object_path}"
+        headers = {
+            "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}",
+            "apikey": SUPABASE_SERVICE_KEY,
+            "Content-Type": "application/json",
+        }
+        resp = httpx.post(sign_endpoint, json={"expiresIn": expires_in}, headers=headers, timeout=3.0)
+        if resp.status_code != 200:
+            logger.warning("No se pudo firmar el recibo (status=%s)", resp.status_code)
+            return None
+        signed_path = resp.json().get("signedURL")
+        if not signed_path:
+            return None
+        return f"{SUPABASE_URL}/storage/v1{signed_path}"
+    except Exception:
+        logger.warning("Error al firmar URL de recibo", exc_info=True)
+        return None
 
 
 # ─── Helpers ─────────────────────────────────────────────────────────────
@@ -171,7 +223,7 @@ def _serialize_expense(exp: models.EventExpense, name_by_id: dict[str, str]) -> 
         "description": exp.description,
         "amount": Decimal(str(exp.amount)),
         "expense_date": exp.expense_date,
-        "receipt_url": exp.receipt_url,
+        "receipt_url": _sign_receipt_url(exp.receipt_url),
         "receipt_filename": exp.receipt_filename,
         "split_mode": exp.split_mode,
         "splits": [
@@ -487,9 +539,18 @@ async def upload_receipt(
 
     if file.content_type not in ALLOWED_RECEIPT_TYPES:
         raise HTTPException(status_code=422, detail="Formato no soportado (usá imagen o PDF)")
-    content = await file.read()
-    if len(content) > MAX_RECEIPT_BYTES:
-        raise HTTPException(status_code=413, detail="El archivo supera el límite de 5 MB")
+
+    # Lectura incremental con tope: abortamos apenas se supera el límite, sin cargar
+    # archivos gigantes a memoria (mitiga DoS por agotamiento de RAM — B2).
+    buffer = bytearray()
+    while True:
+        chunk = await file.read(64 * 1024)
+        if not chunk:
+            break
+        buffer.extend(chunk)
+        if len(buffer) > MAX_RECEIPT_BYTES:
+            raise HTTPException(status_code=413, detail="El archivo supera el límite de 5 MB")
+    content = bytes(buffer)
 
     expense.receipt_url = await _store_receipt(content, file.filename, file.content_type)
     expense.receipt_filename = file.filename
