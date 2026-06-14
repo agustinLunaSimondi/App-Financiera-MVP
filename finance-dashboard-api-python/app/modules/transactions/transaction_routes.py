@@ -35,6 +35,19 @@ def _lock_account_for_update(db: Session, account_id: str, user_id: str) -> Opti
     ).with_for_update().first()
 
 
+def _assert_category_owned(db: Session, category_id: Optional[str], user_id: str) -> None:
+    """Verifica que la categoría pertenezca al usuario (o sea default sin dueño).
+
+    Evita un IDOR parcial: apuntar la propia transacción a la category_id de otro
+    usuario filtraría el nombre de esa categoría al serializar la transacción.
+    """
+    if category_id is None:
+        return
+    cat = db.query(models.Category).filter(models.Category.id == category_id).first()
+    if not cat or (cat.user_id and cat.user_id != user_id):
+        raise HTTPException(status_code=404, detail="Categoría no encontrada")
+
+
 @router.get("/")
 def get_transactions(
     page: int = 1,
@@ -104,6 +117,9 @@ def create_transaction(
     if not account:
         raise HTTPException(status_code=404, detail="Cuenta no encontrada")
 
+    # Validar ownership de la categoría (evita IDOR parcial cross-user).
+    _assert_category_owned(db, tx_in.category_id, current_user.id)
+
     # Envelopes (#60): rechazar si el sobre del mes está vacío.
     ok, env_status, reason = can_charge_to_envelope(
         db, current_user, tx_in.category_id, Decimal(str(tx_in.amount)), tx_in.transaction_date,
@@ -160,6 +176,11 @@ def update_transaction(
         raise HTTPException(status_code=404, detail="Transacción no encontrada")
 
     update_data = tx_update.model_dump(exclude_unset=True)
+
+    # Validar ownership de la nueva categoría si se está cambiando (IDOR parcial).
+    if "category_id" in update_data:
+        _assert_category_owned(db, update_data["category_id"], current_user.id)
+
     old_account_id = tx.account_id
     old_amount = Decimal(str(tx.amount))
     new_account_id = update_data.get("account_id", old_account_id)

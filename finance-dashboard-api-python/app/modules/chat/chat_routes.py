@@ -411,9 +411,9 @@ def call_database_tool(name: str, args: Dict[str, Any], db: Session, user_id: st
             )
         else:
             return {"status": "error", "message": f"Función '{name}' no soportada."}
-    except Exception as e:
+    except Exception:
         logger.exception(f"Error al ejecutar herramienta de base de datos {name}")
-        return {"status": "error", "message": f"Error interno al procesar base de datos: {str(e)}"}
+        return {"status": "error", "message": "No se pudo completar la operación. Intentalo de nuevo."}
 
 
 # Endpoint Principal del Chat
@@ -496,8 +496,10 @@ async def chat_with_agent(
         gemini_target = proxy_url
         headers = {"Content-Type": "application/json", "x-proxy-secret": proxy_secret}
     else:
-        gemini_target = f"{GEMINI_API_URL}?key={gemini_key}"
-        headers = {"Content-Type": "application/json"}
+        # Key en header (x-goog-api-key), no en query string: evita que la API key
+        # de Gemini caiga en logs de acceso / historiales de proxy.
+        gemini_target = GEMINI_API_URL
+        headers = {"Content-Type": "application/json", "x-goog-api-key": gemini_key}
 
     payload = {
         "contents": formatted_contents,
@@ -615,6 +617,6 @@ async def chat_with_agent(
     except httpx.RequestError as exc:
         logger.error(f"Error de red al conectar con Gemini: {str(exc)}")
         raise HTTPException(status_code=503, detail="Servicio de IA temporalmente no disponible.")
-    except Exception as e:
+    except Exception:
         logger.exception("Error inesperado en chat_with_agent")
-        raise HTTPException(status_code=500, detail=f"Error interno en el chat: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error interno en el chat. Intentalo de nuevo.")

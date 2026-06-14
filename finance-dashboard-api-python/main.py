@@ -68,10 +68,19 @@ async def lifespan(app):
     logger.info("Scheduler apagado.")
     posthog_client.shutdown()
 
+# Documentación interactiva (Swagger/ReDoc/OpenAPI): fail-closed.
+# Por defecto queda DESHABILITADA. Solo se expone /docs, /redoc y /openapi.json
+# si ENABLE_DOCS=true (entornos de desarrollo). En producción permanece oculta
+# para no filtrar el mapa completo de la API a usuarios no autenticados.
+_DOCS_ENABLED = os.getenv("ENABLE_DOCS", "false").strip().lower() in ("1", "true", "yes")
+
 app = FastAPI(
     title="Finance Dashboard API (Python/FastAPI)",
     version="1.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
+    docs_url="/docs" if _DOCS_ENABLED else None,
+    redoc_url="/redoc" if _DOCS_ENABLED else None,
+    openapi_url="/openapi.json" if _DOCS_ENABLED else None,
 )
 
 # Rate limiting global (ver app/core/rate_limit.py)
@@ -149,7 +158,9 @@ def health_check():
         "scheduler_running": scheduler.running if scheduler else False,
         "version": app.version,
     }
-    if db_error:
+    # El detalle del error de DB puede filtrar host/driver/usuario de Supabase.
+    # Solo se expone en dev (ENABLE_DOCS=true); en prod se omite.
+    if db_error and _DOCS_ENABLED:
         payload["db_error"] = db_error
     return payload
 
