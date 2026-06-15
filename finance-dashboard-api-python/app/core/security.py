@@ -10,8 +10,9 @@ load_dotenv()
 
 SECRET_KEY = os.getenv("SECRET_KEY") or os.getenv("JWT_SECRET")
 ALGORITHM = os.getenv("ALGORITHM", "HS256")
-# JWT corto. Para una finance app, 60min es el techo razonable sin refresh token.
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 180))
+# JWT corto: techo de inactividad de 1h (L3). El front refresca el token mientras
+# hay actividad (sliding window); tras 60min sin uso el token expira → re-login.
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 60))
 # Issuer/Audience — útiles si en el futuro publicamos APIs internas o microservicios.
 JWT_ISSUER = os.getenv("JWT_ISSUER", "vuelto-api")
 JWT_AUDIENCE = os.getenv("JWT_AUDIENCE", "vuelto-web")

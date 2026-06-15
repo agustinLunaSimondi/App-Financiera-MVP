@@ -7,7 +7,7 @@
         "code_review_graph",
         "serve"
       ],
-      "cwd": "C:\\Users\\agust\\OneDrive\\Desktop\\App-Financiera-MVP",
+      "cwd": "C:\\Users\\agust\\OneDrive\\Desktop\\Proyectos varios\\App-Financiera-MVP",
       "type": "stdio"
     },
     "supabase": {
@@ -23,7 +23,7 @@
     "token-savior": {
       "command": "C:\\Users\\agust\\AppData\\Local\\Programs\\Python\\Python311\\Scripts\\token-savior",
       "env": {
-        "WORKSPACE_ROOTS": "C:\\Users\\agust\\OneDrive\\Desktop\\App-Financiera-MVP",
+        "WORKSPACE_ROOTS": "C:\\Users\\agust\\OneDrive\\Desktop\\Proyectos varios\\App-Financiera-MVP",
         "TOKEN_SAVIOR_CLIENT": "claude-code"
       },
       "type": "stdio"
