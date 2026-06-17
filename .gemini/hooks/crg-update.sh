@@ -5,6 +5,6 @@ set -euo pipefail
 
 cat > /dev/null || true
 
-code-review-graph update --skip-flows --repo "C:/Users/agust/OneDrive/Desktop/App-Financiera-MVP" >/dev/null 2>&1 || true
+code-review-graph update --skip-flows --repo "C:/Users/agust/OneDrive/Desktop/Proyectos varios/App-Financiera-MVP" >/dev/null 2>&1 || true
 echo '{"suppressOutput": true}'
 exit 0

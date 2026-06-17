@@ -79,22 +79,32 @@ export function AuthProvider({ children }) {
         return () => window.removeEventListener(AUTH_INVALID_EVENT, onInvalid);
     }, []);
 
-    // Refresh proactivo del token. El access token expira a los 180min y no hay
-    // refresh-token de larga vida (/auth/refresh exige un token AÚN válido). En
-    // sesiones largas —típico de la PWA en el celular, que queda "abierta" días—
-    // el token vence en background y la próxima acción (ej. abrir/usar Aki) da
-    // 401 → logout. Acá lo renovamos mientras sigue vivo: al volver el foco
-    // (throttle 5min) y cada 60min.
+    // Sliding session con techo de INACTIVIDAD de 1h (L3). El access token expira
+    // a los 60min (ACCESS_TOKEN_EXPIRE_MINUTES en el backend) y /auth/refresh exige
+    // un token aún válido. Mientras haya ACTIVIDAD del usuario renovamos el token
+    // antes de que venza (cada 45min < 60min de TTL). Tras 60min sin actividad NO se
+    // renueva → el token expira → la próxima acción da 401 → re-login.
+    // Nota: el corte duro de seguridad es el TTL de 60min server-side; el logout en
+    // cliente ocurre dentro de ~1h de inactividad (puede arrastrar hasta el venc.
+    // del último token emitido).
     useEffect(() => {
         if (!user) return;
-        let lastRefresh = Date.now();
+        const TTL_MS = 60 * 60 * 1000;           // debe coincidir con el TTL del backend
+        const REFRESH_EVERY_MS = 45 * 60 * 1000; // < TTL para renovar antes de expirar
         const COOLDOWN_MS = 5 * 60 * 1000;
+        let lastRefresh = Date.now();
+        let lastActivity = Date.now();
+
+        const markActivity = () => { lastActivity = Date.now(); };
 
         const refreshSession = async () => {
             if (!getToken()) return;
+            // Techo de inactividad: sin actividad en la última hora no renovamos →
+            // el token se deja expirar y el usuario re-loguea.
+            if (Date.now() - lastActivity > TTL_MS) return;
             try {
                 // __skipAuthRedirect: si el token YA expiró, este 401 no debe
-                // disparar el logout; dejamos que lo haga el próximo request real.
+                // disparar el logout; lo hará el próximo request real.
                 const res = await client.post('/auth/refresh', null, { __skipAuthRedirect: true });
                 if (res?.data?.token) {
                     setToken(res.data.token);
@@ -102,22 +112,27 @@ export function AuthProvider({ children }) {
                 }
                 lastRefresh = Date.now();
             } catch {
-                // timeout/red/5xx → token sigue válido, reintentamos en el próximo foco.
+                // timeout/red/5xx → token sigue válido, reintentamos en el próximo ciclo/foco.
             }
         };
 
         const onVisible = () => {
-            if (document.visibilityState === 'visible' && Date.now() - lastRefresh > COOLDOWN_MS) {
-                refreshSession();
+            if (document.visibilityState === 'visible') {
+                markActivity();
+                if (Date.now() - lastRefresh > COOLDOWN_MS) refreshSession();
             }
         };
 
-        const intervalId = setInterval(refreshSession, 60 * 60 * 1000);
+        const ACTIVITY_EVENTS = ['mousedown', 'keydown', 'touchstart', 'scroll'];
+        ACTIVITY_EVENTS.forEach(e => window.addEventListener(e, markActivity, { passive: true }));
+
+        const intervalId = setInterval(refreshSession, REFRESH_EVERY_MS);
         document.addEventListener('visibilitychange', onVisible);
         window.addEventListener('focus', onVisible);
 
         return () => {
             clearInterval(intervalId);
+            ACTIVITY_EVENTS.forEach(e => window.removeEventListener(e, markActivity));
             document.removeEventListener('visibilitychange', onVisible);
             window.removeEventListener('focus', onVisible);
         };

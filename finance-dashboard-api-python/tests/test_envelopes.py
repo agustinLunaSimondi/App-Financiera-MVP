@@ -45,8 +45,8 @@ def test_can_charge_passes_in_standard_mode(db_session, user):
 
 
 def test_can_charge_blocks_when_envelope_empty(db_session, user):
-    acc, cat, _ = _setup_envelope(db_session, user, Decimal("5000"))
-    user.budget_mode = "envelopes"
+    acc, cat, b = _setup_envelope(db_session, user, Decimal("5000"))
+    b.is_strict = True  # modo chanchito per-budget (reemplazó al budget_mode global, #65f000e)
     db_session.add(models.Transaction(
         account_id=acc.id, category_id=cat.id,
         amount=Decimal("-4500"), description="Comida",
@@ -57,7 +57,7 @@ def test_can_charge_blocks_when_envelope_empty(db_session, user):
     ok, status, reason = can_charge_to_envelope(db_session, user, cat.id, Decimal("-1000"), date.today())
     assert ok is False
     assert status.remaining == Decimal("500")
-    assert "Sobre" in reason
+    assert "chanchito" in reason  # wording actual del modo chanchito (#65f000e)
 
 
 def test_can_charge_passes_when_within_envelope(db_session, user):
@@ -84,8 +84,8 @@ def test_create_transaction_rejects_when_envelope_empty(client, db_session, user
     db_session.add(models.Budget(
         user_id=user.id, category_id=cat.id, amount=Decimal("1000"),
         period=models.BudgetPeriod.MONTHLY, start_date=date.today().replace(day=1),
+        is_strict=True,  # modo chanchito per-budget (reemplazó al budget_mode global, #65f000e)
     ))
-    user.budget_mode = "envelopes"
     db_session.commit()
 
     payload = {
