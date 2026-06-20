@@ -3,7 +3,7 @@ Adaptador de email vía Resend (https://resend.com).
 
 Config:
 - RESEND_API_KEY: si está set, se manda real.
-- RESEND_FROM_EMAIL: from address ("Vuelto <hola@vuelto.app>").
+- RESEND_FROM_EMAIL: from address ("Vueltito <hola@vueltitox.com>").
 - Sin RESEND_API_KEY: log-only. Sirve para dev sin gastar quota.
 
 Uso:
@@ -31,7 +31,7 @@ def send_email(to: str, subject: str, html: str, from_email: Optional[str] = Non
     Envía un mail. Devuelve True si se envió (o se logueó en modo dev), False en error.
     No tira excepción — el caller no debería romperse por un fallo de email.
     """
-    sender = from_email or os.getenv("RESEND_FROM_EMAIL", "Vuelto <hola@vuelto.app>")
+    sender = from_email or os.getenv("RESEND_FROM_EMAIL", "Vueltito <hola@vueltitox.com>")
 
     if not _enabled():
         logger.info("[email/dry-run] to=%s subject=%r", to, subject)

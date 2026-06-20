@@ -7,7 +7,7 @@ gastos puntuales como ruido. Importante: NO crea RecurringTransaction para
 estos cargos — la idea es que el detector los proponga.
 
 Credenciales:
-    subs-test@vuelto.app / Subs2025!
+    subs-test@vueltitox.com / Subs2025!
 
 Uso:
     cd finance-dashboard-api-python
@@ -47,7 +47,7 @@ from app.database.models import (
     Transaction,
 )
 
-EMAIL = "subs-test@vuelto.app"
+EMAIL = "subs-test@vueltitox.com"
 PASSWORD = "Subs2025!"
 NAME = "Test Suscripciones"
 

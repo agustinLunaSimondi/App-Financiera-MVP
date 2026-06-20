@@ -66,7 +66,7 @@ function LegalTOC({ sections }) {
 }
 
 /**
- * Política de Privacidad — Vuelto (Beta privada, sin monetización).
+ * Política de Privacidad — Vueltito (Beta privada, sin monetización).
  * Adecuada a la Ley 25.326 de Protección de Datos Personales (Argentina).
  *
  * Responsable: Agustín Luna · agustinluna760@gmail.com
@@ -80,7 +80,7 @@ export function PrivacyPage() {
                     <Link to="/" className="text-sm font-bold text-zinc-500 hover:text-zinc-900 dark:hover:text-white inline-flex items-center gap-1.5">
                         <ArrowLeft className="w-4 h-4" /> Volver
                     </Link>
-                    <span className="text-xs font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400">Vuelto · Privacidad</span>
+                    <span className="text-xs font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400">Vueltito · Privacidad</span>
                 </div>
             </header>
 
@@ -96,13 +96,13 @@ export function PrivacyPage() {
                 </div>
 
                 <p className="text-base">
-                    Este documento explica qué datos personales recolecta <strong>Vuelto</strong>,
+                    Este documento explica qué datos personales recolecta <strong>Vueltito</strong>,
                     para qué los usa, con quién los comparte y cómo podés ejercer tus derechos.
                 </p>
 
                 <div className="rounded-2xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 p-4 not-prose my-6">
                     <p className="text-sm font-bold text-amber-900 dark:text-amber-200 m-0">
-                        ⚠ Vuelto está en <strong>beta privada</strong>. Es un proyecto en validación, gratuito y sin
+                        ⚠ Vueltito está en <strong>beta privada</strong>. Es un proyecto en validación, gratuito y sin
                         carácter comercial todavía. <strong>No es un servicio financiero ni una entidad regulada
                         por el BCRA o la CNV.</strong> No movemos plata, no damos asesoramiento de inversión y no
                         prestamos servicios bancarios.
@@ -197,7 +197,7 @@ export function PrivacyPage() {
                     <li>Rate limiting para mitigar abusos.</li>
                 </ul>
                 <p>
-                    Ninguna medida es 100% infalible. <strong>No subas a Vuelto información que no toleres
+                    Ninguna medida es 100% infalible. <strong>No subas a Vueltito información que no toleres
                     eventualmente perder o ver expuesta</strong>. Estamos en beta, las pruebas pueden
                     encontrar bugs.
                 </p>
@@ -212,7 +212,7 @@ export function PrivacyPage() {
 
                 <h2 id="sec-9" className="scroll-mt-20">9. Menores de edad</h2>
                 <p>
-                    Vuelto está pensado para mayores de 18 años. No recolectamos a sabiendas datos de
+                    Vueltito está pensado para mayores de 18 años. No recolectamos a sabiendas datos de
                     menores. Si nos enterás de que un menor creó una cuenta, la eliminamos.
                 </p>
 
