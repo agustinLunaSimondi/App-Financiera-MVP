@@ -34,7 +34,7 @@ function Nav() {
                         <Wallet className="w-4 h-4 text-white" />
                     </div>
                     <span className="text-lg font-black tracking-tight text-zinc-900 dark:text-white">
-                        Vuelto
+                        Vueltito
                     </span>
                 </Link>
 
@@ -325,7 +325,7 @@ export function LandingPage() {
             <div className="fixed top-0 left-0 right-0 h-8 bg-amber-500 text-zinc-900 text-center text-xs sm:text-sm font-bold flex items-center justify-center px-4 z-[60]">
                 <span className="inline-flex items-center gap-2 flex-wrap justify-center">
                     <span className="inline-block w-2 h-2 rounded-full bg-zinc-900 animate-pulse" />
-                    Vuelto está en <strong>beta privada gratuita</strong> · No es un servicio financiero ni mueve plata ·{' '}
+                    Vueltito está en <strong>beta privada gratuita</strong> · No es un servicio financiero ni mueve plata ·{' '}
                     <Link to="/terms" className="underline underline-offset-2 hover:opacity-70">Términos</Link>
                 </span>
             </div>
@@ -598,7 +598,7 @@ export function LandingPage() {
                                     <ArrowRight className="w-6 h-6 text-white" />
                                 </motion.div>
 
-                                {/* Vuelto card */}
+                                {/* Vueltito card */}
                                 <motion.div
                                     initial={{ opacity: 0, x: 40 }}
                                     whileInView={{ opacity: 1, x: 0 }}
@@ -610,7 +610,7 @@ export function LandingPage() {
                                         <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center">
                                             <Wallet className="w-4 h-4 text-white" />
                                         </div>
-                                        <span className="text-sm font-black text-zinc-900 dark:text-white">Vuelto</span>
+                                        <span className="text-sm font-black text-zinc-900 dark:text-white">Vueltito</span>
                                     </div>
                                     <div className="space-y-1.5">
                                         <div className="flex items-center gap-2 text-xs"><span>🍔</span><span className="text-zinc-500 flex-1">Comida</span><span className="font-bold">-$3.450</span></div>
@@ -717,7 +717,7 @@ export function LandingPage() {
                     <div className="text-center max-w-2xl mx-auto mb-12">
                         <p className="text-xs font-black uppercase tracking-widest text-emerald-500 mb-3">Sobre el proyecto</p>
                         <h2 className="text-3xl sm:text-5xl font-black tracking-tight">
-                            Por qué existe Vuelto
+                            Por qué existe Vueltito
                         </h2>
                     </div>
 
@@ -735,7 +735,7 @@ export function LandingPage() {
                             o cómo te está pegando la inflación de este mes en serio.
                         </p>
                         <p>
-                            Así nació <strong>Vuelto</strong>: un proyecto personal para resolverme un
+                            Así nació <strong>Vueltito</strong>: un proyecto personal para resolverme un
                             problema mío. Lo armé yo, en mis tiempos libres. Ahora está acá compartido en
                             internet porque sospecho que no soy el único al que le pasa, y quiero validarlo
                             con gente real antes de meterle más tiempo.
@@ -762,7 +762,7 @@ export function LandingPage() {
 
                     <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <a
-                            href="mailto:agustinluna760@gmail.com?subject=Feedback%20de%20Vuelto"
+                            href="mailto:agustinluna760@gmail.com?subject=Feedback%20de%20Vueltito"
                             onClick={() => analytics.landingCtaClicked('about_feedback')}
                             className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-black text-sm rounded-2xl shadow-lg shadow-emerald-500/20 transition-all active:scale-95"
                         >
@@ -828,7 +828,7 @@ export function LandingPage() {
                             <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center">
                                 <Wallet className="w-3.5 h-3.5 text-white" />
                             </div>
-                            <span className="font-black text-zinc-900 dark:text-white">Vuelto</span>
+                            <span className="font-black text-zinc-900 dark:text-white">Vueltito</span>
                             <span className="text-xs text-zinc-400">· Proyecto personal de Agustín Luna · Hecho con 🧉 en Argentina</span>
                         </div>
 
@@ -841,7 +841,7 @@ export function LandingPage() {
                     </div>
 
                     <p className="text-[11px] text-zinc-400 dark:text-zinc-500 text-center max-w-3xl mx-auto leading-relaxed">
-                        Vuelto es un proyecto personal en beta privada, gratuito y sin fines comerciales por el momento.
+                        Vueltito es un proyecto personal en beta privada, gratuito y sin fines comerciales por el momento.
                         No es una entidad financiera ni está regulado por el BCRA, la CNV o la UIF. No mueve plata, no
                         presta servicios bancarios y no constituye asesoramiento financiero. Los datos del usuario están
                         protegidos según la Ley 25.326 de Protección de Datos Personales.

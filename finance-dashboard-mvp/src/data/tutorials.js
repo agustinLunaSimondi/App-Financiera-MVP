@@ -17,7 +17,7 @@ export const tutorials = {
     // ─── Primeros pasos ───────────────────────────────────────
     'first-expense': {
         title: 'Tu primer gasto en 30 segundos',
-        description: 'El flujo más simple para empezar a usar Vuelto hoy.',
+        description: 'El flujo más simple para empezar a usar Vueltito hoy.',
         badge: 'Empezá acá',
         icon: Receipt,
         accent: 'emerald',

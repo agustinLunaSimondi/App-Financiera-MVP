@@ -131,7 +131,7 @@ def run_weekly_snapshots(today: date | None = None) -> int:
                 continue
             data = _build_weekly_snapshot(db, user, today)
             html = render_weekly_snapshot(user.name or "vos", data)
-            ok = send_email(user.email, "Tu semana en Vuelto", html)
+            ok = send_email(user.email, "Tu semana en Vueltito", html)
             if ok:
                 _mark_sent(db, user.id, "weekly_snapshot", dedup)
                 sent += 1

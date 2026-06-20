@@ -83,7 +83,7 @@ def render_pdf_summary(user_name: str, start: date, end: date, rows: List[Report
         buf, pagesize=A4,
         leftMargin=2 * cm, rightMargin=2 * cm,
         topMargin=2 * cm, bottomMargin=2 * cm,
-        title="Reporte para contador — Vuelto",
+        title="Reporte para contador — Vueltito",
     )
     styles = getSampleStyleSheet()
     story = []

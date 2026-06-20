@@ -569,7 +569,7 @@ export default function HelpPage() {
                 <TutorialCard tutorialId="streaks" onClick={openTutorial} />
             </Section>
 
-            {/* Lo nuevo en Vuelto — dismissable */}
+            {/* Lo nuevo en Vueltito — dismissable */}
             {!whatsNewDismissed ? (
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
@@ -582,7 +582,7 @@ export default function HelpPage() {
                             <div className="p-2 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400">
                                 <Sparkles size={22} />
                             </div>
-                            <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">Lo nuevo en Vuelto</h2>
+                            <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">Lo nuevo en Vueltito</h2>
                         </div>
                         <button
                             type="button"
@@ -609,7 +609,7 @@ export default function HelpPage() {
                     className="text-xs text-zinc-400 hover:text-purple-600 dark:hover:text-purple-400 flex items-center gap-1.5 transition-colors"
                 >
                     <Sparkles size={12} />
-                    Volver a mostrar "Lo nuevo en Vuelto"
+                    Volver a mostrar "Lo nuevo en Vueltito"
                 </button>
             )}
 
@@ -625,7 +625,7 @@ export default function HelpPage() {
                     </p>
                     <div className="flex flex-wrap justify-center md:justify-start gap-3 pt-1">
                         <a
-                            href="mailto:agustinluna760@gmail.com?subject=Vuelto%20beta%20—%20Feedback"
+                            href="mailto:agustinluna760@gmail.com?subject=Vueltito%20beta%20—%20Feedback"
                             className="flex items-center gap-2 px-5 py-3 rounded-xl bg-emerald-500 text-white font-bold hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-500/20"
                         >
                             <MessageSquare size={18} /> Escribime

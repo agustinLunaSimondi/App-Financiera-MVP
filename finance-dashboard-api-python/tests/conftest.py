@@ -45,7 +45,7 @@ def db_session():
 def user(db_session):
     """Crea un user persistido y lo retorna."""
     u = models.User(
-        email="test@vuelto.app",
+        email="test@vueltitox.com",
         password_hash="x",
         name="Test User",
         currency="ARS",
