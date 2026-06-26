@@ -191,9 +191,12 @@ async def sync_transactions(
     if not since:
         since = datetime.now(timezone.utc) - timedelta(days=90)
     
-    # Obtener pagos de MP
+    # Obtener pagos de MP. Rango incremental sobre date_last_updated: recupera
+    # pagos que estaban pending en una corrida previa y ahora pasaron a approved.
     try:
-        payments = await mp_service.fetch_payments(connection.access_token, since)
+        payments = await mp_service.fetch_payments(
+            connection.access_token, since, date_field="date_last_updated"
+        )
     except ValueError as e:
         if str(e) == "TOKEN_EXPIRED":
             try:
@@ -202,7 +205,9 @@ async def sync_transactions(
                 connection.refresh_token = new_tokens["refresh_token"]
                 connection.expires_at = datetime.now(timezone.utc) + timedelta(seconds=new_tokens["expires_in"])
                 db.commit()
-                payments = await mp_service.fetch_payments(connection.access_token, since)
+                payments = await mp_service.fetch_payments(
+                    connection.access_token, since, date_field="date_last_updated"
+                )
             except ValueError:
                 raise HTTPException(status_code=401, detail="Token expirado. Reconectá tu cuenta.")
         else:
