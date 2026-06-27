@@ -3,6 +3,7 @@ import * as api from '../services/api';
 import { getToken } from '../services/tokenStore';
 import { useAuth } from './AuthContext';
 import { analytics, amountRange } from '../services/analytics';
+import { setActiveCurrency } from '../utils/formatters';
 
 // Crear el contexto
 export const FinanceContext = createContext();
@@ -105,6 +106,12 @@ export function FinanceProvider({ children }) {
     // Dark mode: aplicado exclusivamente por Layout.jsx (useEffect en isDark).
     // FinanceContext NO toca el DOM ni localStorage para dark mode —
     // evita que una respuesta lenta del backend sobreescriba la preferencia local.
+
+    // Moneda: sincroniza la preferencia del usuario con formatCurrency/formatCompactCurrency,
+    // que la leen como default param. Así no hay que pasar `currency` en cada call site.
+    useEffect(() => {
+        setActiveCurrency(settings.currency);
+    }, [settings.currency]);
 
     // ============= TRANSACTIONS =============
 

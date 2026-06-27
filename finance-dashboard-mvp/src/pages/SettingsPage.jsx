@@ -21,7 +21,7 @@ export function SettingsPage() {
         transactions, budgets, accounts, // For export
         deleteUserAccount // For delete account
     } = useFinance();
-    const { language, setLanguage } = useLanguage();
+    const { language, setLanguage, t } = useLanguage();
     const { logout } = useAuth();
 
     // State for Category Management
@@ -40,16 +40,16 @@ export function SettingsPage() {
         try {
             await updateSettings({ darkMode: next });
         } catch (err) {
-            toast.error(parseApiError(err, 'No se pudo guardar la preferencia'));
+            toast.error(parseApiError(err, t('settings.toastDarkModeError')));
         }
     };
 
     const handleCurrencyChange = async (currency) => {
         try {
             await updateSettings({ currency });
-            toast.success('Moneda actualizada');
+            toast.success(t('settings.toastCurrencySuccess'));
         } catch (err) {
-            toast.error(parseApiError(err, 'Error al actualizar moneda'));
+            toast.error(parseApiError(err, t('settings.toastCurrencyError')));
         }
     };
 
@@ -70,9 +70,9 @@ export function SettingsPage() {
     const handleConfirmDeleteCategory = async () => {
         try {
             await deleteCategory(confirmDeleteCategoryId);
-            toast.success('Categoría eliminada');
+            toast.success(t('settings.toastCategoryDeleted'));
         } catch (error) {
-            toast.error(parseApiError(error, 'Error al eliminar la categoría'));
+            toast.error(parseApiError(error, t('settings.toastCategoryDeletedError')));
         } finally {
             setConfirmDeleteCategoryId(null);
         }
@@ -82,16 +82,16 @@ export function SettingsPage() {
         try {
             if (editingCategory) {
                 await updateCategory(editingCategory.id, formData);
-                toast.success('Categoría actualizada');
+                toast.success(t('settings.toastCategoryUpdated'));
             } else {
                 await addCategory(formData);
-                toast.success('Categoría creada');
+                toast.success(t('settings.toastCategoryCreated'));
             }
             setIsCategoryFormOpen(false);
             setEditingCategory(null);
         } catch (error) {
             console.error(error);
-            toast.error(parseApiError(error, 'Error al guardar la categoría'));
+            toast.error(parseApiError(error, t('settings.toastCategorySaveError')));
         }
     };
 
@@ -123,7 +123,7 @@ export function SettingsPage() {
             await deleteUserAccount();
             logout();
         } catch (error) {
-            toast.error('Error al eliminar cuenta: ' + error.message);
+            toast.error(t('settings.toastDeleteAccountError') + error.message);
             setShowDeleteAccountModal(false);
         }
     };
@@ -134,9 +134,9 @@ export function SettingsPage() {
                 <PageHeader
                     section="settings"
                     icon={SettingsIcon}
-                    kicker="Preferencias"
-                    title="Configuración"
-                    subtitle="Personalizá tu experiencia: idioma, moneda, modo oscuro, categorías y datos."
+                    kicker={t('settings.kicker')}
+                    title={t('settings.title')}
+                    subtitle={t('settings.subtitle')}
                 />
 
                 {/* Appearance Settings */}
@@ -145,7 +145,7 @@ export function SettingsPage() {
                         <div className="flex items-center gap-3 mb-4">
                             <Palette className="w-5 h-5 text-zinc-500" />
                             <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-                                Apariencia
+                                {t('settings.appearance')}
                             </h3>
                         </div>
 
@@ -158,9 +158,9 @@ export function SettingsPage() {
                                     <Sun className="w-5 h-5 text-zinc-500" />
                                 )}
                                 <div>
-                                    <p className="font-medium text-zinc-900 dark:text-zinc-100">Modo Oscuro</p>
+                                    <p className="font-medium text-zinc-900 dark:text-zinc-100">{t('settings.darkMode')}</p>
                                     <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                                        Cambia entre tema claro y oscuro
+                                        {t('settings.darkModeDesc')}
                                     </p>
                                 </div>
                             </div>
@@ -184,7 +184,7 @@ export function SettingsPage() {
                         <div className="flex items-center gap-3 mb-4">
                             <Globe className="w-5 h-5 text-zinc-500" />
                             <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-                                Configuración Regional
+                                {t('settings.regional')}
                             </h3>
                         </div>
 
@@ -192,12 +192,12 @@ export function SettingsPage() {
                             {/* Language */}
                             <div>
                                 <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-                                    Idioma
+                                    {t('settings.language')}
                                 </label>
                                 <select
                                     value={language}
                                     onChange={(e) => setLanguage(e.target.value)}
-                                    aria-label="Idioma de la interfaz"
+                                    aria-label={t('settings.languageAria')}
                                     className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                 >
                                     <option value="es">Español</option>
@@ -208,12 +208,12 @@ export function SettingsPage() {
                             {/* Currency */}
                             <div>
                                 <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-                                    Moneda
+                                    {t('settings.currency')}
                                 </label>
                                 <select
                                     value={settings.currency || 'USD'}
                                     onChange={(e) => handleCurrencyChange(e.target.value)}
-                                    aria-label="Moneda predeterminada"
+                                    aria-label={t('settings.currencyAria')}
                                     className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                 >
                                     <option value="USD">USD - Dólar Estadounidense</option>
@@ -232,7 +232,7 @@ export function SettingsPage() {
                         <div className="flex items-center gap-3 mb-4">
                             <DollarSign className="w-5 h-5 text-zinc-500" />
                             <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-                                Gestión de Datos
+                                {t('settings.dataManagement')}
                             </h3>
                         </div>
 
@@ -242,10 +242,10 @@ export function SettingsPage() {
                                 className="w-full px-4 py-2 text-left border border-zinc-200 dark:border-zinc-700 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
                             >
                                 <p className="font-medium text-zinc-900 dark:text-zinc-100">
-                                    Gestionar Categorías
+                                    {t('settings.manageCategories')}
                                 </p>
                                 <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                                    Añade, edita o elimina categorías personalizadas
+                                    {t('settings.manageCategoriesDesc')}
                                 </p>
                             </button>
 
@@ -255,10 +255,10 @@ export function SettingsPage() {
                             >
                                 <div>
                                     <p className="font-medium text-zinc-900 dark:text-zinc-100">
-                                        Exportar Datos
+                                        {t('settings.exportData')}
                                     </p>
                                     <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                                        Descarga tus datos en formato JSON
+                                        {t('settings.exportDataDesc')}
                                     </p>
                                 </div>
                                 <Download className="w-5 h-5 text-zinc-400" />
@@ -267,13 +267,13 @@ export function SettingsPage() {
                             <button
                                 onClick={() => {
                                     resetOnboarding();
-                                    toast.success('El tour se mostrará al volver al dashboard');
+                                    toast.success(t('settings.viewTourToast'));
                                 }}
                                 className="w-full px-4 py-2 text-left border border-blue-200 dark:border-blue-900/30 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors flex items-center justify-between"
                             >
                                 <div>
                                     <p className="font-medium text-blue-700 dark:text-blue-400">
-                                        Ver Tour Nuevamente
+                                        {t('settings.viewTour')}
                                     </p>
                                     <p className="text-sm text-blue-500 dark:text-blue-500 opacity-80">
                                         Volvé a ver la guía de introducción de Vueltito
@@ -288,10 +288,10 @@ export function SettingsPage() {
                             >
                                 <div>
                                     <p className="font-medium">
-                                        Eliminar Cuenta
+                                        {t('settings.deleteAccount')}
                                     </p>
                                     <p className="text-sm opacity-80">
-                                        Elimina permanentemente tu cuenta y todos los datos
+                                        {t('settings.deleteAccountDesc')}
                                     </p>
                                 </div>
                                 <Trash2 className="w-5 h-5" />
@@ -312,24 +312,24 @@ export function SettingsPage() {
             </div>
 
             {/* Delete Account Confirmation Modal */}
-            <Modal isOpen={showDeleteAccountModal} onClose={() => setShowDeleteAccountModal(false)} title="Eliminar Cuenta">
+            <Modal isOpen={showDeleteAccountModal} onClose={() => setShowDeleteAccountModal(false)} title={t('settings.deleteAccountModalTitle')}>
                 <div className="space-y-5">
                     <div className="flex items-start gap-3 p-4 bg-rose-50 dark:bg-rose-500/10 rounded-xl border border-rose-200/50 dark:border-rose-500/20">
                         <AlertTriangle className="w-5 h-5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
                         <div>
-                            <p className="text-sm font-bold text-rose-700 dark:text-rose-300">Esta acción es irreversible</p>
-                            <p className="text-xs text-rose-600 dark:text-rose-400 mt-1">Se eliminarán permanentemente tu cuenta, transacciones, presupuestos, metas y todos los datos asociados.</p>
+                            <p className="text-sm font-bold text-rose-700 dark:text-rose-300">{t('settings.deleteAccountWarningTitle')}</p>
+                            <p className="text-xs text-rose-600 dark:text-rose-400 mt-1">{t('settings.deleteAccountWarningDesc')}</p>
                         </div>
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-                            Escribí <span className="font-black text-zinc-900 dark:text-white">ELIMINAR</span> para confirmar:
+                            {t('settings.deleteAccountConfirmLabel')} <span className="font-black text-zinc-900 dark:text-white">{t('settings.deleteAccountConfirmWord')}</span> {t('settings.deleteAccountConfirmSuffix')}
                         </label>
                         <input
                             type="text"
                             value={deleteAccountInput}
                             onChange={(e) => setDeleteAccountInput(e.target.value)}
-                            placeholder="ELIMINAR"
+                            placeholder={t('settings.deleteAccountConfirmWord')}
                             className="w-full px-3 py-2.5 border border-zinc-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-rose-500/30 focus:border-rose-500/50 transition-all font-mono"
                         />
                     </div>
@@ -338,14 +338,14 @@ export function SettingsPage() {
                             onClick={() => setShowDeleteAccountModal(false)}
                             className="flex-1 px-4 py-2.5 border border-zinc-200 dark:border-zinc-700 rounded-xl text-sm font-bold text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
                         >
-                            Cancelar
+                            {t('settings.cancel')}
                         </button>
                         <button
                             onClick={handleDeleteAccountConfirmed}
-                            disabled={deleteAccountInput !== 'ELIMINAR'}
+                            disabled={deleteAccountInput !== t('settings.deleteAccountConfirmWord')}
                             className="flex-1 px-4 py-2.5 bg-rose-500 hover:bg-rose-600 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl text-sm font-bold transition-colors"
                         >
-                            Eliminar mi cuenta
+                            {t('settings.deleteAccountConfirmButton')}
                         </button>
                     </div>
                 </div>
@@ -355,7 +355,7 @@ export function SettingsPage() {
             <Modal
                 isOpen={isCategoryModalOpen}
                 onClose={() => { setIsCategoryModalOpen(false); setIsCategoryFormOpen(false); setEditingCategory(null); }}
-                title={isCategoryFormOpen ? (editingCategory ? 'Editar Categoría' : 'Nueva Categoría') : 'Mis Categorías'}
+                title={isCategoryFormOpen ? (editingCategory ? t('settings.editCategory') : t('settings.newCategory')) : t('settings.myCategories')}
             >
                 <div className="space-y-4">
                     {!isCategoryFormOpen ? (
@@ -366,17 +366,17 @@ export function SettingsPage() {
                                     className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1"
                                 >
                                     <Plus className="w-4 h-4" />
-                                    Nueva
+                                    {t('settings.new')}
                                 </button>
                             </div>
 
                             <div className="space-y-2 max-h-[55vh] md:max-h-[50vh] overflow-y-auto pr-1 -mr-1">
                                 {categories.length === 0 && (
-                                    <p className="text-center text-zinc-500 py-4">Sin categorías.</p>
+                                    <p className="text-center text-zinc-500 py-4">{t('settings.noCategories')}</p>
                                 )}
                                 {categories.length > 0 && (
                                     <p className="text-[10px] uppercase tracking-widest font-bold text-zinc-400 px-1 mb-2">
-                                        {categories.length} {categories.length === 1 ? 'categoría' : 'categorías'}
+                                        {categories.length} {categories.length === 1 ? t('settings.categorySingular') : t('settings.categoryPlural')}
                                     </p>
                                 )}
                                 {categories.map(category => (
@@ -390,19 +390,19 @@ export function SettingsPage() {
                                                 {category.name}
                                             </span>
                                             <span className="text-xs px-2 py-0.5 bg-zinc-200 dark:bg-zinc-600 rounded text-zinc-600 dark:text-zinc-300 shrink-0">
-                                                {category.type === 'INCOME' ? 'Ingreso' : 'Gasto'}
+                                                {category.type === 'INCOME' ? t('settings.typeIncome') : t('settings.typeExpense')}
                                             </span>
                                             {category.taxDeductible && (
-                                                <span className="text-[10px] px-1.5 py-0.5 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 rounded font-bold shrink-0" title="Incluida en el reporte AFIP">
-                                                    AFIP
+                                                <span className="text-[10px] px-1.5 py-0.5 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 rounded font-bold shrink-0" title={t('settings.afipBadgeTitle')}>
+                                                    {t('settings.afipBadge')}
                                                 </span>
                                             )}
                                         </div>
                                         <div className="flex items-center gap-1 shrink-0 ml-2">
                                             {confirmDeleteCategoryId === category.id ? (
                                                 <>
-                                                    <button onClick={() => setConfirmDeleteCategoryId(null)} className="px-2 py-1 text-xs font-bold text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors">No</button>
-                                                    <button onClick={handleConfirmDeleteCategory} className="px-2 py-1 text-xs font-bold bg-rose-500 text-white rounded-lg hover:bg-rose-600 transition-colors">Sí</button>
+                                                    <button onClick={() => setConfirmDeleteCategoryId(null)} className="px-2 py-1 text-xs font-bold text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors">{t('settings.confirmNo')}</button>
+                                                    <button onClick={handleConfirmDeleteCategory} className="px-2 py-1 text-xs font-bold bg-rose-500 text-white rounded-lg hover:bg-rose-600 transition-colors">{t('settings.confirmYes')}</button>
                                                 </>
                                             ) : (
                                                 <>
