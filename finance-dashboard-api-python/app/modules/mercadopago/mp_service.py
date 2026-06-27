@@ -5,7 +5,7 @@ Maneja el intercambio OAuth, refresh de tokens y sincronización de pagos.
 import httpx
 import os
 import logging
-from datetime import datetime, timezone, date
+from datetime import datetime, timezone, date, timedelta
 from decimal import Decimal
 from typing import Optional
 from sqlalchemy.orm import Session
@@ -16,6 +16,35 @@ logger = logging.getLogger(__name__)
 
 MP_API_BASE = "https://api.mercadopago.com"
 MP_OAUTH_URL = f"{MP_API_BASE}/oauth/token"
+
+# MP opera en horario de Argentina (UTC-3, sin DST). Sus filtros de fecha
+# esperan un ISO-8601 con offset; mandar UTC etiquetado como -03:00 corre la
+# ventana 3 horas y se pierden/duplican pagos en los bordes del mes.
+AR_TZ = timezone(timedelta(hours=-3))
+
+# Tope defensivo de paginación para no iterar de forma ilimitada si MP devuelve
+# un `paging.total` inconsistente.
+_MAX_PAGES = 20
+
+
+def _fmt_mp_datetime(dt: datetime) -> str:
+    """Formatea un datetime tz-aware al ISO con offset AR que espera el filtro de MP."""
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(AR_TZ).isoformat(timespec="milliseconds")
+
+
+def _net_amount(payment: dict) -> Decimal:
+    """
+    Monto efectivo del pago descontando reembolsos parciales/totales.
+    MP deja el pago en status `approved` aunque haya sido reembolsado en parte;
+    `transaction_amount` queda con el valor original, así que sin restar
+    `transaction_amount_refunded` inflamos ingresos/egresos.
+    """
+    amount = Decimal(str(payment.get("transaction_amount", 0) or 0))
+    refunded = Decimal(str(payment.get("transaction_amount_refunded", 0) or 0))
+    net = amount - refunded
+    return net if net > 0 else Decimal("0")
 
 
 def get_mp_config():
@@ -134,37 +163,53 @@ async def fetch_account_balance(access_token: str, mp_user_id: str = None) -> di
     Usa collector_id para distinguir correctamente egresos de ingresos.
     """
     try:
-        async with httpx.AsyncClient(timeout=15.0) as client:
-            now = datetime.now(timezone.utc)
-            month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-
-            payments_response = await client.get(
-                f"{MP_API_BASE}/v1/payments/search",
-                params={
-                    "sort": "date_created",
-                    "criteria": "desc",
-                    "limit": 100,
-                    "range": "date_created",
-                    "begin_date": month_start.strftime("%Y-%m-%dT00:00:00.000-03:00"),
-                    "end_date": now.strftime("%Y-%m-%dT23:59:59.999-03:00"),
-                },
-                headers={"Authorization": f"Bearer {access_token}"}
-            )
+        now_ar = datetime.now(AR_TZ)
+        month_start = now_ar.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
         income_month = Decimal("0")
         expenses_month = Decimal("0")
         total_transactions = 0
 
-        if payments_response.status_code == 200:
-            for payment in payments_response.json().get("results", []):
-                if payment.get("status") != "approved":
-                    continue
-                amount = Decimal(str(payment.get("transaction_amount", 0)))
-                if _is_expense(payment, mp_user_id):
-                    expenses_month += amount
-                else:
-                    income_month += amount
-                total_transactions += 1
+        base_params = {
+            "sort": "date_created",
+            "criteria": "desc",
+            "limit": 100,
+            "range": "date_created",
+            "begin_date": _fmt_mp_datetime(month_start),
+            "end_date": _fmt_mp_datetime(now_ar),
+        }
+
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            offset = 0
+            for _ in range(_MAX_PAGES):
+                payments_response = await client.get(
+                    f"{MP_API_BASE}/v1/payments/search",
+                    params={**base_params, "offset": offset},
+                    headers={"Authorization": f"Bearer {access_token}"},
+                )
+                if payments_response.status_code != 200:
+                    logger.warning(
+                        "MP balance: respuesta %s en offset %s", payments_response.status_code, offset
+                    )
+                    break
+
+                data = payments_response.json()
+                results = data.get("results", [])
+                for payment in results:
+                    if payment.get("status") != "approved":
+                        continue
+                    net = _net_amount(payment)
+                    if net == 0:
+                        continue
+                    if _is_expense(payment, mp_user_id):
+                        expenses_month += net
+                    else:
+                        income_month += net
+                    total_transactions += 1
+
+                offset += len(results)
+                if not results or offset >= data.get("paging", {}).get("total", 0):
+                    break
 
         return {
             "available_balance": float(income_month - expenses_month),
@@ -182,22 +227,32 @@ async def fetch_account_balance(access_token: str, mp_user_id: str = None) -> di
         }
 
 
-async def fetch_payments(access_token: str, since: Optional[datetime] = None) -> list:
+async def fetch_payments(
+    access_token: str,
+    since: Optional[datetime] = None,
+    date_field: str = "date_created",
+) -> list:
     """
     Obtiene pagos de la API de Mercado Pago.
-    Si since está definido, busca pagos desde esa fecha.
+
+    Si `since` está definido, busca pagos en esa ventana usando `date_field` como
+    criterio de rango. Para sincronización incremental conviene `date_last_updated`:
+    así un pago que estaba `pending` en la corrida anterior y luego pasó a
+    `approved` vuelve a aparecer (su `date_created` quedó fuera de la ventana, pero
+    su `date_last_updated` cae dentro) y la deduplicación por `external_id` evita
+    duplicarlo.
     """
     params = {
         "sort": "date_created",
         "criteria": "desc",
         "limit": 100,
     }
-    
+
     if since:
-        params["begin_date"] = since.strftime("%Y-%m-%dT00:00:00.000-03:00")
-        params["end_date"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT23:59:59.999-03:00")
-        params["range"] = "date_created"
-    
+        params["begin_date"] = _fmt_mp_datetime(since)
+        params["end_date"] = _fmt_mp_datetime(datetime.now(timezone.utc))
+        params["range"] = date_field
+
     all_payments = []
     offset = 0
     
@@ -333,7 +388,12 @@ def sync_payments_to_transactions(
             skipped += 1
             continue
 
-        raw_amount = Decimal(str(payment.get("transaction_amount", 0)))
+        # Monto neto (descuenta reembolsos). Si quedó en 0 fue un wash → no se importa.
+        raw_amount = _net_amount(payment)
+        if raw_amount == 0:
+            skipped += 1
+            continue
+
         description_parts = []
 
         if expense:
