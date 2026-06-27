@@ -4,7 +4,7 @@ import { FileText, ArrowLeft, List, ChevronDown } from 'lucide-react';
 
 const SECTIONS = [
     { id: 'sec-1', label: '1. Quiénes somos' },
-    { id: 'sec-2', label: '2. Qué es Vuelto y qué NO es' },
+    { id: 'sec-2', label: '2. Qué es Vueltito y qué NO es' },
     { id: 'sec-3', label: '3. Beta privada gratuita' },
     { id: 'sec-4', label: '4. Tu cuenta y responsabilidades' },
     { id: 'sec-5', label: '5. Integración con Mercado Pago' },
@@ -64,7 +64,7 @@ function LegalTOC({ sections }) {
 }
 
 /**
- * Términos y Condiciones de Uso — Vuelto (Beta privada, sin monetización).
+ * Términos y Condiciones de Uso — Vueltito (Beta privada, sin monetización).
  * Última actualización: 2026-05-16
  */
 export function TermsPage() {
@@ -75,7 +75,7 @@ export function TermsPage() {
                     <Link to="/" className="text-sm font-bold text-zinc-500 hover:text-zinc-900 dark:hover:text-white inline-flex items-center gap-1.5">
                         <ArrowLeft className="w-4 h-4" /> Volver
                     </Link>
-                    <span className="text-xs font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400">Vuelto · Términos</span>
+                    <span className="text-xs font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400">Vueltito · Términos</span>
                 </div>
             </header>
 
@@ -91,14 +91,14 @@ export function TermsPage() {
                 </div>
 
                 <p>
-                    Estos términos regulan el uso de <strong>Vuelto</strong> (en adelante, "el servicio" o
+                    Estos términos regulan el uso de <strong>Vueltito</strong> (en adelante, "el servicio" o
                     "la app"). Al crear una cuenta y usar el servicio aceptás estos términos en su totalidad.
-                    Si no estás de acuerdo con alguno, no uses Vuelto.
+                    Si no estás de acuerdo con alguno, no uses Vueltito.
                 </p>
 
                 <div className="rounded-2xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 p-4 not-prose my-6">
                     <p className="text-sm font-bold text-amber-900 dark:text-amber-200 m-0">
-                        ⚠ Vuelto es un <strong>proyecto personal en beta privada</strong>, gratuito y
+                        ⚠ Vueltito es un <strong>proyecto personal en beta privada</strong>, gratuito y
                         sin fines comerciales por el momento. No es una entidad financiera, no es un
                         banco, no es un asesor de inversión, no procesa pagos y no está regulado por
                         el BCRA, la CNV ni la UIF. Es una herramienta de visualización y registro de
@@ -110,31 +110,31 @@ export function TermsPage() {
 
                 <h2 id="sec-1" className="scroll-mt-20">1. Quiénes somos</h2>
                 <p>
-                    Vuelto es un proyecto desarrollado por <strong>Agustín Luna</strong>, persona humana
+                    Vueltito es un proyecto desarrollado por <strong>Agustín Luna</strong>, persona humana
                     con domicilio en la República Argentina. Contacto:{' '}
                     <a href="mailto:agustinluna760@gmail.com" className="text-emerald-600 dark:text-emerald-400 font-bold">
                         agustinluna760@gmail.com
                     </a>.
                 </p>
 
-                <h2 id="sec-2" className="scroll-mt-20">2. Qué es Vuelto y qué NO es</h2>
-                <p><strong>Vuelto es</strong>:</p>
+                <h2 id="sec-2" className="scroll-mt-20">2. Qué es Vueltito y qué NO es</h2>
+                <p><strong>Vueltito es</strong>:</p>
                 <ul>
                     <li>Una herramienta para registrar ingresos, gastos, presupuestos y metas de ahorro.</li>
                     <li>Una integración opcional con Mercado Pago vía OAuth, que importa el historial de pagos del usuario para evitar la carga manual.</li>
                     <li>Un dashboard con visualizaciones y métricas a partir de los datos que vos cargás o importás.</li>
                 </ul>
-                <p><strong>Vuelto NO es</strong>:</p>
+                <p><strong>Vueltito NO es</strong>:</p>
                 <ul>
                     <li>Una entidad financiera ni un banco.</li>
                     <li>Un servicio que mueva, transfiera o procese dinero.</li>
-                    <li>Un asesor financiero o de inversión. Cualquier cifra, gráfico o sugerencia que muestre Vuelto es informativa, no constituye recomendación de inversión.</li>
+                    <li>Un asesor financiero o de inversión. Cualquier cifra, gráfico o sugerencia que muestre Vueltito es informativa, no constituye recomendación de inversión.</li>
                     <li>Una billetera virtual ni una solución de pagos.</li>
                 </ul>
 
                 <h2 id="sec-3" className="scroll-mt-20">3. Estado actual: beta privada gratuita</h2>
                 <p>
-                    Vuelto está actualmente en fase de validación. <strong>El servicio es gratuito</strong>{' '}
+                    Vueltito está actualmente en fase de validación. <strong>El servicio es gratuito</strong>{' '}
                     y se ofrece "tal cual está" (<em>as is</em>), sin garantías de funcionamiento continuo,
                     ausencia de errores ni preservación de datos.
                 </p>
@@ -154,8 +154,8 @@ export function TermsPage() {
 
                 <h2 id="sec-5" className="scroll-mt-20">5. Integración con Mercado Pago</h2>
                 <p>
-                    Si conectás tu cuenta de Mercado Pago a Vuelto, autorizás a la app a leer tu historial
-                    de pagos y cobros mediante la API oficial de Mercado Pago, usando OAuth 2.0. Vuelto no
+                    Si conectás tu cuenta de Mercado Pago a Vueltito, autorizás a la app a leer tu historial
+                    de pagos y cobros mediante la API oficial de Mercado Pago, usando OAuth 2.0. Vueltito no
                     accede a tu contraseña de Mercado Pago. Podés desconectar la integración en cualquier
                     momento desde <em>Integraciones</em>, y eso revoca el token de acceso.
                 </p>
@@ -172,19 +172,19 @@ export function TermsPage() {
 
                 <h2 id="sec-7" className="scroll-mt-20">7. Limitación de responsabilidad</h2>
                 <p>
-                    Vuelto se ofrece <strong>tal cual está</strong>, sin garantías expresas o implícitas
+                    Vueltito se ofrece <strong>tal cual está</strong>, sin garantías expresas o implícitas
                     de comerciabilidad, idoneidad para un propósito particular o disponibilidad continua.
                     En la máxima medida que la ley permita:
                 </p>
                 <ul>
-                    <li>Vuelto no se hace responsable por <strong>decisiones financieras</strong> que tomes basándote en lo que muestra la app. Verificá tus números siempre contra fuentes primarias (banco, MP oficial, AFIP).</li>
-                    <li>Vuelto no se hace responsable por <strong>pérdida de datos</strong>, downtime, errores de sincronización con Mercado Pago u otros proveedores, ni por inexactitudes en cotización de dólar o IPC (los obtenemos de fuentes públicas de terceros y los mostramos sin garantía).</li>
-                    <li>Vuelto no se hace responsable por <strong>acciones de terceros</strong> (proveedores de hosting, MP, Google, PostHog).</li>
+                    <li>Vueltito no se hace responsable por <strong>decisiones financieras</strong> que tomes basándote en lo que muestra la app. Verificá tus números siempre contra fuentes primarias (banco, MP oficial, AFIP).</li>
+                    <li>Vueltito no se hace responsable por <strong>pérdida de datos</strong>, downtime, errores de sincronización con Mercado Pago u otros proveedores, ni por inexactitudes en cotización de dólar o IPC (los obtenemos de fuentes públicas de terceros y los mostramos sin garantía).</li>
+                    <li>Vueltito no se hace responsable por <strong>acciones de terceros</strong> (proveedores de hosting, MP, Google, PostHog).</li>
                 </ul>
 
                 <h2 id="sec-8" className="scroll-mt-20">8. Propiedad intelectual</h2>
                 <p>
-                    El código de Vuelto, la marca, el diseño y los textos del producto son propiedad
+                    El código de Vueltito, la marca, el diseño y los textos del producto son propiedad
                     intelectual del autor. Los datos que vos cargás siguen siendo tuyos y podés
                     exportarlos o eliminarlos en cualquier momento.
                 </p>

@@ -28,7 +28,7 @@ export function PWAUpdatePrompt() {
 
     useEffect(() => {
         if (!needRefresh) return;
-        toast('Hay una versión nueva de Vuelto', {
+        toast('Hay una versión nueva de Vueltito', {
             description: 'Recargá para aplicar las últimas mejoras.',
             duration: Infinity,
             action: {

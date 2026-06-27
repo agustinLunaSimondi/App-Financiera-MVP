@@ -296,7 +296,7 @@ export function OnboardingPage() {
                                         Hola, {firstName} 👋
                                     </h1>
                                     <p className="text-zinc-500 dark:text-zinc-400 font-medium text-lg leading-relaxed">
-                                        Bienvenido a Vuelto.
+                                        Bienvenido a Vueltito.
                                     </p>
                                     <p className="text-zinc-400 dark:text-zinc-500 text-sm leading-relaxed max-w-xs mx-auto">
                                         En 3 minutos dejamos tu cuenta lista: conectás MercadoPago,
@@ -333,7 +333,7 @@ export function OnboardingPage() {
                                     <div className="flex items-center gap-2 mb-1">
                                         <Zap className="w-4 h-4 text-emerald-500" />
                                         <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
-                                            Lo más valioso de Vuelto
+                                            Lo más valioso de Vueltito
                                         </span>
                                     </div>
                                     {[
@@ -589,7 +589,7 @@ export function OnboardingPage() {
                                         ¡Cuenta lista, {firstName}!
                                     </h2>
                                     <p className="text-zinc-500 dark:text-zinc-400 font-medium">
-                                        Vuelto está listo para mostrarte a dónde se te va la plata.
+                                        Vueltito está listo para mostrarte a dónde se te va la plata.
                                     </p>
 
                                     {savedExpense && (

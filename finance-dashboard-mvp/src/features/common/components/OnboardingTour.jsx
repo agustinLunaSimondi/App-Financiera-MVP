@@ -21,7 +21,7 @@ const STEPS = [
         id: 'welcome',
         icon: Sparkles,
         iconColor: 'from-emerald-400 to-blue-500',
-        title: '¡Bienvenido a Vuelto!',
+        title: '¡Bienvenido a Vueltito!',
         description: 'Tu plata, sin que te roben el bolsillo. En menos de 2 minutos te mostramos cómo funciona.',
         hint: null,
         cta: 'Comenzar tour',
