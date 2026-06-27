@@ -1,11 +1,23 @@
+// Moneda activa del usuario (sincronizada por FinanceContext desde settings.currency).
+// Permite que formatCurrency/formatCompactCurrency reflejen la preferencia sin
+// tener que pasar `currency` en cada uno de los ~40 call sites del código.
+const CURRENCY_LOCALES = { ARS: 'es-AR', USD: 'en-US', EUR: 'de-DE', MXN: 'es-MX' };
+let activeCurrency = 'ARS';
+
+export const setActiveCurrency = (currency) => {
+    activeCurrency = CURRENCY_LOCALES[currency] ? currency : 'ARS';
+};
+
+export const getActiveCurrency = () => activeCurrency;
+
 /**
  * Formats a given number into a localized currency string.
  * @param {number} amount - The numeric value to format.
- * @param {string} currency - The currency code (default: ARS).
- * @param {string} locale - The locale string (default: es-AR).
+ * @param {string} currency - The currency code (default: active user currency).
+ * @param {string} locale - The locale string (default: derived from currency).
  * @returns {string} The formatted currency string.
  */
-export const formatCurrency = (amount, currency = 'ARS', locale = 'es-AR') => {
+export const formatCurrency = (amount, currency = activeCurrency, locale = CURRENCY_LOCALES[currency] || 'es-AR') => {
     if (amount === undefined || amount === null || isNaN(amount)) return '$0.00';
     return new Intl.NumberFormat(locale, {
         style: 'currency',
@@ -23,7 +35,7 @@ export const formatCurrency = (amount, currency = 'ARS', locale = 'es-AR') => {
  * @param {string} locale
  * @returns {string}
  */
-export const formatCompactCurrency = (amount, currency = 'ARS', locale = 'es-AR') => {
+export const formatCompactCurrency = (amount, currency = activeCurrency, locale = CURRENCY_LOCALES[currency] || 'es-AR') => {
     if (amount === undefined || amount === null || isNaN(amount)) return '$ 0';
     const abs = Math.abs(amount);
     const sign = amount < 0 ? '-' : '';
