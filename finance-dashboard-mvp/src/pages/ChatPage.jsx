@@ -338,7 +338,7 @@ export function ChatPage() {
                         <h1 className="text-md font-black text-zinc-900 dark:text-white tracking-tight flex items-center gap-2">
                             Aki <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse inline-block" />
                         </h1>
-                        <p className="text-[10px] text-zinc-400 dark:text-zinc-500">Asistente Inteligente de Vuelto</p>
+                        <p className="text-[10px] text-zinc-400 dark:text-zinc-500">Asistente Inteligente de Vueltito</p>
                     </div>
                 </div>
             </div>

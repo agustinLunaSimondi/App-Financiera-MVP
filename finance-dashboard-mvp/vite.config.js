@@ -16,8 +16,8 @@ export default defineConfig({
       registerType: 'prompt',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
       manifest: {
-        name: 'Vuelto — Tu plata, en serio',
-        short_name: 'Vuelto',
+        name: 'Vueltito — Tu plata, en serio',
+        short_name: 'Vueltito',
         description: 'Finanzas personales para argentinos. MercadoPago + dólar blue + AI en castellano.',
         theme_color: '#10b981',
         icons: [

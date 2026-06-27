@@ -1,5 +1,5 @@
 """
-Templates HTML inline para emails de Vuelto.
+Templates HTML inline para emails de Vueltito.
 
 Sin Jinja — strings simples con .format() para minimizar dependencias. Los
 estilos son inline porque la mayoría de los clientes de mail no soportan <style>.
@@ -37,7 +37,7 @@ def _wrap(inner: str, title: str) -> str:
     {inner}
     <hr style="border:none;border-top:1px solid #e4e4e7;margin:24px 0">
     <p style="font-size:11px;color:#71717a;margin:0">
-      Recibís este mail porque tenés activadas las notificaciones de Vuelto.
+      Recibís este mail porque tenés activadas las notificaciones de Vueltito.
       Podés desactivarlas desde Configuración.
     </p>
   </div>
@@ -88,7 +88,7 @@ def render_weekly_snapshot(user_name: str, data: dict) -> str:
       <ul style='padding-left:18px;margin:0;font-size:14px'>{goals_rows}</ul>
       {insight_block}
     """
-    return _wrap(inner, "Tu semana en Vuelto")
+    return _wrap(inner, "Tu semana en Vueltito")
 
 
 def render_smart_alert(user_name: str, headline: str, body_html: str) -> str:

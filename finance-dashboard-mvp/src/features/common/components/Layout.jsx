@@ -115,7 +115,7 @@ function SidebarContent({ onMobileNavClick }) {
                         <Wallet className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                        <span className="text-xl font-black text-zinc-900 dark:text-zinc-100 tracking-tighter">Vuelto</span>
+                        <span className="text-xl font-black text-zinc-900 dark:text-zinc-100 tracking-tighter">Vueltito</span>
                         <div className="flex items-center gap-1.5 mt-0.5">
                             <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
                             <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-widest">Beta privada</span>
@@ -158,7 +158,7 @@ function SidebarContent({ onMobileNavClick }) {
                         </div>
                     </div>
                     <a
-                        href="mailto:agustinluna760@gmail.com?subject=Vuelto%20beta%20—%20Feedback"
+                        href="mailto:agustinluna760@gmail.com?subject=Vueltito%20beta%20—%20Feedback"
                         className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-[11px] font-bold text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800/50 transition-colors"
                         title="Mandar feedback o reportar un bug"
                     >
@@ -251,7 +251,7 @@ export function Layout({ children }) {
                         <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center">
                             <Wallet className="w-5 h-5 text-white" />
                         </div>
-                        <span className="text-lg font-black tracking-tighter">Vuelto</span>
+                        <span className="text-lg font-black tracking-tighter">Vueltito</span>
                     </div>
                     <div className="flex items-center gap-2">
                         <DarkModeToggle isDark={isDark} onToggle={handleToggleDark} compact />
@@ -276,7 +276,7 @@ export function Layout({ children }) {
 
                             {/* Mini footer legal — siempre visible al final del scroll */}
                             <footer className="mt-12 pt-6 border-t border-zinc-200/60 dark:border-zinc-800/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-zinc-400 dark:text-zinc-500">
-                                <p>Vuelto · Beta privada · Proyecto personal de Agustín Luna · No es un servicio financiero</p>
+                                <p>Vueltito · Beta privada · Proyecto personal de Agustín Luna · No es un servicio financiero</p>
                                 <div className="flex items-center gap-4 font-bold">
                                     <NavLink to="/privacy" className="hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors">Privacidad</NavLink>
                                     <NavLink to="/terms" className="hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors">Términos</NavLink>

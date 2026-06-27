@@ -38,7 +38,7 @@ export function WidgetEmbedPage() {
             {data.type === 'goal' && <GoalWidget data={data.data} />}
             {data.type === 'month_spend' && <MonthSpendWidget data={data.data} />}
             <span className="absolute bottom-2 right-3 text-[9px] text-zinc-400 font-bold tracking-wider">
-                via Vuelto
+                via Vueltito
             </span>
         </div>
     );

@@ -105,7 +105,7 @@ export function RegisterPage() {
                         Sumate a la <span className="premium-gradient-text">beta</span>
                     </h2>
                     <p className="text-zinc-500 dark:text-zinc-400 font-medium text-sm">
-                        Vuelto es un proyecto personal en validación. Gratuito y sin compromiso.
+                        Vueltito es un proyecto personal en validación. Gratuito y sin compromiso.
                     </p>
                 </div>
 
@@ -224,7 +224,7 @@ export function RegisterPage() {
                             y la{' '}
                             <Link to="/privacy" target="_blank" className="font-bold text-emerald-600 dark:text-emerald-400 underline underline-offset-2">
                                 Política de Privacidad
-                            </Link>. Entiendo que Vuelto está en beta y no es un servicio financiero.
+                            </Link>. Entiendo que Vueltito está en beta y no es un servicio financiero.
                         </span>
                     </label>
 

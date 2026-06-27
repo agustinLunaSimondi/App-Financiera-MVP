@@ -290,7 +290,7 @@ export function DashboardPage() {
                         <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
                             <div className="space-y-2 max-w-2xl">
                                 <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase tracking-widest">
-                                    🚀 ¡Bienvenido a Vuelto!
+                                    🚀 ¡Bienvenido a Vueltito!
                                 </div>
                                 <h2 className="text-xl md:text-2xl font-black text-zinc-900 dark:text-white tracking-tight">
                                     Comenzá a tomar el control de tu plata
@@ -333,7 +333,7 @@ export function DashboardPage() {
                                 <Zap className="w-3 h-3 fill-current" /> {t('dashboard.online')}
                             </motion.div>
                             <h1 className="text-2xl md:text-4xl font-black text-zinc-900 dark:text-zinc-100 tracking-tighter">
-                                {t('dashboard.title')} <span className="premium-gradient-text">Vuelto</span>
+                                {t('dashboard.title')} <span className="premium-gradient-text">Vueltito</span>
                             </h1>
                             <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400 max-w-md">
                                 {t('dashboard.subtitle')}
