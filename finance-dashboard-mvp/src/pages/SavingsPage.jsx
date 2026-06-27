@@ -9,6 +9,7 @@ import { EmptyState } from '../features/common/components/EmptyState';
 import { PageHeader } from '../features/common/components/PageHeader';
 
 import { useFinance } from '../hooks/useFinance';
+import { useLanguage } from '../contexts/LanguageContext';
 import { formatCompactCurrency } from '../utils/formatters';
 import { parseApiError } from '../lib/apiErrors';
 import { BTN_PRIMARY_ACCENT } from '../lib/formClasses';
@@ -16,6 +17,7 @@ import { cn } from '../lib/utils';
 
 export function SavingsPage() {
     const { savingsGoals, loading, addSavingGoal, updateSavingGoal, deleteSavingGoal } = useFinance();
+    const { t } = useLanguage();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingGoal, setEditingGoal] = useState(null);
     const [confirmDeleteId, setConfirmDeleteId] = useState(null);
@@ -30,10 +32,10 @@ export function SavingsPage() {
         try {
             if (editingGoal) {
                 await updateSavingGoal(editingGoal.id, formData);
-                toast.success('Meta actualizada correctamente');
+                toast.success(t('savings.toastUpdated'));
             } else {
                 await addSavingGoal(formData);
-                toast.success('Meta creada correctamente');
+                toast.success(t('savings.toastCreated'));
             }
             setIsModalOpen(false);
             setEditingGoal(null);
@@ -42,7 +44,7 @@ export function SavingsPage() {
             const detail = error?.response?.data?.detail;
             const msg = typeof detail === 'string' ? detail
                 : Array.isArray(detail) ? detail.map(d => d.msg).join(', ')
-                : 'Error al guardar la meta';
+                : t('savings.toastSaveError');
             toast.error(msg);
         }
     };
@@ -54,11 +56,11 @@ export function SavingsPage() {
         try {
             const updatedAmount = Number(goal.currentAmount) + Number(amount);
             await updateSavingGoal(goalId, { currentAmount: updatedAmount });
-            toast.success(`Depósito de ${new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(amount)} registrado`);
+            toast.success(`${t('savings.depositPrefix')} ${formatCompactCurrency(amount)} ${t('savings.depositSuffix')}`);
         } catch (error) {
             console.error('Error contributing to goal:', error);
             const detail = error?.response?.data?.detail;
-            const msg = typeof detail === 'string' ? detail : 'Error al registrar la contribución';
+            const msg = typeof detail === 'string' ? detail : t('savings.toastContributeError');
             toast.error(msg);
         }
     };
@@ -69,10 +71,10 @@ export function SavingsPage() {
         setDeleting(true);
         try {
             await deleteSavingGoal(confirmDeleteId);
-            toast.success('Meta eliminada');
+            toast.success(t('savings.toastDeleted'));
             setConfirmDeleteId(null);
         } catch (err) {
-            toast.error(parseApiError(err, 'Error al eliminar la meta'));
+            toast.error(parseApiError(err, t('savings.toastDeleteError')));
         } finally {
             setDeleting(false);
         }
@@ -89,17 +91,19 @@ export function SavingsPage() {
     const rawPercentage = totalTarget > 0 ? Math.round((totalCurrent / totalTarget) * 100) : 0;
     const overallPercentage = Number.isFinite(rawPercentage) ? Math.min(Math.max(rawPercentage, 0), 999) : 0;
 
+    const goalsLabel = savingsGoals.length === 1 ? t('savings.goalActive') : t('savings.goalsActive');
+
     return (
         <div className="space-y-10">
                 <PageHeader
                     section="savings"
                     icon={PiggyBank}
-                    kicker="Mis Metas"
-                    title="Metas de Ahorro"
+                    kicker={t('savings.kicker')}
+                    title={t('savings.title')}
                     subtitle={
                         savingsGoals.length === 0
-                            ? "Definí objetivos concretos (un viaje, una compra, un fondo de emergencia) y vas viendo el avance."
-                            : `${savingsGoals.length} ${savingsGoals.length === 1 ? 'meta activa' : 'metas activas'} — ${overallPercentage}% completadas`
+                            ? t('savings.subtitleEmpty')
+                            : `${savingsGoals.length} ${goalsLabel} — ${overallPercentage}% ${t('savings.completed')}`
                     }
                     action={
                         <button
@@ -108,7 +112,7 @@ export function SavingsPage() {
                             className={cn(BTN_PRIMARY_ACCENT, "w-full md:w-auto group py-3.5")}
                         >
                             <Plus className="w-5 h-5 transition-transform group-hover:rotate-90" />
-                            Nueva Meta
+                            {t('savings.newGoal')}
                         </button>
                     }
                 />
@@ -119,11 +123,11 @@ export function SavingsPage() {
                         <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                             <div className="space-y-4 max-w-md">
                                 <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase tracking-widest">
-                                    {savingsGoals.length} {savingsGoals.length === 1 ? 'meta activa' : 'metas activas'}
+                                    {savingsGoals.length} {goalsLabel}
                                 </div>
-                                <h3 className="text-2xl font-black text-zinc-900 dark:text-white">Tu Progreso Global</h3>
+                                <h3 className="text-2xl font-black text-zinc-900 dark:text-white">{t('savings.globalProgress')}</h3>
                                 <p className="text-zinc-500 dark:text-zinc-400 font-medium">
-                                    Llevás ahorrado <span className="text-emerald-600 dark:text-emerald-400 font-bold">{formatCompactCurrency(totalCurrent)}</span> de tu objetivo total de <span className="text-zinc-900 dark:text-white font-bold">{formatCompactCurrency(totalTarget)}</span>.
+                                    {t('savings.savedPrefix')} <span className="text-emerald-600 dark:text-emerald-400 font-bold">{formatCompactCurrency(totalCurrent)}</span> {t('savings.savedMiddle')} <span className="text-zinc-900 dark:text-white font-bold">{formatCompactCurrency(totalTarget)}</span>.
                                 </p>
                             </div>
 
@@ -176,9 +180,9 @@ export function SavingsPage() {
                     <EmptyState
                         icon={Target}
                         tone="primary"
-                        title="Sin metas todavía"
-                        description="Definí tu primer objetivo de ahorro — ej. un viaje, un fondo de emergencia, o una compra grande."
-                        actionLabel="Crear primera meta"
+                        title={t('savings.emptyTitle')}
+                        description={t('savings.emptyDesc')}
+                        actionLabel={t('savings.emptyAction')}
                         onAction={() => handleOpenModal()}
                     />
                 )}
@@ -186,7 +190,7 @@ export function SavingsPage() {
                 <Modal
                     isOpen={isModalOpen}
                     onClose={() => setIsModalOpen(false)}
-                    title={editingGoal ? "Editar Meta de Ahorro" : "Nueva Meta de Ahorro"}
+                    title={editingGoal ? t('savings.editModalTitle') : t('savings.newModalTitle')}
                 >
                     <SavingGoalForm
                         goal={editingGoal}
@@ -199,8 +203,8 @@ export function SavingsPage() {
                     isOpen={!!confirmDeleteId}
                     onClose={() => !deleting && setConfirmDeleteId(null)}
                     onConfirm={handleConfirmDelete}
-                    title="¿Eliminar esta meta?"
-                    description="Vas a perder el progreso y el historial de depósitos."
+                    title={t('savings.confirmDeleteTitle')}
+                    description={t('savings.confirmDeleteDesc')}
                     itemName={goalToDelete?.name}
                     loading={deleting}
                 />

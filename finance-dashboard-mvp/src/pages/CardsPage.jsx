@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { toast } from 'sonner';
 import { useFinance } from '../hooks/useFinance';
+import { useLanguage } from '../contexts/LanguageContext';
 
 import { Card } from '../features/common/components/Card';
 import { Plus, Edit2, Trash2, Wallet, CreditCard } from 'lucide-react';
@@ -23,6 +24,7 @@ const safeType = (type) => (type ?? '').toString().toLowerCase();
 
 export function CardsPage() {
     const { accounts, loading, deleteAccount } = useFinance();
+    const { t } = useLanguage();
 
     // Modal state
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -41,10 +43,10 @@ export function CardsPage() {
         setDeleting(true);
         try {
             await deleteAccount(confirmDeleteId);
-            toast.success('Cuenta eliminada');
+            toast.success(t('cards.toastDeleted'));
             setConfirmDeleteId(null);
         } catch (err) {
-            toast.error(parseApiError(err, 'No se pudo eliminar la cuenta'));
+            toast.error(parseApiError(err, t('cards.toastDeleteError')));
         } finally {
             setDeleting(false);
         }
@@ -89,28 +91,29 @@ export function CardsPage() {
     const getAccountIcon = (type) => safeType(type) === 'credit' ? CreditCard : Wallet;
 
     const getAccountTypeLabel = (type) => {
-        const t = safeType(type);
-        switch (t) {
-            case 'checking': return 'Cuenta Corriente';
-            case 'savings': return 'Ahorros';
-            case 'credit': return 'Tarjeta de Crédito';
-            case 'investment': return 'Inversión';
-            case 'cash': return 'Efectivo';
-            default: return type || 'Cuenta';
+        switch (safeType(type)) {
+            case 'checking': return t('cards.typeChecking');
+            case 'savings': return t('cards.typeSavings');
+            case 'credit': return t('cards.typeCredit');
+            case 'investment': return t('cards.typeInvestment');
+            case 'cash': return t('cards.typeCash');
+            default: return type || t('cards.typeDefault');
         }
     };
+
+    const accountsLabel = accounts.length === 1 ? t('cards.accountActive') : t('cards.accountsActive');
 
     return (
         <div className="space-y-10">
                 <PageHeader
                     section="cards"
                     icon={CreditCard}
-                    kicker="Billetera"
-                    title="Cuentas y Tarjetas"
+                    kicker={t('cards.kicker')}
+                    title={t('cards.title')}
                     subtitle={
                         accounts.length === 0
-                            ? "Agregá las cuentas y tarjetas que usás en tu día a día para trackear el saldo total."
-                            : `${accounts.length} ${accounts.length === 1 ? 'cuenta activa' : 'cuentas activas'} — ${formatCurrency(totalBalance)} consolidado`
+                            ? t('cards.subtitleEmpty')
+                            : `${accounts.length} ${accountsLabel} — ${formatCurrency(totalBalance)} ${t('cards.consolidated')}`
                     }
                     action={
                         <button
@@ -119,7 +122,7 @@ export function CardsPage() {
                             className={cn(BTN_PRIMARY, "w-full md:w-auto group py-3.5")}
                         >
                             <Plus className="w-5 h-5 transition-transform group-hover:rotate-90" />
-                            Nueva Cuenta
+                            {t('cards.newAccount')}
                         </button>
                     }
                 />
@@ -128,9 +131,9 @@ export function CardsPage() {
                     <EmptyState
                         icon={Wallet}
                         tone="info"
-                        title="Sin cuentas todavía"
-                        description="Creá tu primera cuenta (efectivo, débito, crédito o ahorros) para empezar a registrar movimientos."
-                        actionLabel="Crear primera cuenta"
+                        title={t('cards.emptyTitle')}
+                        description={t('cards.emptyDesc')}
+                        actionLabel={t('cards.emptyAction')}
                         onAction={() => setIsModalOpen(true)}
                     />
                 )}
@@ -169,7 +172,7 @@ export function CardsPage() {
 
                                     <div className="pt-4 border-t border-zinc-200/50 dark:border-zinc-800/50 flex justify-between items-end">
                                         <div>
-                                            <p className="text-[10px] uppercase tracking-widest font-black text-zinc-400 mb-1">Saldo Disponible</p>
+                                            <p className="text-[10px] uppercase tracking-widest font-black text-zinc-400 mb-1">{t('cards.availableBalance')}</p>
                                             <div className={cn(
                                                 "text-2xl font-black",
                                                 Number(account.balance) < 0 ? "text-rose-500" : "text-zinc-900 dark:text-white"
@@ -197,7 +200,7 @@ export function CardsPage() {
                 <div className="glass p-8 rounded-[2.5rem] relative overflow-hidden">
                     <div className="relative z-10 grid grid-cols-1 sm:grid-cols-3 gap-8 text-center sm:text-left">
                         <div>
-                            <p className="text-[10px] uppercase tracking-widest font-black text-zinc-400 mb-2">Total Consolidado</p>
+                            <p className="text-[10px] uppercase tracking-widest font-black text-zinc-400 mb-2">{t('cards.totalConsolidated')}</p>
                             <div className={cn(
                                 "text-3xl font-black",
                                 isNegativeTotal ? "text-rose-600 dark:text-rose-400" : "text-zinc-900 dark:text-white"
@@ -206,13 +209,13 @@ export function CardsPage() {
                             </div>
                         </div>
                         <div className="sm:border-l sm:border-zinc-200/50 dark:sm:border-zinc-800/50 sm:pl-8">
-                            <p className="text-[10px] uppercase tracking-widest font-black text-zinc-400 mb-2">Cuentas Activas</p>
+                            <p className="text-[10px] uppercase tracking-widest font-black text-zinc-400 mb-2">{t('cards.activeAccounts')}</p>
                             <p className="text-3xl font-black text-zinc-900 dark:text-white">
                                 {accounts.length}
                             </p>
                         </div>
                         <div className="sm:border-l sm:border-zinc-200/50 dark:sm:border-zinc-800/50 sm:pl-8">
-                            <p className="text-[10px] uppercase tracking-widest font-black text-zinc-400 mb-2">Promedio p/ Cuenta</p>
+                            <p className="text-[10px] uppercase tracking-widest font-black text-zinc-400 mb-2">{t('cards.avgPerAccount')}</p>
                             <div className={cn(
                                 "text-3xl font-black",
                                 avgBalance < 0 ? "text-rose-600 dark:text-rose-400" : "text-zinc-900 dark:text-white"
@@ -228,7 +231,7 @@ export function CardsPage() {
                 <Modal
                     isOpen={isModalOpen}
                     onClose={handleCloseModal}
-                    title={editingAccount ? "Editar Cuenta" : "Nueva Cuenta"}
+                    title={editingAccount ? t('cards.editModalTitle') : t('cards.newModalTitle')}
                 >
                     <AccountForm
                         onClose={handleCloseModal}
@@ -240,8 +243,8 @@ export function CardsPage() {
                     isOpen={!!confirmDeleteId}
                     onClose={() => !deleting && setConfirmDeleteId(null)}
                     onConfirm={handleConfirmDelete}
-                    title="¿Eliminar esta cuenta?"
-                    description="Se perderán todas las transacciones asociadas a esta cuenta."
+                    title={t('cards.confirmDeleteTitle')}
+                    description={t('cards.confirmDeleteDesc')}
                     itemName={accountToDelete?.name}
                     loading={deleting}
                 />
