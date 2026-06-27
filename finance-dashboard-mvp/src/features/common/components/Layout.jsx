@@ -94,7 +94,7 @@ function SidebarContent({ onMobileNavClick }) {
         { icon: MessageSquare, label: t('sidebar.chat'), path: '/chat' },
         { icon: PieChart, label: t('sidebar.budgets'), path: '/budget' },
         { icon: PiggyBank, label: t('sidebar.savings'), path: '/savings' },
-        { icon: Users, label: 'Eventos', path: '/events' },
+        { icon: Users, label: t('sidebar.events'), path: '/events' },
         { icon: Clock, label: t('sidebar.recurring'), path: '/recurring' },
         { icon: CreditCard, label: t('sidebar.accounts'), path: '/cards' },
     ];
