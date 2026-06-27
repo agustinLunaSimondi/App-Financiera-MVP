@@ -96,7 +96,7 @@ export function RecurringTransactionForm({ rt, onSubmit, onCancel }) {
                 />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                     <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Monto</label>
                     <input
@@ -127,7 +127,7 @@ export function RecurringTransactionForm({ rt, onSubmit, onCancel }) {
                 </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                     <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Cuenta</label>
                     <select
@@ -160,7 +160,7 @@ export function RecurringTransactionForm({ rt, onSubmit, onCancel }) {
                 </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                     <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Fecha de Inicio</label>
                     <input

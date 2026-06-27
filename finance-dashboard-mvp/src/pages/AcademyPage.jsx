@@ -250,7 +250,7 @@ function PlazoFijoCalculator() {
                 </div>
             </div>
 
-            <div className="mt-6 grid grid-cols-3 gap-3">
+            <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 text-center">
                     <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Interés ganado</p>
                     <p className="text-lg font-bold text-green-600 dark:text-green-400">{formatMoney(interest)}</p>

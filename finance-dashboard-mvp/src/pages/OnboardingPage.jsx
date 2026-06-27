@@ -540,7 +540,7 @@ export function OnboardingPage() {
 
                                 <div>
                                     <p className="text-xs font-bold uppercase tracking-widest text-zinc-400 mb-2">Frecuencia</p>
-                                    <div className="grid grid-cols-4 gap-2">
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                                         {FREQUENCIES.map(f => (
                                             <button
                                                 key={f.value}
