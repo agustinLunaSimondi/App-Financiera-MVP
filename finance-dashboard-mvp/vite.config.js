@@ -9,11 +9,12 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
-      // 'prompt' (no 'autoUpdate'): el SW nuevo espera y avisamos al usuario con
-      // un toast "Recargar". iOS standalone no chequea updates solo de forma
-      // confiable; con prompt + registration.update() periódico, el celular deja
-      // de quedar pegado a un bundle viejo sin que el user se entere.
-      registerType: 'prompt',
+      // 'autoUpdate': el SW nuevo activa skipWaiting + clientsClaim solo, sin
+      // esperar click del usuario. Antes era 'prompt' (toast "Recargar"), pero
+      // quedaba JS viejo + CSS nuevo mezclado hasta que alguien tocaba el toast
+      // (o nunca, en iOS standalone) → UI rota (headers duplicados, layout corrido).
+      // Con autoUpdate + reload forzado en PWAUpdatePrompt, el bundle se actualiza solo.
+      registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
       manifest: {
         name: 'Vueltito — Tu plata, en serio',
