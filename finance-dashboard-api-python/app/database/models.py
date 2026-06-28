@@ -68,6 +68,7 @@ class User(Base):
     saving_goals = relationship("SavingGoal", back_populates="user", cascade="all, delete-orphan")
     recurring_transactions = relationship("RecurringTransaction", back_populates="user", cascade="all, delete-orphan")
     mercadopago_connection = relationship("MercadoPagoConnection", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    belvo_connections = relationship("BelvoConnection", back_populates="user", cascade="all, delete-orphan")
 
 class Account(Base):
     __tablename__ = "accounts"
@@ -217,6 +218,26 @@ class MercadoPagoConnection(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
 
     user = relationship("User", back_populates="mercadopago_connection")
+
+
+class BelvoConnection(Base):
+    """Conexión a un banco/billetera vía Belvo. Un user puede tener N links
+    (N bancos distintos), a diferencia de MercadoPagoConnection que es 1:1."""
+    __tablename__ = "belvo_connections"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    # Encriptado at rest, igual que los tokens de MP (ver app/core/crypto.py)
+    link_id = Column(EncryptedString, nullable=False)
+    institution_name = Column(String, nullable=False)
+    status = Column(String, default="valid", nullable=False, server_default="valid")  # valid|invalid|unconfirmed
+    last_sync_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
+
+    user = relationship("User", back_populates="belvo_connections")
+
+    __table_args__ = (UniqueConstraint('user_id', 'link_id', name='_user_belvo_link_uc'),)
 
 
 class Notification(Base):

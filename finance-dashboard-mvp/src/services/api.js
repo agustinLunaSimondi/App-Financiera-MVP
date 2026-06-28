@@ -392,6 +392,36 @@ export const disconnectMercadoPago = async () => {
     return true;
 };
 
+// ============= BELVO (bancos y billeteras) =============
+
+export const getBelvoWidgetToken = async () => {
+    const response = await client.get('/belvo/widget-token');
+    return response.data.access;
+};
+
+export const createBelvoLink = async (linkId, institutionName) => {
+    const response = await client.post('/belvo/link', {
+        linkId,
+        institutionName,
+    });
+    return response.data;
+};
+
+export const getBelvoConnections = async () => {
+    const response = await client.get('/belvo/connections');
+    return response.data;
+};
+
+export const syncBelvoConnection = async (connectionId) => {
+    const response = await client.post(`/belvo/connections/${connectionId}/sync`);
+    return response.data;
+};
+
+export const disconnectBelvoConnection = async (connectionId) => {
+    await client.delete(`/belvo/connections/${connectionId}`);
+    return true;
+};
+
 // ============= ANALYTICS (server-side aggregations) =============
 
 export const getAnalyticsKpis = async ({ startDate, endDate } = {}) => {
