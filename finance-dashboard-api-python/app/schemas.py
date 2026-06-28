@@ -349,6 +349,26 @@ class MercadoPagoSyncResult(CamelModel):
     message: str = ""
 
 
+# Belvo Schemas
+class BelvoWidgetToken(CamelModel):
+    access: str
+
+class BelvoLinkCreate(CamelModel):
+    link_id: str
+    institution_name: str
+
+class BelvoConnectionStatus(CamelModel):
+    id: str
+    institution_name: str
+    status: str
+    last_sync_at: Optional[datetime] = None
+
+class BelvoSyncResult(CamelModel):
+    transactions_imported: int = 0
+    transactions_skipped: int = 0
+    message: str = ""
+
+
 # ===== Events Schemas (gastos compartidos en grupo) =====
 class EventMemberCreate(CamelModel):
     display_name: str

@@ -20,6 +20,8 @@ from app.modules.savings import saving_routes
 from app.modules.recurring import recurring_routes
 from app.modules.analytics import analytics_routes
 from app.modules.mercadopago import mp_routes
+from app.modules.belvo import belvo_routes
+from app.modules.belvo.belvo_service import sync_all_belvo_connections
 from app.modules.waitlist import waitlist_routes
 from app.modules.chat import chat_routes
 from app.modules.aki_name import aki_name_routes
@@ -56,6 +58,8 @@ scheduler.add_job(run_weekly_snapshots, 'cron', day_of_week='sun', hour=13, minu
 scheduler.add_job(run_nightly_streaks, 'cron', hour=9, minute=0, id='nightly_streaks')
 # Benchmark anonimizado (#59): diario 7am ART (10 UTC) — recalcula buckets.
 scheduler.add_job(run_daily_benchmark_aggregation, 'cron', hour=10, minute=30, id='daily_benchmark')
+# Refresh de conexiones bancarias Belvo cada 6h (complementa al webhook, que no siempre llega).
+scheduler.add_job(sync_all_belvo_connections, 'interval', hours=6, id='belvo_sync')
 
 @asynccontextmanager
 async def lifespan(app):
@@ -120,6 +124,7 @@ app.include_router(saving_routes.router, prefix="/api")
 app.include_router(recurring_routes.router, prefix="/api")
 app.include_router(analytics_routes.router, prefix="/api")
 app.include_router(mp_routes.router, prefix="/api")
+app.include_router(belvo_routes.router, prefix="/api")
 app.include_router(waitlist_routes.router, prefix="/api")
 app.include_router(chat_routes.router, prefix="/api")
 app.include_router(streak_routes.router, prefix="/api")

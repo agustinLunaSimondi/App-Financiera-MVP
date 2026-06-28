@@ -7,13 +7,11 @@ const LanguageContext = createContext();
 export const dictionaries = { en, es };
 
 export const LanguageProvider = ({ children }) => {
-    const [language, setLanguage] = useState(() => {
-        return localStorage.getItem('language') || 'es';
-    });
-
-    useEffect(() => {
-        localStorage.setItem('language', language);
-    }, [language]);
+    // Idioma forzado a 'es' hasta rediseñar i18n con routing por locale (/es, /en).
+    // El selector de idioma fue removido del UI para lanzar a producción solo en español.
+    // setLanguage queda como no-op para no romper consumidores existentes.
+    const language = 'es';
+    const setLanguage = () => {};
 
     const t = useCallback((key) => {
         const dict = dictionaries[language] || dictionaries.es;
