@@ -12,6 +12,7 @@ Triggers cubiertos:
 """
 from __future__ import annotations
 
+import html
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
@@ -43,6 +44,7 @@ def detect_budget_at_risk(
         return None
     remaining = budget_total - spent_to_date
     days_left = days_in_month - day_of_month
+    category_name = html.escape(category_name)
     return TriggerCandidate(
         type="budget_at_risk",
         dedup_key=f"budget_at_risk:{category_name}:{today.year}-{today.month:02d}",
@@ -67,6 +69,7 @@ def detect_unusual_spend(
     ratio = float(abs(tx_amount) / historical_avg)
     if ratio < 2.0:
         return None
+    category_name = html.escape(category_name)
     return TriggerCandidate(
         type="unusual_spend",
         dedup_key=f"unusual_spend:{tx_id}",
@@ -89,6 +92,7 @@ def detect_goal_at_risk(
         return None
     if days_to_deadline < 0:
         return None
+    goal_name = html.escape(goal_name)
     return TriggerCandidate(
         type="goal_at_risk",
         dedup_key=f"goal_at_risk:{goal_id}:{today.isoformat()}",

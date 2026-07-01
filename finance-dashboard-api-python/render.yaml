@@ -32,6 +32,12 @@ services:
         sync: false
       - key: PYTHON_VERSION
         value: 3.11.0
+      # Render sirve detrás de un proxy — sin esto, el rate limiter por IP
+      # confía en la IP del socket local (el proxy) en vez de X-Forwarded-For.
+      - key: TRUST_PROXY
+        value: "1"
+      - key: APP_ENV
+        value: production
       - key: GEMINI_API_KEY
         sync: false
       # Proxy de Gemini en Vercel (US). Render tiene la IP de egress geo-bloqueada
