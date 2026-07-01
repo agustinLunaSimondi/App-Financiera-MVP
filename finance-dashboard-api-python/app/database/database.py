@@ -7,7 +7,9 @@ load_dotenv()
 
 SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL")
 if not SQLALCHEMY_DATABASE_URL:
-    # Fallback de tests: in-memory SQLite si la env no está seteada.
+    if os.getenv("APP_ENV", "development").lower() == "production":
+        raise RuntimeError("DATABASE_URL no configurada en production — abortando arranque.")
+    # Fallback de tests/dev: in-memory SQLite si la env no está seteada.
     SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
 
 if SQLALCHEMY_DATABASE_URL.startswith("postgresql://"):

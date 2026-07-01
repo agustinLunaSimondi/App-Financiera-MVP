@@ -30,11 +30,13 @@ export class ErrorBoundary extends React.Component {
                         <p className="text-zinc-500 dark:text-zinc-400 mb-8">
                             Ha ocurrido un error inesperado. Por favor, intentá recargar la página via tu cuenta.
                         </p>
-                        <div className="bg-zinc-100 dark:bg-zinc-800 p-4 rounded-xl text-left mb-8 overflow-auto max-h-32">
-                            <code className="text-xs font-mono text-rose-500">
-                                {this.state.error?.toString()}
-                            </code>
-                        </div>
+                        {import.meta.env.DEV && (
+                            <div className="bg-zinc-100 dark:bg-zinc-800 p-4 rounded-xl text-left mb-8 overflow-auto max-h-32">
+                                <code className="text-xs font-mono text-rose-500">
+                                    {this.state.error?.toString()}
+                                </code>
+                            </div>
+                        )}
                         <button
                             onClick={() => window.location.reload()}
                             className="w-full py-4 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-2xl font-bold hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
