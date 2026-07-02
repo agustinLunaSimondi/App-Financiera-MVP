@@ -66,6 +66,15 @@ async def _store_receipt(content: bytes, filename: str, content_type: str) -> st
         return object_path
 
     # Fallback local (dev) — efímero en Render; en prod configurar Supabase Storage.
+    # Fail-fast en producción: el dir local se sirve por StaticFiles SIN auth,
+    # así que si faltan las env vars de Supabase en prod preferimos rechazar el
+    # upload antes que exponer recibos públicamente. Render setea RENDER=true.
+    if os.getenv("RENDER"):
+        logger.error("Upload de recibo rechazado: SUPABASE_URL/SUPABASE_SERVICE_KEY no configuradas en producción.")
+        raise HTTPException(
+            status_code=503,
+            detail="El almacenamiento de recibos no está disponible temporalmente.",
+        )
     os.makedirs(LOCAL_UPLOADS_DIR, exist_ok=True)
     with open(os.path.join(LOCAL_UPLOADS_DIR, safe_name), "wb") as fh:
         fh.write(content)

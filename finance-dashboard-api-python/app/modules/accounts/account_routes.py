@@ -21,7 +21,12 @@ def recalculate_balances(
     Útil para detectar / reparar desajustes acumulados por bugs históricos.
     Devuelve diff por cuenta.
     """
-    accounts = db.query(models.Account).filter(models.Account.user_id == current_user.id).all()
+    accounts = (
+        db.query(models.Account)
+        .filter(models.Account.user_id == current_user.id)
+        .with_for_update()
+        .all()
+    )
     sums = dict(
         db.query(models.Transaction.account_id, func.coalesce(func.sum(models.Transaction.amount), 0))
         .join(models.Account, models.Account.id == models.Transaction.account_id)
