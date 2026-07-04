@@ -38,6 +38,23 @@ LOCAL_UPLOADS_DIR = os.path.join(_API_ROOT, "uploads", "event-receipts")
 ALLOWED_RECEIPT_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif", "application/pdf"}
 MAX_RECEIPT_BYTES = 5 * 1024 * 1024  # 5 MB
 
+# Firmas reales (magic bytes) por tipo declarado. El Content-Type del multipart
+# lo controla el cliente: sin esto se puede subir HTML/SVG con script declarado
+# como image/png y que termine servido desde el bucket/StaticFiles.
+_MAGIC_SIGNATURES = {
+    "image/jpeg": [b"\xff\xd8\xff"],
+    "image/png": [b"\x89PNG\r\n\x1a\n"],
+    "image/gif": [b"GIF87a", b"GIF89a"],
+    "application/pdf": [b"%PDF-"],
+}
+
+
+def _matches_magic_bytes(content: bytes, declared_type: str) -> bool:
+    """Verifica que el contenido real coincida con el Content-Type declarado."""
+    if declared_type == "image/webp":
+        return content[:4] == b"RIFF" and content[8:12] == b"WEBP"
+    return any(content.startswith(sig) for sig in _MAGIC_SIGNATURES.get(declared_type, []))
+
 _CENT = Decimal("0.01")
 _EPS = Decimal("0.005")
 
@@ -560,6 +577,12 @@ async def upload_receipt(
         if len(buffer) > MAX_RECEIPT_BYTES:
             raise HTTPException(status_code=413, detail="El archivo supera el límite de 5 MB")
     content = bytes(buffer)
+
+    if not _matches_magic_bytes(content, file.content_type):
+        raise HTTPException(
+            status_code=422,
+            detail="El contenido del archivo no coincide con su formato declarado.",
+        )
 
     expense.receipt_url = await _store_receipt(content, file.filename, file.content_type)
     expense.receipt_filename = file.filename
