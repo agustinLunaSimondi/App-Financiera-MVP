@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import { UserPlus, ArrowRight, Loader2, Sparkles, ShieldCheck, Eye, EyeOff } from 'lucide-react';
+import { UserPlus, ArrowRight, ArrowLeft, Loader2, Sparkles, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';
 import { motion } from 'framer-motion';
 import { parseApiError } from '../lib/apiErrors';
@@ -91,6 +91,16 @@ export function RegisterPage() {
                 <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-500/10 dark:bg-blue-500/5 blur-[120px] rounded-full animate-pulse" />
                 <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-emerald-500/10 dark:bg-emerald-500/5 blur-[120px] rounded-full" />
             </div>
+
+            {/* Volver a la landing */}
+            <Link
+                to="/"
+                className="fixed left-4 sm:left-6 z-10 flex items-center gap-2 px-4 py-2.5 rounded-full glass-card text-xs font-black text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white hover:scale-[1.03] active:scale-[0.97] transition-all"
+                style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))' }}
+            >
+                <ArrowLeft className="w-4 h-4" />
+                Volver al inicio
+            </Link>
 
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
