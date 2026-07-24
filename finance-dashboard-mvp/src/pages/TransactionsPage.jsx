@@ -383,6 +383,11 @@ export function TransactionsPage() {
                                 <div className="flex items-center gap-2">
                                     <span className="font-bold text-zinc-900 dark:text-white text-sm truncate">{tx.description || tx.name}</span>
                                     {tx.externalId && <span className="text-[10px] text-sky-500 font-black shrink-0">MP</span>}
+                                    {tx.installmentNumber && tx.installmentTotal && (
+                                        <span className="text-[10px] text-violet-600 dark:text-violet-400 font-black shrink-0">
+                                            Cuota {tx.installmentNumber}/{tx.installmentTotal}
+                                        </span>
+                                    )}
                                 </div>
                                 <div className="flex items-center gap-2 mt-1">
                                     <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 truncate max-w-[10rem]">
@@ -477,7 +482,14 @@ export function TransactionsPage() {
                                         <tr key={tx.id} className="group hover:bg-emerald-500/[0.02] transition-colors">
                                             <td className="px-8 py-5">
                                                 <div className="flex flex-col">
-                                                    <span className="font-bold text-zinc-900 dark:text-white">{tx.description || tx.name}</span>
+                                                    <span className="font-bold text-zinc-900 dark:text-white">
+                                                        {tx.description || tx.name}
+                                                        {tx.installmentNumber && tx.installmentTotal && (
+                                                            <span className="ml-2 text-[10px] text-violet-600 dark:text-violet-400 font-black">
+                                                                Cuota {tx.installmentNumber}/{tx.installmentTotal}
+                                                            </span>
+                                                        )}
+                                                    </span>
                                                     {tx.externalId && (
                                                         <span className="text-[10px] text-sky-500 font-bold flex items-center gap-1 mt-0.5">
                                                             MP
