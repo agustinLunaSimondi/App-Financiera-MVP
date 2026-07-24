@@ -55,6 +55,8 @@ import { CardsPage } from './pages/CardsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
+import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { SavingsPage } from './pages/SavingsPage';
 import { RecurringPage } from './pages/RecurringPage';
 import { IntegrationsPage } from './pages/IntegrationsPage';
@@ -113,6 +115,8 @@ function App() {
                 {/* Public routes */}
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
+                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                <Route path="/reset-password" element={<ResetPasswordPage />} />
                 <Route path="/privacy" element={<PrivacyPage />} />
                 <Route path="/terms" element={<TermsPage />} />
                 {/* Widget embebible público (#64) — sin auth, sin layout */}

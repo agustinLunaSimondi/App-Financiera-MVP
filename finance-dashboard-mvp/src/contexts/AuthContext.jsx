@@ -174,6 +174,20 @@ export function AuthProvider({ children }) {
         return user;
     }, []);
 
+    const forgotPassword = useCallback(async (email) => {
+        await client.post('/auth/forgot-password', { email });
+    }, []);
+
+    const resetPassword = useCallback(async (token, newPassword) => {
+        const res = await client.post('/auth/reset-password', { token, newPassword });
+        const { token: authToken, user } = res.data;
+        setToken(authToken);
+        setUser(user);
+        setLoading(false);
+        identifyUser(user.id, { email: user.email, name: user.name });
+        return user;
+    }, []);
+
     const logout = useCallback(() => {
         analytics.userLoggedOut();
         resetUser();
@@ -190,6 +204,8 @@ export function AuthProvider({ children }) {
         login,
         loginWithGoogle,
         register,
+        forgotPassword,
+        resetPassword,
         logout,
         updateUser,
         isAuthenticated: !!user,

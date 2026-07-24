@@ -177,7 +177,12 @@ export function LoginPage() {
                     </div>
 
                     <div className="space-y-2">
-                        <label htmlFor="login-password" className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 ml-4 block">Contraseña</label>
+                        <div className="flex items-center justify-between ml-4 mr-1">
+                            <label htmlFor="login-password" className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 block">Contraseña</label>
+                            <Link to="/forgot-password" className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline underline-offset-4">
+                                ¿Olvidaste tu contraseña?
+                            </Link>
+                        </div>
                         <div className="relative">
                             <input
                                 id="login-password"
