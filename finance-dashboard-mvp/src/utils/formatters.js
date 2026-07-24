@@ -16,6 +16,15 @@ export const setActiveCurrency = (currency) => {
 
 export const getActiveCurrency = () => activeCurrency;
 
+// K/M solo tiene sentido en pantallas chicas donde el espacio es escaso;
+// en desktop mostramos el número completo. Sincronizado por Layout.jsx vía
+// matchMedia, mismo patrón que activeCurrency (evita pasar isMobile a cada call site).
+let compactModeEnabled = true;
+
+export const setCompactMode = (enabled) => {
+    compactModeEnabled = enabled;
+};
+
 /**
  * Formats a given number into a localized currency string with an explicit,
  * region-disambiguated symbol (AR$, US$, MX$, €).
@@ -43,6 +52,7 @@ export const formatCurrency = (amount, currency = activeCurrency, locale = CURRE
  * @returns {string}
  */
 export const formatCompactCurrency = (amount, currency = activeCurrency, locale = CURRENCY_LOCALES[currency] || 'es-AR') => {
+    if (!compactModeEnabled) return formatCurrency(amount, currency, locale);
     const sym = CURRENCY_SYMBOLS[currency] || CURRENCY_SYMBOLS.ARS;
     if (amount === undefined || amount === null || isNaN(amount)) return `${sym} 0`;
     const abs = Math.abs(amount);
