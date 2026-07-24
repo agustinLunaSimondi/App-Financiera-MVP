@@ -77,6 +77,26 @@ export const addTransaction = async (transaction) => {
     };
 };
 
+export const createInstallmentPlan = async (plan) => {
+    const payload = {
+        ...plan,
+        principalAmount: parseFloat(plan.principalAmount),
+        numInstallments: parseInt(plan.numInstallments, 10),
+        monthlyInterestRate: parseFloat(plan.monthlyInterestRate || 0)
+    };
+    const response = await client.post('/transactions/installment-plans', payload);
+    const data = response.data;
+    return {
+        ...data,
+        transactions: data.transactions.map(tx => ({
+            ...tx,
+            amount: Number(tx.amount),
+            category: tx.category?.name || tx.category,
+            account: tx.account?.name || tx.account
+        }))
+    };
+};
+
 export const updateTransaction = async (id, updates) => {
     const response = await client.put(`/transactions/${id}`, updates);
     const tx = response.data;

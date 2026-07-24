@@ -135,6 +135,21 @@ export function FinanceProvider({ children }) {
         }
     }, []);
 
+    const addInstallmentPlan = useCallback(async (plan) => {
+        try {
+            const result = await api.createInstallmentPlan(plan);
+            setTransactions(prev => [...prev, ...result.transactions]);
+            analytics.expenseAdded(
+                plan.category || 'unknown',
+                amountRange(Math.abs(Number(plan.principalAmount || 0)))
+            );
+            return result;
+        } catch (err) {
+            setError(err.message);
+            throw err;
+        }
+    }, []);
+
     const updateTransaction = useCallback(async (id, updates) => {
         try {
             const updatedTx = await api.updateTransaction(id, updates);
@@ -277,6 +292,7 @@ export function FinanceProvider({ children }) {
 
         // Funciones de transacciones
         addTransaction,
+        addInstallmentPlan,
         updateTransaction,
         deleteTransaction,
 

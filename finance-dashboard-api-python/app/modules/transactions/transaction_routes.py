@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session, joinedload
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 from typing import Optional
 from datetime import date
+from dateutil.relativedelta import relativedelta
 from app.database import models
 from app.database.database import get_db
 from app.core.deps import get_current_user
@@ -46,6 +47,138 @@ def _assert_category_owned(db: Session, category_id: Optional[str], user_id: str
     cat = db.query(models.Category).filter(models.Category.id == category_id).first()
     if not cat or (cat.user_id and cat.user_id != user_id):
         raise HTTPException(status_code=404, detail="Categoría no encontrada")
+
+
+def _cents(value: Decimal) -> Decimal:
+    return value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+
+def _calc_installments(principal: Decimal, n: int, monthly_rate_pct: Decimal) -> dict:
+    """Sistema francés (cuota fija). monthly_rate_pct es la tasa mensual en % (ej. 5 = 5%/mes).
+
+    Devuelve la cuota (redondeada a centavos) y una lista de `n` montos por cuota —
+    todas iguales salvo la última, que absorbe el redondeo para que la suma cierre
+    exacto contra `installment_amount * n`.
+    """
+    i = monthly_rate_pct / Decimal("100")
+    if i == 0:
+        raw_installment = principal / n
+    else:
+        one_plus_i = Decimal("1") + i
+        raw_installment = principal * i / (Decimal("1") - one_plus_i ** (-n))
+
+    installment_amount = _cents(raw_installment)
+    amounts = [installment_amount] * (n - 1)
+    last = _cents(raw_installment * n - installment_amount * (n - 1))
+    amounts.append(last)
+
+    total_paid = sum(amounts)
+    total_interest = total_paid - principal
+    return {
+        "installment_amount": installment_amount,
+        "amounts": amounts,
+        "total_paid": total_paid,
+        "total_interest": total_interest,
+    }
+
+
+def _educational_tip(principal: Decimal, n: int, monthly_rate_pct: Decimal, total_interest: Decimal) -> str:
+    if monthly_rate_pct == 0:
+        return f"Sin interés: pagás exactamente lo mismo que al contado, dividido en {n} cuotas iguales."
+
+    surcharge_pct = (total_interest / principal * Decimal("100")) if principal else Decimal("0")
+    surcharge_str = f"{surcharge_pct:.1f}%"
+    interest_str = f"${total_interest:.2f}"
+
+    if surcharge_pct < 10:
+        return (
+            f"Vas a pagar {interest_str} de más en total ({surcharge_str} sobre el precio de "
+            f"contado) — un recargo bajo para {n} cuotas."
+        )
+    if surcharge_pct < 30:
+        return (
+            f"Vas a pagar {interest_str} de más en total ({surcharge_str} sobre el precio de "
+            f"contado). Es un recargo notable — si podés pagarlo antes o de contado, ahorrás esa "
+            f"diferencia."
+        )
+    return (
+        f"Ojo: vas a pagar {interest_str} de más en total ({surcharge_str} sobre el precio de "
+        f"contado). A esta tasa, financiar en cuotas sale caro — muchas veces conviene ahorrar "
+        f"unos meses y pagar de contado. Mirá la calculadora de interés en Academia para comparar."
+    )
+
+
+@router.post("/installment-plans", response_model=schemas.InstallmentPlanResponse)
+def create_installment_plan(
+    plan_in: schemas.InstallmentPlanCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Crea un gasto en cuotas (sistema francés: cuota fija). Genera de una vez las
+    N transacciones (una por cuota, fechadas mes a mes desde start_date) — mismo
+    criterio que ya usa el resto de la app: el monto se aplica al balance de la
+    cuenta en el momento de creación, sin distinguir "pendiente" vs "liquidado"."""
+    account = _lock_account_for_update(db, plan_in.account_id, current_user.id)
+    if not account:
+        raise HTTPException(status_code=404, detail="Cuenta no encontrada")
+
+    _assert_category_owned(db, plan_in.category_id, current_user.id)
+
+    calc = _calc_installments(plan_in.principal_amount, plan_in.num_installments, plan_in.monthly_interest_rate)
+
+    plan = models.InstallmentPlan(
+        user_id=current_user.id,
+        account_id=plan_in.account_id,
+        category_id=plan_in.category_id,
+        description=plan_in.description,
+        principal_amount=plan_in.principal_amount,
+        num_installments=plan_in.num_installments,
+        monthly_interest_rate=plan_in.monthly_interest_rate,
+        start_date=plan_in.start_date,
+    )
+    db.add(plan)
+    db.flush()
+
+    new_txs = []
+    for idx, amount in enumerate(calc["amounts"], start=1):
+        tx = models.Transaction(
+            account_id=plan_in.account_id,
+            category_id=plan_in.category_id,
+            installment_plan_id=plan.id,
+            installment_number=idx,
+            amount=-amount,  # gasto = negativo, mismo criterio que create_transaction
+            description=f"{plan_in.description} (cuota {idx}/{plan_in.num_installments})",
+            transaction_date=plan_in.start_date + relativedelta(months=idx - 1),
+        )
+        db.add(tx)
+        new_txs.append(tx)
+        account.balance = (account.balance or Decimal("0")) - amount
+
+    db.commit()
+    db.refresh(plan)
+    for tx in new_txs:
+        db.refresh(tx)
+
+    posthog_client.capture(
+        current_user.id,
+        "installment_plan_created",
+        {"num_installments": plan_in.num_installments, "monthly_interest_rate": float(plan_in.monthly_interest_rate)},
+    )
+
+    return {
+        "id": plan.id,
+        "description": plan.description,
+        "principal_amount": plan.principal_amount,
+        "num_installments": plan.num_installments,
+        "monthly_interest_rate": plan.monthly_interest_rate,
+        "installment_amount": calc["installment_amount"],
+        "total_paid": calc["total_paid"],
+        "total_interest": calc["total_interest"],
+        "educational_tip": _educational_tip(
+            plan_in.principal_amount, plan_in.num_installments, plan_in.monthly_interest_rate, calc["total_interest"]
+        ),
+        "transactions": new_txs,
+    }
 
 
 @router.get("/")
@@ -91,7 +224,8 @@ def get_transactions(
 
     transactions = query.options(
         joinedload(models.Transaction.category),
-        joinedload(models.Transaction.account)
+        joinedload(models.Transaction.account),
+        joinedload(models.Transaction.installment_plan)
     ).order_by(primary, models.Transaction.id.desc()).offset((page-1)*limit).limit(limit).all()
 
     serialized = [schemas.Transaction.model_validate(tx).model_dump(by_alias=True) for tx in transactions]

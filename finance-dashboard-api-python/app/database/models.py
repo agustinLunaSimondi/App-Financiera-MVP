@@ -59,6 +59,10 @@ class User(Base):
     geo_region = Column(String, nullable=True)  # 'AR-CABA' | 'AR-GBA' | 'AR-Norte' | 'AR-Cuyo' | 'AR-Sur' | 'AR-Centro' | 'Otro'
     # JWTs emitidos antes de esta marca son rechazados (revocación granular: logout total, cambio de contraseña, etc.)
     tokens_invalidated_at = Column(DateTime(timezone=True), nullable=True)
+    # Recuperar contraseña: hash sha256 del token (nunca se guarda el token plano),
+    # expira a los 15min. Un solo token activo por usuario — pedir uno nuevo pisa el anterior.
+    reset_token_hash = Column(String, nullable=True)
+    reset_token_expires_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
 
@@ -114,6 +118,8 @@ class Transaction(Base):
     account_id = Column(String, ForeignKey("accounts.id", ondelete="CASCADE"), nullable=False)
     category_id = Column(String, ForeignKey("categories.id", ondelete="RESTRICT"), nullable=False)
     recurring_id = Column(String, ForeignKey("recurring_transactions.id", ondelete="SET NULL"), nullable=True)
+    installment_plan_id = Column(String, ForeignKey("installment_plans.id", ondelete="SET NULL"), nullable=True)
+    installment_number = Column(Integer, nullable=True)  # 1-based; junto con installment_plan.num_installments arma "cuota i/n"
     amount = Column(Numeric(12, 2), nullable=False)
     description = Column(String, nullable=False)
     transaction_date = Column(Date, nullable=False)
@@ -122,9 +128,35 @@ class Transaction(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
 
+    installment_plan = relationship("InstallmentPlan", back_populates="transactions")
     account = relationship("Account", back_populates="transactions")
     category = relationship("Category", back_populates="transactions")
     recurring = relationship("RecurringTransaction", back_populates="transactions")
+
+    @property
+    def installment_total(self):
+        """Cantidad total de cuotas del plan al que pertenece esta tx (para el badge "i/n" en UI)."""
+        return self.installment_plan.num_installments if self.installment_plan else None
+
+
+class InstallmentPlan(Base):
+    """Gasto en cuotas (sistema francés: cuota fija). Genera N Transaction al crearse,
+    una por cuota, todas con installment_plan_id apuntando acá."""
+    __tablename__ = "installment_plans"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    account_id = Column(String, ForeignKey("accounts.id", ondelete="CASCADE"), nullable=False)
+    category_id = Column(String, ForeignKey("categories.id"), nullable=False)
+    description = Column(String, nullable=False)
+    principal_amount = Column(Numeric(12, 2), nullable=False)
+    num_installments = Column(Integer, nullable=False)
+    monthly_interest_rate = Column(Numeric(6, 3), default=0, nullable=False, server_default="0")  # % mensual
+    start_date = Column(Date, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    transactions = relationship("Transaction", back_populates="installment_plan", cascade="all, delete-orphan")
+
 
 class Budget(Base):
     __tablename__ = "budgets"
