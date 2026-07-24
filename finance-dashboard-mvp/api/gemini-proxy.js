@@ -10,8 +10,24 @@
 // Seguridad: requiere el header `x-proxy-secret` igual a GEMINI_PROXY_SECRET para
 // que no sea un relay abierto de Gemini. La API key vive solo acá como env var.
 
+import { timingSafeEqual } from "node:crypto";
+
 const GEMINI_URL =
   "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+
+// Comparación constant-time: `!==` filtra información de timing que permitiría
+// adivinar el secreto carácter por carácter.
+function secretsMatch(provided, expected) {
+  if (typeof provided !== "string" || typeof expected !== "string") {
+    return false;
+  }
+  const providedBuf = Buffer.from(provided);
+  const expectedBuf = Buffer.from(expected);
+  if (providedBuf.length !== expectedBuf.length) {
+    return false;
+  }
+  return timingSafeEqual(providedBuf, expectedBuf);
+}
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -19,7 +35,7 @@ export default async function handler(req, res) {
   }
 
   const secret = process.env.GEMINI_PROXY_SECRET;
-  if (!secret || req.headers["x-proxy-secret"] !== secret) {
+  if (!secret || !secretsMatch(req.headers["x-proxy-secret"], secret)) {
     return res.status(401).json({ error: "Unauthorized" });
   }
 

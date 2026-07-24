@@ -57,12 +57,12 @@ def _embed_text(text: str) -> Optional[List[float]]:
     try:
         with httpx.Client(timeout=10.0) as cli:
             res = cli.post(
-                f"{GEMINI_EMBED_URL}?key={key}",
+                GEMINI_EMBED_URL,
                 json={
                     "model": f"models/{EMBEDDING_MODEL}",
                     "content": {"parts": [{"text": text}]},
                 },
-                headers={"Content-Type": "application/json"},
+                headers={"Content-Type": "application/json", "x-goog-api-key": key},
             )
         if res.status_code != 200:
             logger.error("Gemini embed %s → %s", res.status_code, res.text[:300])

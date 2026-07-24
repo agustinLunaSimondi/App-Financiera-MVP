@@ -33,7 +33,8 @@ class UserBase(CamelModel):
     onboarding_completed: bool = False
 
 class UserCreate(UserBase):
-    password: str
+    # Mínimo 8 chars (NIST 800-63B); max acota el costo de bcrypt.
+    password: str = Field(min_length=8, max_length=128)
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -53,7 +54,7 @@ class UserUpdate(CamelModel):
     email: Optional[EmailStr] = None
     currency: Optional[str] = None
     dark_mode: Optional[bool] = None
-    password: Optional[str] = None
+    password: Optional[str] = Field(default=None, min_length=8, max_length=128)
 
 class User(UserBase):
     id: str
