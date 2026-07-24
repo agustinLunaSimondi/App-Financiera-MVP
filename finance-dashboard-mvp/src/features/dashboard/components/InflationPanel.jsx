@@ -106,6 +106,19 @@ export function InflationPanel() {
                             Blue: {data.usd_blue ? `$${data.usd_blue.toFixed(0)}` : '—'}
                             {data.usd_oficial ? ` · Oficial: $${data.usd_oficial.toFixed(0)}` : ''}
                         </p>
+                        {data.usd_blue && (
+                            <p className="text-[10px] text-zinc-400 dark:text-zinc-600">
+                                Fuente:{' '}
+                                <a
+                                    href="https://bluelytics.com.ar"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="underline hover:text-zinc-600 dark:hover:text-zinc-400"
+                                >
+                                    {data.usd_blue_source || 'Bluelytics'}
+                                </a>
+                            </p>
+                        )}
                     </div>
 
                     <div className="space-y-1">
