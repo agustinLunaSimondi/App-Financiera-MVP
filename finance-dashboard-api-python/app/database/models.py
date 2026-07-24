@@ -59,6 +59,10 @@ class User(Base):
     geo_region = Column(String, nullable=True)  # 'AR-CABA' | 'AR-GBA' | 'AR-Norte' | 'AR-Cuyo' | 'AR-Sur' | 'AR-Centro' | 'Otro'
     # JWTs emitidos antes de esta marca son rechazados (revocación granular: logout total, cambio de contraseña, etc.)
     tokens_invalidated_at = Column(DateTime(timezone=True), nullable=True)
+    # Recuperar contraseña: hash sha256 del token (nunca se guarda el token plano),
+    # expira a los 15min. Un solo token activo por usuario — pedir uno nuevo pisa el anterior.
+    reset_token_hash = Column(String, nullable=True)
+    reset_token_expires_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
 
