@@ -8,9 +8,9 @@ import { Card } from '../features/common/components/Card';
 import { PageHeader } from '../features/common/components/PageHeader';
 import { cn } from '../lib/utils';
 import {
-    Link2, Unlink, RefreshCw, Check, AlertCircle, Clock,
-    CreditCard, ArrowRight, Loader2, ExternalLink, Zap,
-    Wallet, ArrowUpRight, ArrowDownRight, AlertTriangle
+    Link2, Unlink, RefreshCw, Check, AlertCircle,
+    CreditCard, ArrowRight, Loader2, Zap,
+    Wallet, ArrowUpRight, ArrowDownRight, AlertTriangle, Landmark
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as api from '../services/api';
@@ -38,6 +38,13 @@ export function IntegrationsPage() {
     const [error, setError] = useState(null);
     const [successMessage, setSuccessMessage] = useState(null);
     const [confirmDisconnect, setConfirmDisconnect] = useState(false);
+
+    // Belvo (bancos y billeteras)
+    const [belvoConnections, setBelvoConnections] = useState([]);
+    const [belvoLoading, setBelvoLoading] = useState(true);
+    const [belvoConnecting, setBelvoConnecting] = useState(false);
+    const [belvoSyncingId, setBelvoSyncingId] = useState(null);
+    const widgetScriptLoadedRef = useRef(false);
 
     // Pre-fetch de la URL de autorización de MP.
     // iOS Safari bloquea window.location.href cuando se ejecuta después de un await
@@ -232,6 +239,97 @@ export function IntegrationsPage() {
             setError(msg);
         } finally {
             setSyncing(false);
+        }
+    };
+
+    // --- Belvo ---
+
+    const loadBelvoConnections = useCallback(async () => {
+        try {
+            setBelvoLoading(true);
+            const connections = await api.getBelvoConnections();
+            setBelvoConnections(connections);
+        } catch (err) {
+            console.error('Error loading Belvo connections:', err);
+        } finally {
+            setBelvoLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        loadBelvoConnections();
+    }, [loadBelvoConnections]);
+
+    const loadBelvoWidgetScript = () => {
+        return new Promise((resolve, reject) => {
+            if (widgetScriptLoadedRef.current || window.belvoSDK) {
+                resolve();
+                return;
+            }
+            const script = document.createElement('script');
+            script.src = 'https://cdn.belvo.io/belvo-widget-1-stable.js';
+            script.async = true;
+            script.onload = () => { widgetScriptLoadedRef.current = true; resolve(); };
+            script.onerror = () => reject(new Error('No se pudo cargar el widget de Belvo'));
+            document.body.appendChild(script);
+        });
+    };
+
+    const handleConnectBelvo = async () => {
+        setError(null);
+        setBelvoConnecting(true);
+        try {
+            await loadBelvoWidgetScript();
+            const accessToken = await api.getBelvoWidgetToken();
+
+            // API del Belvo Connect Widget — confirmar firma exacta de callbacks
+            // contra docs.belvo.com antes de habilitar en producción.
+            const widget = window.belvoSDK.createWidget(accessToken, {
+                callback: async (link, institution) => {
+                    try {
+                        await api.createBelvoLink(link, institution?.name || 'Banco conectado');
+                        setSuccessMessage('¡Cuenta conectada! Sincronizando tus movimientos...');
+                        await Promise.all([loadBelvoConnections(), refreshData()]);
+                        setTimeout(() => setSuccessMessage(null), 5000);
+                    } catch (err) {
+                        setError(err.response?.data?.detail || 'Error al registrar la conexión bancaria.');
+                    } finally {
+                        setBelvoConnecting(false);
+                    }
+                },
+                onExit: () => setBelvoConnecting(false),
+            });
+            widget.build();
+        } catch {
+            setError('No se pudo iniciar la conexión con tu banco. Reintentá en unos segundos.');
+            setBelvoConnecting(false);
+        }
+    };
+
+    const handleSyncBelvo = async (connectionId) => {
+        setBelvoSyncingId(connectionId);
+        setError(null);
+        try {
+            const result = await api.syncBelvoConnection(connectionId);
+            setSyncResult(result);
+            await Promise.all([loadBelvoConnections(), refreshData()]);
+            setTimeout(() => setSyncResult(null), 8000);
+        } catch (err) {
+            setError(err.response?.data?.detail || 'Error al sincronizar la cuenta bancaria.');
+        } finally {
+            setBelvoSyncingId(null);
+        }
+    };
+
+    const handleDisconnectBelvo = async (connectionId) => {
+        setError(null);
+        try {
+            await api.disconnectBelvoConnection(connectionId);
+            await loadBelvoConnections();
+            setSuccessMessage('Conexión bancaria desconectada.');
+            setTimeout(() => setSuccessMessage(null), 4000);
+        } catch (err) {
+            setError(err.response?.data?.detail || 'Error al desconectar.');
         }
     };
 
@@ -468,26 +566,81 @@ export function IntegrationsPage() {
                     <div className="absolute -bottom-8 -right-8 w-40 h-40 bg-[#00AAFF]/5 blur-3xl rounded-full" />
                 </Card>
 
-                {/* Coming Soon placeholder */}
-                <Card className="group relative overflow-hidden opacity-50 cursor-not-allowed" delay={0.2}>
+                {/* Belvo Card — bancos y billeteras */}
+                <Card className="group relative overflow-hidden" delay={0.2}>
                     <div className="relative z-10 space-y-6">
-                        <div className="flex items-center gap-4">
-                            <div className="w-14 h-14 rounded-2xl bg-zinc-500/10 flex items-center justify-center">
-                                <ExternalLink className="w-7 h-7 text-zinc-400" />
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="w-14 h-14 rounded-2xl bg-violet-500/10 flex items-center justify-center shadow-lg transition-transform group-hover:scale-110 duration-300">
+                                    <Landmark className="w-7 h-7 text-violet-500" />
+                                </div>
+                                <div>
+                                    <h3 className="font-black text-zinc-900 dark:text-white text-xl tracking-tight">Bancos y billeteras</h3>
+                                    <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium mt-0.5">Conectá tu banco vía Belvo</p>
+                                </div>
                             </div>
-                            <div>
-                                <h3 className="font-black text-zinc-400 text-xl tracking-tight">Más integraciones</h3>
-                                <p className="text-xs text-zinc-400 font-medium mt-0.5">Próximamente</p>
+                            {belvoConnections.length > 0 && (
+                                <span className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-xl text-xs font-black">
+                                    <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                                    {belvoConnections.length} conectado{belvoConnections.length > 1 ? 's' : ''}
+                                </span>
+                            )}
+                        </div>
+
+                        {belvoLoading ? (
+                            <div className="flex items-center justify-center py-8">
+                                <Loader2 className="w-6 h-6 text-zinc-400 animate-spin" />
                             </div>
-                        </div>
-                        <p className="text-sm text-zinc-400 font-medium">
-                            Estamos trabajando en integrar más servicios financieros: bancos, billeteras digitales, y más.
-                        </p>
-                        <div className="flex items-center gap-2 text-xs text-zinc-400 font-bold">
-                            <Clock className="w-4 h-4" />
-                            En desarrollo
-                        </div>
+                        ) : (
+                            <div className="space-y-5">
+                                {belvoConnections.length > 0 && (
+                                    <div className="space-y-2">
+                                        {belvoConnections.map((conn) => (
+                                            <div key={conn.id} className="flex items-center justify-between gap-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl p-3">
+                                                <div className="min-w-0">
+                                                    <p className="text-sm font-bold text-zinc-900 dark:text-white truncate">{conn.institutionName}</p>
+                                                    <p className="text-xs text-zinc-400">
+                                                        {conn.lastSyncAt
+                                                            ? `Sincronizado: ${new Date(conn.lastSyncAt).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' })}`
+                                                            : 'Sin sincronizar aún'}
+                                                    </p>
+                                                </div>
+                                                <div className="flex gap-1.5 shrink-0">
+                                                    <button
+                                                        onClick={() => handleSyncBelvo(conn.id)}
+                                                        disabled={belvoSyncingId === conn.id}
+                                                        className="p-2 rounded-lg text-violet-500 hover:bg-violet-500/10 transition-colors disabled:opacity-50"
+                                                        title="Sincronizar"
+                                                    >
+                                                        <RefreshCw className={cn("w-4 h-4", belvoSyncingId === conn.id && "animate-spin")} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDisconnectBelvo(conn.id)}
+                                                        className="p-2 rounded-lg text-rose-500 hover:bg-rose-500/10 transition-colors"
+                                                        title="Desconectar"
+                                                    >
+                                                        <Unlink className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                <button
+                                    onClick={handleConnectBelvo}
+                                    disabled={belvoConnecting}
+                                    className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-violet-500 hover:bg-violet-600 disabled:opacity-60 text-white rounded-2xl font-black text-sm shadow-xl shadow-violet-500/20 transition-all active:scale-95 group"
+                                >
+                                    {belvoConnecting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Link2 className="w-5 h-5" />}
+                                    {belvoConnecting ? 'Conectando...' : 'Conectar banco o billetera'}
+                                    {!belvoConnecting && <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />}
+                                </button>
+                            </div>
+                        )}
                     </div>
+
+                    <div className="absolute -bottom-8 -right-8 w-40 h-40 bg-violet-500/5 blur-3xl rounded-full" />
                 </Card>
             </div>
 

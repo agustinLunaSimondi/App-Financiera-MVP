@@ -1,14 +1,17 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
+import hashlib
 import logging
 import os
+import secrets
 from pydantic import BaseModel
 from app.database import models
 from app.database.database import get_db
 from app.core import security
 from app.core.deps import get_current_user
 from app.core.rate_limit import limiter
+from app.core.email import send_email
 from app import schemas
 from app.core import posthog_client
 
@@ -16,6 +19,8 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173").split(",")[0].strip()
+RESET_TOKEN_EXPIRE_MINUTES = 15
 
 
 class GoogleAuthRequest(BaseModel):
@@ -121,6 +126,66 @@ def login(request: Request, user_in: schemas.UserLogin, db: Session = Depends(ge
     access_token = security.create_access_token(
         data={"userId": user.id, "email": user.email}
     )
+    return {"token": access_token, "user": user}
+
+
+@router.post("/forgot-password")
+@limiter.limit("5/minute")
+def forgot_password(request: Request, payload: schemas.ForgotPasswordRequest, db: Session = Depends(get_db)):
+    """
+    Genera un token de reset y lo manda por email. Responde siempre el mismo
+    mensaje genérico exista o no el email — evita que un atacante enumere
+    cuentas registradas probando direcciones (mismo criterio que /login).
+    """
+    email_clean = payload.email.lower()
+    user = db.query(models.User).filter(models.User.email == email_clean).first()
+
+    if user:
+        raw_token = secrets.token_urlsafe(32)
+        user.reset_token_hash = hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
+        user.reset_token_expires_at = datetime.now(timezone.utc) + timedelta(minutes=RESET_TOKEN_EXPIRE_MINUTES)
+        db.commit()
+
+        reset_link = f"{FRONTEND_URL}/reset-password?token={raw_token}"
+        send_email(
+            to=user.email,
+            subject="Recuperá tu contraseña de Vueltito",
+            html=(
+                f"<p>Pediste recuperar tu contraseña. Este link vale por {RESET_TOKEN_EXPIRE_MINUTES} minutos:</p>"
+                f'<p><a href="{reset_link}">{reset_link}</a></p>'
+                "<p>Si no fuiste vos, ignorá este email — tu contraseña sigue igual.</p>"
+            ),
+        )
+        logger.info(f"Reset de contraseña solicitado user_id={user.id}")
+
+    return {"message": "Si el email está registrado, te enviamos un link para recuperar tu contraseña."}
+
+
+@router.post("/reset-password", response_model=schemas.Token)
+@limiter.limit("5/minute")
+def reset_password(request: Request, payload: schemas.ResetPasswordRequest, db: Session = Depends(get_db)):
+    token_hash = hashlib.sha256(payload.token.encode("utf-8")).hexdigest()
+    user = db.query(models.User).filter(models.User.reset_token_hash == token_hash).first()
+
+    now = datetime.now(timezone.utc)
+    if not user or not user.reset_token_expires_at or user.reset_token_expires_at < now:
+        raise HTTPException(status_code=400, detail="El link de recuperación es inválido o expiró. Pedí uno nuevo.")
+
+    user.password_hash = security.get_password_hash(payload.new_password)
+    user.reset_token_hash = None
+    user.reset_token_expires_at = None
+    # Invalida sesiones viejas (mismo mecanismo que logout_all_sessions / cambio de password en
+    # update_me). Buffer de 2s: el JWT que emitimos abajo trunca su "iat" a segundos enteros
+    # (spec JWT), así que sin este margen el propio token recién emitido podía quedar con
+    # iat < tokens_invalidated_at (por el redondeo) y auto-invalidarse en get_current_user.
+    user.tokens_invalidated_at = now - timedelta(seconds=2)
+    db.commit()
+    db.refresh(user)
+
+    posthog_client.capture(user.id, "password_reset_completed")
+    logger.info(f"Contraseña reseteada user_id={user.id}")
+
+    access_token = security.create_access_token(data={"userId": user.id, "email": user.email})
     return {"token": access_token, "user": user}
 
 

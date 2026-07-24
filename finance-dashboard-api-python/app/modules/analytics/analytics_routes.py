@@ -155,6 +155,22 @@ async def _fetch_macro_data() -> dict:
     return result
 
 
+def refresh_macro_cache() -> None:
+    """
+    Refresca proactivamente el cache de dólar blue/IPC. Pensado para correr en un
+    job del scheduler (cada 1h, ver main.py) en vez de esperar a que expire el TTL
+    y un request de usuario pague la latencia del fetch a bluelytics/argentinadatos.
+    """
+    now = datetime.now(timezone.utc)
+    try:
+        macro = asyncio.run(_fetch_macro_data())
+    except Exception:
+        logger.exception("refresh_macro_cache: fetch falló, se mantiene el cache anterior")
+        return
+    _macro_cache["data"] = macro
+    _macro_cache["expires_at"] = now + timedelta(seconds=_MACRO_TTL_SECONDS)
+
+
 @router.get("/inflation-context")
 async def get_inflation_context(
     db: Session = Depends(get_db),
@@ -214,6 +230,7 @@ async def get_inflation_context(
         "expenses_last_month_ars": expenses_last_month,
         "expenses_month_usd": expenses_month_usd,
         "usd_blue": usd_blue,
+        "usd_blue_source": "Bluelytics",
         "usd_oficial": macro.get("usd_oficial"),
         "ipc_last_month_pct": ipc_pct,
         "ipc_month_ref": macro.get("ipc_month"),

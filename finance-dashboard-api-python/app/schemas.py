@@ -40,6 +40,15 @@ class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str = Field(min_length=8, max_length=128, alias="newPassword")
+
+    model_config = ConfigDict(populate_by_name=True)
+
 class UserUpdate(CamelModel):
     name: Optional[str] = None
     email: Optional[EmailStr] = None
@@ -131,12 +140,38 @@ class TransactionUpdate(CamelModel):
 class Transaction(TransactionBase):
     id: str
     recurring_id: Optional[str] = None
+    installment_plan_id: Optional[str] = None
+    installment_number: Optional[int] = None
+    installment_total: Optional[int] = None
     external_id: Optional[str] = None
     source: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     category: Optional[Category] = None
     account: Optional[Account] = None
+
+
+# Installment Plan Schemas ("cuotas")
+class InstallmentPlanCreate(CamelModel):
+    description: str
+    principal_amount: Decimal = Field(gt=0, max_digits=12, decimal_places=2)
+    num_installments: int = Field(ge=2, le=60)
+    monthly_interest_rate: Decimal = Field(default=Decimal("0"), ge=0, le=50, max_digits=6, decimal_places=3)
+    start_date: date
+    account_id: str
+    category_id: str
+
+class InstallmentPlanResponse(CamelModel):
+    id: str
+    description: str
+    principal_amount: Decimal
+    num_installments: int
+    monthly_interest_rate: Decimal
+    installment_amount: Decimal
+    total_paid: Decimal
+    total_interest: Decimal
+    educational_tip: str
+    transactions: List[Transaction]
 
 
 # Budget Schemas
@@ -345,6 +380,26 @@ class MercadoPagoStatus(CamelModel):
     expires_at: Optional[datetime] = None
 
 class MercadoPagoSyncResult(CamelModel):
+    transactions_imported: int = 0
+    transactions_skipped: int = 0
+    message: str = ""
+
+
+# Belvo Schemas
+class BelvoWidgetToken(CamelModel):
+    access: str
+
+class BelvoLinkCreate(CamelModel):
+    link_id: str
+    institution_name: str
+
+class BelvoConnectionStatus(CamelModel):
+    id: str
+    institution_name: str
+    status: str
+    last_sync_at: Optional[datetime] = None
+
+class BelvoSyncResult(CamelModel):
     transactions_imported: int = 0
     transactions_skipped: int = 0
     message: str = ""

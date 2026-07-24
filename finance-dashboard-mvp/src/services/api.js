@@ -77,6 +77,26 @@ export const addTransaction = async (transaction) => {
     };
 };
 
+export const createInstallmentPlan = async (plan) => {
+    const payload = {
+        ...plan,
+        principalAmount: parseFloat(plan.principalAmount),
+        numInstallments: parseInt(plan.numInstallments, 10),
+        monthlyInterestRate: parseFloat(plan.monthlyInterestRate || 0)
+    };
+    const response = await client.post('/transactions/installment-plans', payload);
+    const data = response.data;
+    return {
+        ...data,
+        transactions: data.transactions.map(tx => ({
+            ...tx,
+            amount: Number(tx.amount),
+            category: tx.category?.name || tx.category,
+            account: tx.account?.name || tx.account
+        }))
+    };
+};
+
 export const updateTransaction = async (id, updates) => {
     const response = await client.put(`/transactions/${id}`, updates);
     const tx = response.data;
@@ -389,6 +409,36 @@ export const getWaitlistCount = async () => {
 
 export const disconnectMercadoPago = async () => {
     await client.delete('/mercadopago/disconnect');
+    return true;
+};
+
+// ============= BELVO (bancos y billeteras) =============
+
+export const getBelvoWidgetToken = async () => {
+    const response = await client.get('/belvo/widget-token');
+    return response.data.access;
+};
+
+export const createBelvoLink = async (linkId, institutionName) => {
+    const response = await client.post('/belvo/link', {
+        linkId,
+        institutionName,
+    });
+    return response.data;
+};
+
+export const getBelvoConnections = async () => {
+    const response = await client.get('/belvo/connections');
+    return response.data;
+};
+
+export const syncBelvoConnection = async (connectionId) => {
+    const response = await client.post(`/belvo/connections/${connectionId}/sync`);
+    return response.data;
+};
+
+export const disconnectBelvoConnection = async (connectionId) => {
+    await client.delete(`/belvo/connections/${connectionId}`);
     return true;
 };
 

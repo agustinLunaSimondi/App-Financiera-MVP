@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-import { Plus, X, ArrowRight } from 'lucide-react';
+import { Plus, X, ArrowRight, Lightbulb } from 'lucide-react';
 import { useFinance } from '../../../hooks/useFinance';
+import { calcInstallments, getEducationalTip } from '../../../utils/installments';
+import { formatCurrency } from '../../../utils/formatters';
 
 const INPUT_CLS = "w-full px-4 py-2.5 border border-zinc-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-emerald-500 focus:outline-none transition-colors text-sm";
 const LABEL_CLS = "block text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mb-1.5";
@@ -99,11 +101,14 @@ function NewCategoryPanel({ onCreated, onCancel, transactionType }) {
 
 // ─── Main Form ────────────────────────────────────────────
 export function TransactionForm({ onClose, transactionToEdit = null }) {
-    const { addTransaction, updateTransaction, accounts, categories, loading } = useFinance();
+    const { addTransaction, addInstallmentPlan, updateTransaction, accounts, categories, loading } = useFinance();
     const navigate = useNavigate();
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
     const [showNewCategory, setShowNewCategory] = useState(false);
+    const [isInstallment, setIsInstallment] = useState(false);
+    const [numInstallments, setNumInstallments] = useState('3');
+    const [monthlyInterestRate, setMonthlyInterestRate] = useState('0');
 
     const handleGoToAccounts = () => {
         onClose?.();
@@ -164,6 +169,26 @@ export function TransactionForm({ onClose, transactionToEdit = null }) {
             if (!formData.accountId) throw new Error('Debes seleccionar una cuenta');
             if (!formData.categoryId) throw new Error('Debes seleccionar una categoría');
             if (!formData.amount || parseFloat(formData.amount) <= 0) throw new Error('El monto debe ser mayor a 0');
+
+            const showInstallments = isInstallment && formData.type === 'EXPENSE' && !transactionToEdit;
+
+            if (showInstallments) {
+                const n = parseInt(numInstallments, 10);
+                if (!n || n < 2) throw new Error('La cantidad de cuotas debe ser al menos 2');
+
+                await addInstallmentPlan({
+                    description: formData.description.trim(),
+                    principalAmount: parseFloat(formData.amount),
+                    numInstallments: n,
+                    monthlyInterestRate: parseFloat(monthlyInterestRate) || 0,
+                    startDate: formData.date,
+                    categoryId: formData.categoryId,
+                    accountId: formData.accountId,
+                });
+                toast.success(`Plan de ${n} cuotas creado correctamente`);
+                onClose();
+                return;
+            }
 
             const finalAmount = parseFloat(formData.amount) * (formData.type === 'EXPENSE' ? -1 : 1);
 
@@ -258,7 +283,7 @@ export function TransactionForm({ onClose, transactionToEdit = null }) {
                 </button>
                 <button
                     type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, type: 'INCOME', categoryId: '' }))}
+                    onClick={() => { setFormData(prev => ({ ...prev, type: 'INCOME', categoryId: '' })); setIsInstallment(false); }}
                     className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${formData.type === 'INCOME'
                         ? 'bg-white dark:bg-zinc-700 text-emerald-600 dark:text-emerald-400 shadow-sm'
                         : 'text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300'
@@ -287,6 +312,80 @@ export function TransactionForm({ onClose, transactionToEdit = null }) {
                     />
                 </div>
             </div>
+
+            {/* Cuotas — solo para gastos nuevos (no disponible al editar) */}
+            {formData.type === 'EXPENSE' && !transactionToEdit && (
+                <div className="space-y-3">
+                    <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                        <input
+                            type="checkbox"
+                            checked={isInstallment}
+                            onChange={(e) => setIsInstallment(e.target.checked)}
+                            className="w-4 h-4 rounded accent-emerald-600"
+                        />
+                        <span className="text-sm font-bold text-zinc-700 dark:text-zinc-300">¿Es en cuotas?</span>
+                    </label>
+
+                    {isInstallment && (
+                        <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900/40 space-y-4">
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className={LABEL_CLS}>Cantidad de cuotas</label>
+                                    <input
+                                        type="number"
+                                        inputMode="numeric"
+                                        min="2"
+                                        max="60"
+                                        step="1"
+                                        className={INPUT_CLS}
+                                        value={numInstallments}
+                                        onChange={(e) => setNumInstallments(e.target.value)}
+                                    />
+                                </div>
+                                <div>
+                                    <label className={LABEL_CLS}>Interés mensual %</label>
+                                    <input
+                                        type="number"
+                                        inputMode="decimal"
+                                        min="0"
+                                        max="50"
+                                        step="0.1"
+                                        placeholder="0"
+                                        className={INPUT_CLS}
+                                        value={monthlyInterestRate}
+                                        onChange={(e) => setMonthlyInterestRate(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+
+                            {(() => {
+                                const principal = parseFloat(formData.amount);
+                                const n = parseInt(numInstallments, 10);
+                                const rate = parseFloat(monthlyInterestRate) || 0;
+                                if (!principal || principal <= 0 || !n || n < 2) return null;
+                                const { installmentAmount, totalPaid, totalInterest } = calcInstallments(principal, n, rate);
+                                const tip = getEducationalTip(principal, n, rate, totalInterest);
+                                return (
+                                    <div className="space-y-2 pt-1 border-t border-zinc-200 dark:border-zinc-700">
+                                        <div className="flex items-center justify-between text-sm pt-3">
+                                            <span className="text-zinc-500 dark:text-zinc-400">{n}x de</span>
+                                            <span className="font-black text-zinc-900 dark:text-white">{formatCurrency(installmentAmount)}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between text-xs">
+                                            <span className="text-zinc-400">Total a pagar</span>
+                                            <span className="font-bold text-zinc-600 dark:text-zinc-300">{formatCurrency(totalPaid)}</span>
+                                        </div>
+                                        <div className="flex gap-2 items-start bg-amber-500/10 text-amber-700 dark:text-amber-400 rounded-lg p-2.5 text-[11px] leading-relaxed mt-2">
+                                            <Lightbulb className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                                            <span>{tip}</span>
+                                        </div>
+                                    </div>
+                                );
+                            })()}
+                        </div>
+                    )}
+                </div>
+            )}
 
             {/* Descripción */}
             <div>
@@ -371,7 +470,7 @@ export function TransactionForm({ onClose, transactionToEdit = null }) {
 
             {/* Fecha */}
             <div>
-                <label className={LABEL_CLS}>Fecha</label>
+                <label className={LABEL_CLS}>{isInstallment && formData.type === 'EXPENSE' && !transactionToEdit ? 'Fecha de inicio (1ª cuota)' : 'Fecha'}</label>
                 <input
                     type="date"
                     name="date"
@@ -396,7 +495,11 @@ export function TransactionForm({ onClose, transactionToEdit = null }) {
                     disabled={submitting || accountsEmpty}
                     className="flex-1 px-4 py-2.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-xl hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-bold text-sm"
                 >
-                    {submitting ? 'Guardando...' : (transactionToEdit ? 'Actualizar' : 'Guardar')}
+                    {submitting
+                        ? 'Guardando...'
+                        : transactionToEdit
+                            ? 'Actualizar'
+                            : (isInstallment && formData.type === 'EXPENSE' ? 'Crear plan de cuotas' : 'Guardar')}
                 </button>
             </div>
         </form>
