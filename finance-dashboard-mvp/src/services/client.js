@@ -8,7 +8,7 @@ const client = axios.create({
     headers: {
         'Content-Type': 'application/json'
     },
-    timeout: 30000, // 30s — cubre cold-starts de Render
+    timeout: 45000, // 45s — cold-start de Render (free tier) puede tardar 30-50s en despertar
 });
 
 const looksLikeId = (segment) => {
@@ -66,6 +66,15 @@ const AUTH_REDIRECT_BLOCKLIST = [
 const RETRY_STATUS = new Set([502, 503, 504]);
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
+// Login/Google también son "seguros" de reintentar ante timeout: no mutan nada si fallan
+// (login solo valida credenciales; google crea el user una única vez, y un ID token de Google
+// reenviado dentro de su ventana de validez simplemente re-loguea). El caso real que motiva
+// esto es cold-start de Render: el primer POST se cuelga esperando que el server despierte.
+const RETRIABLE_ON_TIMEOUT_PATHS = [
+    /\/auth\/login\/?$/i,
+    /\/auth\/google\/?$/i,
+];
+
 client.interceptors.response.use(
     (response) => response,
     async (error) => {
@@ -75,11 +84,13 @@ client.interceptors.response.use(
         // Auto-retry para errores transitorios (cold start típico).
         // 502/503/504 = el gateway respondió sin que el server procese el request → safe reintentar cualquier método.
         // ECONNABORTED = timeout del cliente: el server PUDO haber procesado. Reintentar un POST/PUT/DELETE
-        // duplicaría el efecto (ej: doble transacción). Por eso el timeout solo se reintenta en métodos idempotentes.
+        // duplicaría el efecto (ej: doble transacción) — salvo los endpoints en RETRIABLE_ON_TIMEOUT_PATHS,
+        // que son seguros de reintentar aunque no sean GET.
         const method = (config?.method || 'get').toLowerCase();
         const isIdempotent = method === 'get' || method === 'head' || method === 'options';
+        const isRetriablePath = RETRIABLE_ON_TIMEOUT_PATHS.some(rx => rx.test(config?.url || ''));
         const isTimeout = error.code === 'ECONNABORTED';
-        const retriable = RETRY_STATUS.has(status) || (isTimeout && isIdempotent);
+        const retriable = RETRY_STATUS.has(status) || (isTimeout && (isIdempotent || isRetriablePath));
 
         if (config && !config.__noRetry && retriable) {
             if (!config.__retryCount) config.__retryCount = 0;
