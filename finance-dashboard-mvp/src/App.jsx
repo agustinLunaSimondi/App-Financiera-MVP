@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { FinanceProvider } from './contexts/FinanceContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -8,6 +8,34 @@ import { LanguageProvider } from './contexts/LanguageContext';
 import { Layout } from './features/common/components/Layout';
 import { PWAUpdatePrompt } from './features/common/components/PWAUpdatePrompt';
 import { analytics } from './services/analytics';
+import { setCompactMode } from './utils/formatters';
+
+const MOBILE_QUERY = '(max-width: 767px)';
+
+// K/M (formatCompactCurrency) solo en mobile — en desktop hay espacio para el número
+// completo. `key` en el Outlet fuerza un remount de la página activa al cruzar el
+// breakpoint, así los montos ya renderizados se recalculan (compactModeEnabled es
+// una variable de módulo, no estado de React — sin remount quedarían stale).
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return true;
+    return window.matchMedia(MOBILE_QUERY).matches;
+  });
+
+  useEffect(() => {
+    const mq = window.matchMedia?.(MOBILE_QUERY);
+    if (!mq) return;
+    setCompactMode(mq.matches);
+    const handler = (e) => {
+      setCompactMode(e.matches);
+      setIsMobile(e.matches);
+    };
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
+  return isMobile;
+}
 
 // Trackea page_viewed en PostHog en cada cambio de ruta
 function PageTracker() {
@@ -54,6 +82,7 @@ function RequireAuth() {
 function PrivateLayout() {
   const { isAuthenticated, user } = useAuth();
   const location = useLocation();
+  const isMobile = useIsMobile();
 
   if (!isAuthenticated && location.pathname === '/') {
     return <LandingPage />;
@@ -67,7 +96,7 @@ function PrivateLayout() {
 
   return (
     <Layout>
-      <Outlet />
+      <Outlet key={isMobile ? 'mobile' : 'desktop'} />
     </Layout>
   );
 }
