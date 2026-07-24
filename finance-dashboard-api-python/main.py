@@ -118,6 +118,21 @@ app.add_middleware(
     max_age=600,
 )
 
+# Security headers en toda respuesta del API (M1 del assessment).
+# vercel.json solo cubre el frontend estático; esto cubre las respuestas de Render.
+@app.middleware("http")
+async def add_security_headers(request, call_next):
+    response = await call_next(request)
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "DENY")
+    response.headers.setdefault("Referrer-Policy", "no-referrer")
+    # API JSON-only: CSP restrictiva previene render de contenido inyectado si
+    # un browser abre una respuesta directamente.
+    response.headers.setdefault("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'")
+    # HSTS solo aplica detrás de TLS (Render termina HTTPS); ignorado en http local.
+    response.headers.setdefault("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
+    return response
+
 # Registro de Rutas
 app.include_router(auth_routes.router, prefix="/api")
 app.include_router(account_routes.router, prefix="/api")

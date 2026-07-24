@@ -89,7 +89,9 @@ def register(request: Request, user_in: schemas.UserCreate, db: Session = Depend
     db.commit()
     db.refresh(new_user)
 
-    posthog_client.identify(new_user.id, {"email": new_user.email, "name": new_user.name, "currency": new_user.currency})
+    # Sin PII hacia PostHog (mismo criterio que send_default_pii=False en Sentry):
+    # distinct_id=user.id alcanza para unir eventos; email/nombre no se envían.
+    posthog_client.identify(new_user.id, {"currency": new_user.currency})
     posthog_client.capture(new_user.id, "user_signed_up", {"method": "email"})
 
     access_token = security.create_access_token(
@@ -249,7 +251,7 @@ def google_login(request: Request, payload: GoogleAuthRequest, db: Session = Dep
         _create_default_categories(db, user.id)
         db.commit()
         db.refresh(user)
-        posthog_client.identify(user.id, {"email": user.email, "name": user.name})
+        posthog_client.identify(user.id)
         posthog_client.capture(user.id, "user_signed_up", {"method": "google"})
         logger.info(f"Usuario Google registrado user_id={user.id}")
     else:
