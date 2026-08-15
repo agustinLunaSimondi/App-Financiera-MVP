@@ -35,6 +35,7 @@ from app.modules.benchmark import benchmark_routes
 from app.modules.benchmark.aggregator import run_daily_benchmark_aggregation
 from app.modules.reports import report_routes
 from app.modules.widgets import widget_routes
+from app.modules.growth import growth_routes
 from app.database.database import SessionLocal
 
 load_dotenv()
@@ -152,6 +153,7 @@ app.include_router(report_routes.router, prefix="/api")
 app.include_router(widget_routes.router, prefix="/api")
 app.include_router(aki_name_routes.router, prefix="/api")
 app.include_router(event_routes.router, prefix="/api")
+app.include_router(growth_routes.router, prefix="/api")
 
 # Static para recibos de eventos subidos localmente (dev/fallback).
 # En prod se usa Supabase Storage; este dir es efímero en Render.

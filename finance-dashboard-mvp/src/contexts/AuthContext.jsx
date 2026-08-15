@@ -2,6 +2,7 @@ import React, { createContext, useState, useEffect, useContext, useCallback, use
 import client from '../services/client';
 import { getToken, setToken, clearToken, AUTH_INVALID_EVENT } from '../services/tokenStore';
 import { identifyUser, resetUser, analytics } from '../services/analytics';
+import { getAttributionPayload, clearAttribution } from '../utils/attribution';
 
 const AuthContext = createContext();
 
@@ -164,13 +165,26 @@ export function AuthProvider({ children }) {
 
     const register = useCallback(async (name, email, password) => {
         checkAuthCancelledRef.current = true;
-        const res = await client.post('/auth/register', { name, email, password });
+        // La atribución se capturó al aterrizar (sessionStorage), no ahora: para
+        // cuando el usuario llega al registro la URL original ya se perdió.
+        const attribution = getAttributionPayload();
+        const res = await client.post('/auth/register', {
+            name, email, password, ...attribution,
+        });
         const { token, user } = res.data;
         setToken(token);
         setUser(user);
         setLoading(false);
         identifyUser(user.id, { email: user.email, name: user.name });
-        analytics.userSignedUp('email');
+        analytics.userSignedUp('email', {
+            utmSource: attribution.utmSource,
+            utmMedium: attribution.utmMedium,
+            utmCampaign: attribution.utmCampaign,
+            referred: Boolean(attribution.referralCode),
+        });
+        // Recién limpiamos cuando el registro salió bien: si falló, el reintento
+        // tiene que conservar la atribución.
+        clearAttribution();
         return user;
     }, []);
 

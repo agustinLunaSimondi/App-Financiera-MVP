@@ -57,6 +57,21 @@ class User(Base):
     benchmark_opt_in = Column(Boolean, default=False, nullable=False, server_default="false")
     age_range = Column(String, nullable=True)  # '18-24' | '25-34' | '35-44' | '45-54' | '55+'
     geo_region = Column(String, nullable=True)  # 'AR-CABA' | 'AR-GBA' | 'AR-Norte' | 'AR-Cuyo' | 'AR-Sur' | 'AR-Centro' | 'Otro'
+    # Growth: atribución de adquisición. Se captura una sola vez, en el registro,
+    # desde los params UTM que el frontend guarda en sessionStorage al aterrizar.
+    # Sirve para calcular CAC por canal — sin esto no se puede separar orgánico de pago.
+    acquisition_source = Column(String, nullable=True)     # utm_source: 'reddit' | 'instagram' | ...
+    acquisition_medium = Column(String, nullable=True)     # utm_medium: 'organic' | 'cpc' | 'referral'
+    acquisition_campaign = Column(String, nullable=True)   # utm_campaign: 'lanzamiento-beta'
+    acquisition_referrer = Column(String, nullable=True)   # host de document.referrer
+    acquisition_landing = Column(String, nullable=True)    # primer path visitado
+    # Growth: motor viral. `referral_code` es el código propio que el usuario comparte.
+    # `referred_by_user_id` apunta a quien lo invitó (null si llegó solo).
+    referral_code = Column(String, unique=True, index=True, nullable=True)
+    referred_by_user_id = Column(String, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    # Monetización: 'free' | 'premium'. `plan_expires_at` null en free o en premium perpetuo.
+    plan_type = Column(String, default="free", nullable=False, server_default="free")
+    plan_expires_at = Column(DateTime(timezone=True), nullable=True)
     # JWTs emitidos antes de esta marca son rechazados (revocación granular: logout total, cambio de contraseña, etc.)
     tokens_invalidated_at = Column(DateTime(timezone=True), nullable=True)
     # Recuperar contraseña: hash sha256 del token (nunca se guarda el token plano),
@@ -451,3 +466,56 @@ class EventExpenseSplit(Base):
 
     expense = relationship("EventExpense", back_populates="splits")
     member = relationship("EventMember")
+
+
+# ───────────────────────────────────────────────────────────────
+# Growth layer — motor viral y captura de valor
+# ───────────────────────────────────────────────────────────────
+
+
+class Referral(Base):
+    """Una invitación concretada: `referred_user_id` se registró usando el código de `referrer_user_id`.
+
+    `status` arranca en 'pending' y pasa a 'qualified' recién cuando el invitado completa
+    el onboarding. Ese diferimiento es anti-abuso: sin él, alguien podría farmear recompensas
+    creando cuentas descartables que nunca usan el producto.
+    """
+    __tablename__ = "referrals"
+    __table_args__ = (
+        # Un usuario solo puede ser referido una vez — evita duplicar recompensas.
+        UniqueConstraint("referred_user_id", name="uq_referral_referred_user"),
+    )
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    referrer_user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    referred_user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    code_used = Column(String, nullable=False)
+    status = Column(String, nullable=False, default="pending", server_default="pending")  # 'pending' | 'qualified'
+    qualified_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    referrer = relationship("User", foreign_keys=[referrer_user_id])
+    referred = relationship("User", foreign_keys=[referred_user_id])
+
+
+class PricingIntent(Base):
+    """Señal de willingness-to-pay: alguien vio un precio concreto y reaccionó.
+
+    Existe para validar precio ANTES de construir la infraestructura de cobro
+    (enfoque 'Mago de Oz'). Guardamos el precio exacto que se mostró porque el
+    precio va a ir cambiando entre experimentos y hay que poder segmentar por él.
+    """
+    __tablename__ = "pricing_intents"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    # Nullable: la pricing page es pública, se puede expresar intención sin estar logueado.
+    user_id = Column(String, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    email = Column(String, nullable=True, index=True)
+    plan = Column(String, nullable=False)              # 'premium'
+    price_shown_ars = Column(Numeric(12, 2), nullable=True)
+    price_shown_usd = Column(Numeric(12, 2), nullable=True)
+    # 'viewed_pricing' | 'clicked_subscribe' | 'joined_waitlist' | 'rejected_price'
+    action = Column(String, nullable=False)
+    # Texto libre opcional: por qué no pagaría. Es la señal cualitativa más valiosa.
+    feedback = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())

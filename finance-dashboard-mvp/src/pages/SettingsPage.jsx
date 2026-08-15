@@ -11,6 +11,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { resetOnboarding } from '../features/common/components/OnboardingTour';
 import { TaxReportSection } from '../features/common/components/TaxReportSection';
 import { WidgetsSection } from '../features/common/components/WidgetsSection';
+import { ReferralCard } from '../features/common/components/ReferralCard';
 import { toast } from 'sonner';
 import { parseApiError } from '../lib/apiErrors';
 
@@ -283,6 +284,9 @@ export function SettingsPage() {
                         </div>
                     </div>
                 </Card>
+
+                {/* Referidos — motor viral */}
+                <ReferralCard />
 
                 {/* Tax Report — #63 */}
                 <Card>
