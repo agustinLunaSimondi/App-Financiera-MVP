@@ -9,6 +9,7 @@ import { Layout } from './features/common/components/Layout';
 import { PWAUpdatePrompt } from './features/common/components/PWAUpdatePrompt';
 import { analytics } from './services/analytics';
 import { setCompactMode } from './utils/formatters';
+import { captureAttribution } from './utils/attribution';
 
 const MOBILE_QUERY = '(max-width: 767px)';
 
@@ -47,6 +48,19 @@ function PageTracker() {
     return null;
 }
 
+// Captura UTM + referrer + ?ref= una sola vez por sesión, apenas se monta la app.
+// Tiene que correr ANTES de cualquier navegación interna: una vez que React Router
+// cambia de ruta, los params originales de la URL ya no están.
+function AttributionTracker() {
+    useEffect(() => {
+        const captured = captureAttribution();
+        if (captured?.referralCode) {
+            analytics.referralLandingVisited();
+        }
+    }, []);
+    return null;
+}
+
 // Pages
 import { DashboardPage } from './pages/DashboardPage';
 import { TransactionsPage } from './pages/TransactionsPage';
@@ -64,6 +78,7 @@ import { AcademyPage } from './pages/AcademyPage';
 import HelpPage from './pages/HelpPage';
 import { OnboardingPage } from './pages/OnboardingPage';
 import { LandingPage } from './pages/LandingPage';
+import { PricingPage } from './pages/PricingPage';
 import { PrivacyPage } from './pages/PrivacyPage';
 import { TermsPage } from './pages/TermsPage';
 import { ChatPage } from './pages/ChatPage';
@@ -108,6 +123,7 @@ function App() {
     <ErrorBoundary>
       <LanguageProvider>
         <Router>
+          <AttributionTracker />
           <PageTracker />
           <AuthProvider>
             <FinanceProvider>
@@ -119,6 +135,9 @@ function App() {
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
                 <Route path="/privacy" element={<PrivacyPage />} />
                 <Route path="/terms" element={<TermsPage />} />
+                {/* Pública a propósito: la validación de precio se mide sobre todo
+                    en gente que todavía no se registró. */}
+                <Route path="/pricing" element={<PricingPage />} />
                 {/* Widget embebible público (#64) — sin auth, sin layout */}
                 <Route path="/widget/:token" element={<WidgetEmbedPage />} />
 

@@ -35,6 +35,14 @@ class UserBase(CamelModel):
 class UserCreate(UserBase):
     # Mínimo 8 chars (NIST 800-63B); max acota el costo de bcrypt.
     password: str = Field(min_length=8, max_length=128)
+    # Growth: atribución y referido. Todos opcionales — el registro nunca depende
+    # de ellos. Se sanean en growth.logic antes de persistirse.
+    utm_source: Optional[str] = Field(default=None, max_length=128)
+    utm_medium: Optional[str] = Field(default=None, max_length=128)
+    utm_campaign: Optional[str] = Field(default=None, max_length=128)
+    referrer: Optional[str] = Field(default=None, max_length=512)
+    landing_path: Optional[str] = Field(default=None, max_length=512)
+    referral_code: Optional[str] = Field(default=None, max_length=32)
 
 class UserLogin(BaseModel):
     email: EmailStr

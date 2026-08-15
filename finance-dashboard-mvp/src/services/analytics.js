@@ -80,8 +80,16 @@ export function capture(event, properties = {}) {
 
 export const analytics = {
     // Auth
-    userSignedUp: (method = 'email') =>
-        capture('user_signed_up', { method }),
+    // `attribution` permite segmentar el signup por canal — es lo que hace
+    // posible calcular CAC por fuente en vez de mirar un total ciego.
+    userSignedUp: (method = 'email', attribution = {}) =>
+        capture('user_signed_up', {
+            method,
+            utm_source: attribution.utmSource,
+            utm_medium: attribution.utmMedium,
+            utm_campaign: attribution.utmCampaign,
+            referred: Boolean(attribution.referred),
+        }),
 
     userLoggedIn: (method = 'email') =>
         capture('user_logged_in', { method }),
@@ -176,6 +184,39 @@ export const analytics = {
 
     widgetTokenRotated: () =>
         capture('widget_token_rotated'),
+
+    // ─── Growth: motor viral ──────────────────────────────────────────────────
+    referralPageViewed: () =>
+        capture('referral_page_viewed'),
+
+    referralLinkCopied: (source) =>
+        capture('referral_link_copied', { source }),
+
+    referralLinkShared: (channel) =>
+        capture('referral_link_shared', { channel }),
+
+    // Se dispara al aterrizar con ?ref= — mide cuánta gente llega por invitación.
+    referralLandingVisited: () =>
+        capture('referral_landing_visited'),
+
+    // ─── Growth: captura de valor ─────────────────────────────────────────────
+    // El precio mostrado va en el evento porque va a cambiar entre experimentos
+    // y hay que poder segmentar la conversión por precio.
+    pricingViewed: ({ priceArs, priceUsd, variant } = {}) =>
+        capture('pricing_viewed', { price_ars: priceArs, price_usd: priceUsd, variant }),
+
+    pricingSubscribeClicked: ({ priceArs, priceUsd, variant } = {}) =>
+        capture('pricing_subscribe_clicked', { price_ars: priceArs, price_usd: priceUsd, variant }),
+
+    pricingRejected: ({ priceArs, priceUsd, hasFeedback } = {}) =>
+        capture('pricing_rejected', { price_ars: priceArs, price_usd: priceUsd, has_feedback: !!hasFeedback }),
+
+    // Paywall: alguien tocó una feature premium sin tener plan.
+    paywallHit: (feature) =>
+        capture('paywall_hit', { feature }),
+
+    paywallCtaClicked: (feature) =>
+        capture('paywall_cta_clicked', { feature }),
 };
 
 // Util: rangos de monto para no enviar valores exactos

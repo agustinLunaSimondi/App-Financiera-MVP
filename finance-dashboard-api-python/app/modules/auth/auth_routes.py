@@ -14,6 +14,12 @@ from app.core.rate_limit import limiter
 from app.core.email import send_email
 from app import schemas
 from app.core import posthog_client
+from app.modules.growth.processor import (
+    apply_attribution,
+    attach_referral,
+    ensure_referral_code,
+    qualify_referral,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -76,6 +82,19 @@ def register(request: Request, user_in: schemas.UserCreate, db: Session = Depend
     db.add(new_user)
     db.flush()
 
+    # Growth: atribución first-touch + código propio + vínculo con quien lo invitó.
+    # Va después del flush porque attach_referral necesita el id del usuario.
+    apply_attribution(
+        new_user,
+        utm_source=user_in.utm_source,
+        utm_medium=user_in.utm_medium,
+        utm_campaign=user_in.utm_campaign,
+        referrer=user_in.referrer or request.headers.get("referer"),
+        landing_path=user_in.landing_path,
+    )
+    ensure_referral_code(db, new_user)
+    referral = attach_referral(db, referred_user=new_user, raw_code=user_in.referral_code)
+
     default_account = models.Account(
         name="Efectivo",
         type=models.AccountType.CHECKING,
@@ -91,8 +110,19 @@ def register(request: Request, user_in: schemas.UserCreate, db: Session = Depend
 
     # Sin PII hacia PostHog (mismo criterio que send_default_pii=False en Sentry):
     # distinct_id=user.id alcanza para unir eventos; email/nombre no se envían.
-    posthog_client.identify(new_user.id, {"currency": new_user.currency})
-    posthog_client.capture(new_user.id, "user_signed_up", {"method": "email"})
+    posthog_client.identify(new_user.id, {
+        "currency": new_user.currency,
+        "acquisition_source": new_user.acquisition_source,
+        "acquisition_medium": new_user.acquisition_medium,
+        "acquisition_campaign": new_user.acquisition_campaign,
+    })
+    posthog_client.capture(new_user.id, "user_signed_up", {
+        "method": "email",
+        "utm_source": new_user.acquisition_source,
+        "utm_medium": new_user.acquisition_medium,
+        "utm_campaign": new_user.acquisition_campaign,
+        "referred": referral is not None,
+    })
 
     access_token = security.create_access_token(
         data={"userId": new_user.id, "email": new_user.email}
@@ -315,10 +345,21 @@ def complete_onboarding(
     current_user: models.User = Depends(get_current_user),
 ):
     """Marca el onboarding como completado para el usuario autenticado."""
+    already_completed = current_user.onboarding_completed
     current_user.onboarding_completed = True
+
+    # Recién acá el referido cuenta como "calificado": completar onboarding es la
+    # señal de que es un usuario real y no una cuenta creada para farmear recompensas.
+    # El guard evita re-premiar si el frontend reenvía la llamada.
+    referral = None if already_completed else qualify_referral(db, current_user)
+
     db.commit()
     db.refresh(current_user)
     posthog_client.capture(current_user.id, "onboarding_completed")
+    if referral is not None:
+        posthog_client.capture(referral.referrer_user_id, "referral_qualified", {
+            "referred_user_id": current_user.id,
+        })
     return current_user
 
 

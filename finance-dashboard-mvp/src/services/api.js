@@ -562,3 +562,39 @@ export const getPublicWidget = async (token) => {
     const res = await client.get(`/widgets/public/${token}`, { __skipAuthRedirect: true });
     return res.data;
 };
+
+// ============= GROWTH (referidos / entitlements / pricing) =============
+
+/** Estado de referidos + recompensas + entitlements del usuario logueado. */
+export const getGrowthState = async () => {
+    const res = await client.get('/growth/me');
+    return res.data;
+};
+
+/** Permisos según el plan. La UI lo usa para decidir qué bloquear. */
+export const getEntitlements = async () => {
+    const res = await client.get('/growth/entitlements');
+    return res.data;
+};
+
+/**
+ * Registra una señal de willingness-to-pay.
+ * Público: la pricing page se ve sin sesión y ahí es donde más importa medir.
+ * Nunca debe romper la UI — si falla, se descarta en silencio.
+ */
+export const recordPricingIntent = async ({ action, plan = 'premium', email, priceShownArs, priceShownUsd, feedback } = {}) => {
+    try {
+        const res = await client.post('/growth/pricing-intent', {
+            action, plan, email, priceShownArs, priceShownUsd, feedback,
+        }, { __skipAuthRedirect: true });
+        return res.data;
+    } catch {
+        return { success: false };
+    }
+};
+
+/** Agregados de intención de precio — para leer la validación. */
+export const getPricingIntentStats = async () => {
+    const res = await client.get('/growth/pricing-intent/stats');
+    return res.data;
+};

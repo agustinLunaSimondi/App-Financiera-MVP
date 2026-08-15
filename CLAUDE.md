@@ -43,8 +43,34 @@ Todos los routers se montan bajo el prefijo `/api`:
 | Recurring | `app/modules/recurring/recurring_routes.py` |
 | Analytics | `app/modules/analytics/analytics_routes.py` |
 | MercadoPago | `app/modules/mercadopago/mp_routes.py` |
+| Belvo (open banking) | `app/modules/belvo/belvo_routes.py` |
+| Chat (AI) | `app/modules/chat/chat_routes.py` |
+| Events (gastos compartidos) | `app/modules/events/event_routes.py` |
+| Streaks (gamificación) | `app/modules/streaks/streak_routes.py` |
+| Benchmark (comparativa anónima) | `app/modules/benchmark/benchmark_routes.py` |
+| Waitlist (captura de emails) | `app/modules/waitlist/waitlist_routes.py` |
+| Widgets (embed público) | `app/modules/widgets/widget_routes.py` |
+| Reports (export/impuestos) | `app/modules/reports/report_routes.py` |
+| Notifications | `app/modules/notifications/` |
+| Aki Name (naming AI) | `app/modules/aki_name/aki_name_routes.py` |
 
 Schemas centralizados en `app/schemas.py`. Modelos de DB en `app/database/models.py`.
+
+**Convención de módulos** (mirar `app/modules/streaks/` como referencia):
+- `logic.py` → funciones puras, sin DB. Es lo que se testea unitariamente.
+- `processor.py` → efectos sobre la DB.
+- `{modulo}_routes.py` → router FastAPI, thin.
+- Registrar el router en `main.py` con `prefix="/api"`.
+- Endpoints públicos (sin auth) usan `@limiter.limit(...)` de `app/core/rate_limit.py` y reciben `request: Request`.
+
+## Testing (Backend)
+
+Suite pytest en `finance-dashboard-api-python/tests/`. Fixtures compartidas en `conftest.py`: `db_session`, `user`, `client`.
+Patrón: testear la lógica pura de `logic.py` por separado de los endpoints. Ejemplo de referencia: `tests/test_streaks.py`.
+
+```bash
+cd finance-dashboard-api-python && pytest
+```
 
 ## Arquitectura del Frontend
 
@@ -65,11 +91,31 @@ src/
 │   ├── CardsPage.jsx, IntegrationsPage.jsx
 │   ├── AcademyPage.jsx, HelpPage.jsx, SettingsPage.jsx
 │   ├── LoginPage.jsx, RegisterPage.jsx
+│   ├── LandingPage.jsx          # Landing pública (copy de marketing + PUV + CTA waitlist)
+│   ├── OnboardingPage.jsx, ChatPage.jsx
+│   ├── EventsPage.jsx, EventDetailPage.jsx
+│   ├── ForgotPasswordPage.jsx, ResetPasswordPage.jsx
+│   ├── PrivacyPage.jsx, TermsPage.jsx
+│   └── WidgetEmbedPage.jsx      # Render público de widgets embebidos
 └── hooks/, lib/, services/, utils/
 ```
 
-Rutas públicas: `/login`, `/register`  
-Rutas privadas (protegidas por `PrivateLayout`): `/`, `/transactions`, `/budget`, `/savings`, `/recurring`, `/cards`, `/integrations`, `/academy`, `/settings`, `/help`
+Rutas públicas: `/login`, `/register`, `/` (landing), `/privacy`, `/terms`, `/forgot-password`, `/reset-password`, embed de widgets  
+Rutas privadas (protegidas por `PrivateLayout`): `/dashboard`, `/transactions`, `/budget`, `/savings`, `/recurring`, `/cards`, `/integrations`, `/academy`, `/settings`, `/help`, `/events`, `/chat`
+
+## Analytics y Growth
+
+- **PostHog** vía `src/services/analytics.js` — wrapper con eventos tipados (objeto `analytics`). Si `VITE_POSTHOG_KEY` no está seteada, todos los métodos son no-ops silenciosos.
+- Al agregar un evento nuevo: definirlo como método tipado en el objeto `analytics`, nunca llamar `posthog.capture()` suelto desde un componente.
+- Nunca enviar montos exactos — usar el helper `amountRange()`.
+- **Sentry** configurado en `src/services/sentry.js`.
+- Consentimiento de tracking: `VITE_ANALYTICS_CONSENT_REQUIRED` (default `false`, opt-in implícito para AR; poner `true` para UE).
+
+## Estrategia de Negocio
+
+Documentos de referencia en `docs/` — leerlos antes de tomar decisiones de producto, pricing o marketing:
+- `docs/estrategia-mvp-marketing-metas.md` — CME, metas de tracción, VUP, pricing, canales de adquisición.
+- `docs/ebook-emprendedor-resumen.md` — frameworks de referencia (AARRR, CAC/LTV, Kano, modelos de ingresos).
 
 ## Variables de Entorno
 
