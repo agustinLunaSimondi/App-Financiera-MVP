@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
 import { useFinance } from '../hooks/useFinance';
+import { useLanguage } from '../contexts/LanguageContext';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 
 import { Card } from '../features/common/components/Card';
@@ -22,6 +23,7 @@ import { cn } from '../lib/utils';
 
 export function TransactionsPage() {
     const { transactions, categories, loading, deleteTransaction, updateFilters, clearFilters, filters, refreshData } = useFinance();
+    const { t } = useLanguage();
     // Filtros persistentes vía localStorage
     const [searchQuery, setSearchQuery] = useLocalStorage('tx-search', '');
     const [categoryFilter, setCategoryFilter] = useLocalStorage('tx-category', 'all');
@@ -148,10 +150,10 @@ export function TransactionsPage() {
         setDeleting(true);
         try {
             await deleteTransaction(confirmDeleteId);
-            toast.success('Transacción eliminada');
+            toast.success(t('transactions.toastDeleted'));
             setConfirmDeleteId(null);
         } catch (err) {
-            toast.error(parseApiError(err, 'Error al eliminar la transacción'));
+            toast.error(parseApiError(err, t('transactions.toastDeleteError')));
         } finally {
             setDeleting(false);
         }
@@ -193,14 +195,16 @@ export function TransactionsPage() {
         );
     }
 
+    const movementsLabel = transactions.length === 1 ? t('transactions.movementSingular') : t('transactions.movementPlural');
+
     return (
         <div className="space-y-10">
                 <PageHeader
                     section="transactions"
                     icon={Receipt}
-                    kicker="Historial"
-                    title="Transacciones"
-                    subtitle={`${transactions.length} ${transactions.length === 1 ? 'movimiento registrado' : 'movimientos registrados'}`}
+                    kicker={t('transactions.kicker')}
+                    title={t('transactions.title')}
+                    subtitle={`${transactions.length} ${movementsLabel}`}
                     action={
                         <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
                             <button
@@ -209,7 +213,7 @@ export function TransactionsPage() {
                                 className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-emerald-400/40 text-emerald-700 dark:text-emerald-400 bg-emerald-500/5 hover:bg-emerald-500/10 text-xs font-bold transition-colors"
                             >
                                 <Sparkles className="w-4 h-4" />
-                                Sugerencias de Aki
+                                {t('transactions.akiSuggestions')}
                             </button>
                             <button
                                 type="button"
@@ -217,7 +221,7 @@ export function TransactionsPage() {
                                 className={cn(BTN_PRIMARY, "w-full md:w-auto group py-3.5")}
                             >
                                 <Plus className="w-5 h-5 transition-transform group-hover:rotate-90" />
-                                Nueva Transacción
+                                {t('transactions.newTransaction')}
                             </button>
                         </div>
                     }
@@ -232,9 +236,9 @@ export function TransactionsPage() {
                     <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
                         <div className="inline-flex bg-zinc-100 dark:bg-zinc-800/50 p-1 rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50 self-start">
                             {[
-                                { id: 'all', label: 'Todos', icon: null },
-                                { id: 'income', label: 'Ingresos', icon: TrendingUp },
-                                { id: 'expense', label: 'Egresos', icon: TrendingDown },
+                                { id: 'all', label: t('transactions.filterAll'), icon: null },
+                                { id: 'income', label: t('transactions.filterIncome'), icon: TrendingUp },
+                                { id: 'expense', label: t('transactions.filterExpense'), icon: TrendingDown },
                             ].map(item => {
                                 const Icon = item.icon;
                                 const active = typeFilter === item.id;
@@ -263,10 +267,10 @@ export function TransactionsPage() {
                         <div className="flex items-center gap-2">
                             <div className="flex bg-zinc-100 dark:bg-zinc-800/50 p-1 rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50 overflow-x-auto scrollbar-hide">
                                 {[
-                                    { id: 'thisMonth', label: 'Este mes' },
-                                    { id: 'last7Days', label: '7 días' },
-                                    { id: 'year', label: 'Este año' },
-                                    { id: 'all', label: 'Todo' },
+                                    { id: 'thisMonth', label: t('transactions.dateThisMonth') },
+                                    { id: 'last7Days', label: t('transactions.date7Days') },
+                                    { id: 'year', label: t('transactions.dateThisYear') },
+                                    { id: 'all', label: t('transactions.dateAll') },
                                 ].map(item => (
                                     <button
                                         key={item.id}
@@ -305,8 +309,8 @@ export function TransactionsPage() {
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400 group-focus-within:text-emerald-500 transition-colors" />
                             <input
                                 type="text"
-                                placeholder="Buscar por descripción..."
-                                aria-label="Buscar transacciones por descripción"
+                                placeholder={t('transactions.searchPlaceholder')}
+                                aria-label={t('transactions.searchAria')}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="w-full pl-12 pr-10 py-4 glass border-zinc-200/50 dark:border-zinc-800/50 rounded-2xl text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/50 transition-all font-medium"
@@ -315,7 +319,7 @@ export function TransactionsPage() {
                                 <button
                                     type="button"
                                     onClick={() => setSearchQuery('')}
-                                    aria-label="Limpiar búsqueda"
+                                    aria-label={t('transactions.clearSearchAria')}
                                     className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-lg text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
                                 >
                                     <X className="w-4 h-4" />
@@ -328,10 +332,10 @@ export function TransactionsPage() {
                             <select
                                 value={categoryFilter}
                                 onChange={(e) => setCategoryFilter(e.target.value)}
-                                aria-label="Filtrar por categoría"
+                                aria-label={t('transactions.filterCategoryAria')}
                                 className="w-full pl-12 pr-8 py-4 glass border-zinc-200/50 dark:border-zinc-800/50 rounded-2xl text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/50 transition-all font-medium appearance-none"
                             >
-                                <option value="all">Todas las categorías</option>
+                                <option value="all">{t('transactions.allCategories')}</option>
                                 {categories.map(cat => (
                                     <option key={cat.id} value={cat.id}>{cat.name}</option>
                                 ))}
@@ -342,14 +346,14 @@ export function TransactionsPage() {
                     {/* Filtros activos */}
                     {hasActiveFilters && (
                         <div className="flex items-center gap-2 text-xs">
-                            <span className="text-zinc-400 font-bold uppercase tracking-widest">Filtros activos:</span>
-                            <span className="font-bold text-emerald-600 dark:text-emerald-400">{filteredTransactions.length} resultados</span>
+                            <span className="text-zinc-400 font-bold uppercase tracking-widest">{t('transactions.activeFilters')}</span>
+                            <span className="font-bold text-emerald-600 dark:text-emerald-400">{filteredTransactions.length} {t('transactions.results')}</span>
                             <button
                                 type="button"
                                 onClick={clearAllFilters}
                                 className="ml-auto px-3 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 font-bold transition-colors"
                             >
-                                Limpiar
+                                {t('transactions.clear')}
                             </button>
                         </div>
                     )}
@@ -362,18 +366,18 @@ export function TransactionsPage() {
                             <EmptyState
                                 icon={Search}
                                 tone="neutral"
-                                title="Sin resultados"
-                                description="No encontramos movimientos con los filtros actuales. Probá limpiarlos o ajustar la búsqueda."
-                                actionLabel="Limpiar filtros"
+                                title={t('transactions.emptyNoResultsTitle')}
+                                description={t('transactions.emptyNoResultsDesc')}
+                                actionLabel={t('transactions.clearFilters')}
                                 onAction={clearAllFilters}
                             />
                         ) : (
                             <EmptyState
                                 icon={Wallet}
                                 tone="primary"
-                                title="Tu primera transacción"
-                                description="Registrá un gasto o ingreso para empezar a ver tu historial acá."
-                                actionLabel="Registrar movimiento"
+                                title={t('transactions.emptyFirstTitle')}
+                                description={t('transactions.emptyFirstDesc')}
+                                actionLabel={t('transactions.emptyFirstAction')}
                                 onAction={() => setIsModalOpen(true)}
                             />
                         )
@@ -405,14 +409,14 @@ export function TransactionsPage() {
                                 <div className="flex items-center gap-0.5">
                                     <button
                                         onClick={() => handleEdit(tx)}
-                                        aria-label="Editar transacción"
+                                        aria-label={t('transactions.editAria')}
                                         className="p-1.5 text-zinc-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-all"
                                     >
                                         <Edit2 className="w-3.5 h-3.5" />
                                     </button>
                                     <button
                                         onClick={() => handleDelete(tx.id)}
-                                        aria-label="Eliminar transacción"
+                                        aria-label={t('transactions.deleteAria')}
                                         className="p-1.5 text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all"
                                     >
                                         <Trash2 className="w-3.5 h-3.5" />
@@ -430,18 +434,18 @@ export function TransactionsPage() {
                         <EmptyState
                             icon={Search}
                             tone="neutral"
-                            title="Sin resultados"
-                            description="No encontramos movimientos con los filtros actuales. Probá limpiarlos o ajustar la búsqueda."
-                            actionLabel="Limpiar filtros"
+                            title={t('transactions.emptyNoResultsTitle')}
+                            description={t('transactions.emptyNoResultsDesc')}
+                            actionLabel={t('transactions.clearFilters')}
                             onAction={clearAllFilters}
                         />
                     ) : (
                         <EmptyState
                             icon={Wallet}
                             tone="primary"
-                            title="Sin transacciones todavía"
-                            description="Registrá tu primer ingreso o gasto para verlo listado acá."
-                            actionLabel="Crear transacción"
+                            title={t('transactions.emptyTitle')}
+                            description={t('transactions.emptyDesc')}
+                            actionLabel={t('transactions.emptyAction')}
                             onAction={() => setIsModalOpen(true)}
                         />
                     )
@@ -456,24 +460,24 @@ export function TransactionsPage() {
                                         onClick={() => handleSort('description')}
                                         aria-sort={sortBy === 'description' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
                                     >
-                                        Descripción {sortBy === 'description' && (sortDir === 'desc' ? '↓' : '↑')}
+                                        {t('transactions.colDescription')} {sortBy === 'description' && (sortDir === 'desc' ? '↓' : '↑')}
                                     </th>
-                                    <th className="px-8 py-5">Categoría</th>
+                                    <th className="px-8 py-5">{t('transactions.colCategory')}</th>
                                     <th
                                         className="px-8 py-5 cursor-pointer select-none hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
                                         onClick={() => handleSort('transaction_date')}
                                         aria-sort={sortBy === 'transaction_date' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
                                     >
-                                        Fecha {sortBy === 'transaction_date' && (sortDir === 'desc' ? '↓' : '↑')}
+                                        {t('transactions.colDate')} {sortBy === 'transaction_date' && (sortDir === 'desc' ? '↓' : '↑')}
                                     </th>
                                     <th
                                         className="px-8 py-5 text-right cursor-pointer select-none hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
                                         onClick={() => handleSort('amount')}
                                         aria-sort={sortBy === 'amount' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
                                     >
-                                        Monto {sortBy === 'amount' && (sortDir === 'desc' ? '↓' : '↑')}
+                                        {t('transactions.colAmount')} {sortBy === 'amount' && (sortDir === 'desc' ? '↓' : '↑')}
                                     </th>
-                                    <th className="px-8 py-5 text-right">Acciones</th>
+                                    <th className="px-8 py-5 text-right">{t('transactions.colActions')}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-zinc-200/50 dark:divide-zinc-800/50">
@@ -515,14 +519,14 @@ export function TransactionsPage() {
                                                 <div className="flex items-center justify-end gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
                                                     <button
                                                         onClick={() => handleEdit(tx)}
-                                                        aria-label="Editar transacción"
+                                                        aria-label={t('transactions.editAria')}
                                                         className="p-2 text-zinc-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-500/10 rounded-xl transition-all"
                                                     >
                                                         <Edit2 className="w-4 h-4" />
                                                     </button>
                                                     <button
                                                         onClick={() => handleDelete(tx.id)}
-                                                        aria-label="Eliminar transacción"
+                                                        aria-label={t('transactions.deleteAria')}
                                                         className="p-2 text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-500/10 rounded-xl transition-all"
                                                     >
                                                         <Trash2 className="w-4 h-4" />
@@ -543,7 +547,7 @@ export function TransactionsPage() {
                 {filteredTransactions.length > 0 && (
                     <div className="px-2 md:px-8 py-4 flex items-center justify-between gap-2">
                         <div className="text-[10px] md:text-xs text-zinc-500 font-bold uppercase tracking-widest">
-                            {((currentPage - 1) * itemsPerPage) + 1}–{Math.min(currentPage * itemsPerPage, filteredTransactions.length)} de {filteredTransactions.length}
+                            {((currentPage - 1) * itemsPerPage) + 1}–{Math.min(currentPage * itemsPerPage, filteredTransactions.length)} {t('transactions.paginationOf')} {filteredTransactions.length}
                         </div>
                         <div className="flex items-center gap-2">
                             <button
@@ -551,7 +555,7 @@ export function TransactionsPage() {
                                 disabled={currentPage === 1}
                                 className="px-3 md:px-4 py-2 border border-zinc-200/50 dark:border-zinc-800/50 rounded-xl text-xs font-bold text-zinc-500 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                Anterior
+                                {t('transactions.prev')}
                             </button>
                             <span className="text-xs font-medium text-zinc-400 px-2 whitespace-nowrap">
                                 {currentPage} / {totalPages}
@@ -561,7 +565,7 @@ export function TransactionsPage() {
                                 disabled={currentPage === totalPages}
                                 className="px-3 md:px-4 py-2 border border-zinc-200/50 dark:border-zinc-800/50 rounded-xl text-xs font-bold text-zinc-500 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                Siguiente
+                                {t('transactions.next')}
                             </button>
                         </div>
                     </div>
@@ -571,7 +575,7 @@ export function TransactionsPage() {
                 <Modal
                     isOpen={isModalOpen}
                     onClose={handleCloseModal}
-                    title={editingTransaction ? "Editar Transacción" : "Nueva Transacción"}
+                    title={editingTransaction ? t('transactions.editModalTitle') : t('transactions.newModalTitle')}
                 >
                     <TransactionForm
                         onClose={handleCloseModal}
@@ -583,8 +587,8 @@ export function TransactionsPage() {
                     isOpen={!!confirmDeleteId}
                     onClose={() => !deleting && setConfirmDeleteId(null)}
                     onConfirm={handleConfirmDelete}
-                    title="¿Eliminar transacción?"
-                    description="Esta acción no se puede deshacer y afectará el saldo de tu cuenta."
+                    title={t('transactions.confirmDeleteTitle')}
+                    description={t('transactions.confirmDeleteDesc')}
                     itemName={transactionToDelete?.description || transactionToDelete?.name}
                     loading={deleting}
                 />

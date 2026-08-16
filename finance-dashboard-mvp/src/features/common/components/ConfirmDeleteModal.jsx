@@ -3,6 +3,7 @@ import { AlertTriangle, Loader2 } from 'lucide-react';
 import { Modal } from './Modal';
 import { BTN_DANGER, BTN_SECONDARY } from '../../../lib/formClasses';
 import { cn } from '../../../lib/utils';
+import { useLanguage } from '../../../contexts/LanguageContext';
 
 /**
  * Modal estándar de confirmación de eliminación.
@@ -15,13 +16,19 @@ export function ConfirmDeleteModal({
     isOpen,
     onClose,
     onConfirm,
-    title = '¿Eliminar este elemento?',
-    description = 'Esta acción no se puede deshacer.',
+    title,
+    description,
     itemName,
-    confirmLabel = 'Eliminar',
-    cancelLabel = 'Cancelar',
+    confirmLabel,
+    cancelLabel,
     loading = false,
 }) {
+    const { t } = useLanguage();
+    const resolvedTitle = title ?? t('common.confirmDeleteTitle');
+    const resolvedDescription = description ?? t('common.confirmDeleteDesc');
+    const resolvedConfirm = confirmLabel ?? t('common.delete');
+    const resolvedCancel = cancelLabel ?? t('common.cancel');
+
     const handleConfirm = async () => {
         if (loading) return;
         await onConfirm?.();
@@ -36,7 +43,7 @@ export function ConfirmDeleteModal({
 
                 <div className="space-y-1.5">
                     <h3 className="text-lg font-black text-zinc-900 dark:text-white tracking-tight">
-                        {title}
+                        {resolvedTitle}
                     </h3>
                     {itemName && (
                         <p className="inline-block px-3 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-sm font-bold text-zinc-700 dark:text-zinc-300 max-w-full truncate">
@@ -44,7 +51,7 @@ export function ConfirmDeleteModal({
                         </p>
                     )}
                     <p className="text-sm text-zinc-500 dark:text-zinc-400 font-medium">
-                        {description}
+                        {resolvedDescription}
                     </p>
                 </div>
 
@@ -55,7 +62,7 @@ export function ConfirmDeleteModal({
                         disabled={loading}
                         className={cn(BTN_SECONDARY, "flex-1")}
                     >
-                        {cancelLabel}
+                        {resolvedCancel}
                     </button>
                     <button
                         type="button"
@@ -67,10 +74,10 @@ export function ConfirmDeleteModal({
                         {loading ? (
                             <>
                                 <Loader2 className="w-4 h-4 animate-spin" />
-                                Eliminando...
+                                {t('common.deleting')}
                             </>
                         ) : (
-                            confirmLabel
+                            resolvedConfirm
                         )}
                     </button>
                 </div>

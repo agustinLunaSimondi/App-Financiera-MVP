@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { toast } from 'sonner';
 import { useFinance } from '../hooks/useFinance';
+import { useLanguage } from '../contexts/LanguageContext';
 import { formatCompactCurrency } from '../utils/formatters';
 import { parseApiError } from '../lib/apiErrors';
 
@@ -19,6 +20,7 @@ import { motion } from 'framer-motion';
 
 export function BudgetPage() {
     const { budgets, transactions, categories, loading, addBudget, updateBudget, deleteBudget } = useFinance();
+    const { t } = useLanguage();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingBudget, setEditingBudget] = useState(null);
     const [confirmDeleteId, setConfirmDeleteId] = useState(null);
@@ -62,15 +64,15 @@ export function BudgetPage() {
         try {
             if (editingBudget) {
                 await updateBudget(editingBudget.id, formData);
-                toast.success('Presupuesto actualizado correctamente');
+                toast.success(t('budget.toastUpdated'));
             } else {
                 await addBudget(formData);
-                toast.success('Presupuesto creado correctamente');
+                toast.success(t('budget.toastCreated'));
             }
             handleCloseModal();
         } catch (error) {
             console.error("Error saving budget:", error);
-            toast.error(parseApiError(error, 'Error al guardar el presupuesto'));
+            toast.error(parseApiError(error, t('budget.toastSaveError')));
         }
     };
 
@@ -78,9 +80,9 @@ export function BudgetPage() {
         const next = !budget.isStrict;
         try {
             await updateBudget(budget.id, { isStrict: next });
-            toast.success(next ? '🐷 Modo chanchito activado' : 'Modo chanchito desactivado');
+            toast.success(next ? t('budget.toastPiggyOn') : t('budget.toastPiggyOff'));
         } catch (err) {
-            toast.error(parseApiError(err, 'No se pudo actualizar el modo chanchito'));
+            toast.error(parseApiError(err, t('budget.toastPiggyError')));
         }
     };
 
@@ -90,10 +92,10 @@ export function BudgetPage() {
         setDeleting(true);
         try {
             await deleteBudget(confirmDeleteId);
-            toast.success('Presupuesto eliminado');
+            toast.success(t('budget.toastDeleted'));
             setConfirmDeleteId(null);
         } catch (err) {
-            toast.error(parseApiError(err, 'Error al eliminar el presupuesto'));
+            toast.error(parseApiError(err, t('budget.toastDeleteError')));
         } finally {
             setDeleting(false);
         }
@@ -125,20 +127,20 @@ export function BudgetPage() {
         );
     }
 
+    const subtitle = budgetWithActuals.length === 0
+        ? t('budget.subtitleEmpty')
+        : exceededCount > 0
+            ? `${exceededCount} ${exceededCount === 1 ? t('budget.exceededSingular') : t('budget.exceededPlural')} ${t('budget.thisMonth')}`
+            : `${budgetWithActuals.length} ${budgetWithActuals.length === 1 ? t('budget.activeSingular') : t('budget.activePlural')}, ${t('budget.allOnTrack')}`;
+
     return (
         <div className="space-y-10">
                 <PageHeader
                     section="budget"
                     icon={PieChart}
-                    kicker="Planificación"
-                    title="Presupuestos"
-                    subtitle={
-                        budgetWithActuals.length === 0
-                            ? "Definí límites mensuales por categoría para controlar tu plata."
-                            : exceededCount > 0
-                                ? `${exceededCount} ${exceededCount === 1 ? 'presupuesto excedido' : 'presupuestos excedidos'} este mes`
-                                : `${budgetWithActuals.length} ${budgetWithActuals.length === 1 ? 'presupuesto activo' : 'presupuestos activos'}, todo en curso`
-                    }
+                    kicker={t('budget.kicker')}
+                    title={t('budget.title')}
+                    subtitle={subtitle}
                     action={
                         <button
                             type="button"
@@ -146,7 +148,7 @@ export function BudgetPage() {
                             className={cn(BTN_PRIMARY, "w-full md:w-auto group py-3.5")}
                         >
                             <Plus className="w-5 h-5 transition-transform group-hover:rotate-90" />
-                            Nuevo Presupuesto
+                            {t('budget.newBudget')}
                         </button>
                     }
                 />
@@ -161,9 +163,9 @@ export function BudgetPage() {
                             const categoryInfo = categories.find(c => c.name === budget.categoryName);
                             // Priorizamos el color del presupuesto; si está vacío caemos al de la categoría.
                             const color = budget.color || categoryInfo?.color || '#6366f1';
-                            const periodLabel = budget.period === 'WEEKLY' ? 'Semanal'
-                                : budget.period === 'YEARLY' ? 'Anual'
-                                : 'Mensual';
+                            const periodLabel = budget.period === 'WEEKLY' ? t('budget.periodWeekly')
+                                : budget.period === 'YEARLY' ? t('budget.periodYearly')
+                                : t('budget.periodMonthly');
 
                             return (
                                 <Card key={budget.id} className="group relative overflow-hidden" delay={index * 0.1}>
@@ -186,14 +188,14 @@ export function BudgetPage() {
                                         <div className="flex gap-1">
                                             <button
                                                 onClick={() => handleOpenEdit(budget)}
-                                                aria-label="Editar presupuesto"
+                                                aria-label={t('budget.editAria')}
                                                 className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors text-zinc-400 hover:text-emerald-500"
                                             >
                                                 <Edit2 className="w-4 h-4" />
                                             </button>
                                             <button
                                                 onClick={() => handleDelete(budget.id)}
-                                                aria-label="Eliminar presupuesto"
+                                                aria-label={t('budget.deleteAria')}
                                                 className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors text-zinc-400 hover:text-rose-500"
                                             >
                                                 <Trash2 className="w-4 h-4" />
@@ -204,7 +206,7 @@ export function BudgetPage() {
                                     <div className="space-y-4">
                                         <div className="flex justify-between items-end">
                                             <div>
-                                                <p className="text-[10px] uppercase tracking-widest font-black text-zinc-400 mb-1">Consumido</p>
+                                                <p className="text-[10px] uppercase tracking-widest font-black text-zinc-400 mb-1">{t('budget.consumed')}</p>
                                                 <p className="text-2xl font-black text-zinc-900 dark:text-white">
                                                     {formatCompactCurrency(budget.spent)}
                                                     <span className="text-sm font-medium text-zinc-400 ml-1">/ {formatCompactCurrency(budget.amount)}</span>
@@ -235,30 +237,30 @@ export function BudgetPage() {
                                             {budget.exceeded ? (
                                                 <div className="flex items-center gap-1.5 text-rose-600 dark:text-rose-400 bg-rose-500/10 px-2 py-1 rounded-lg">
                                                     <AlertCircle className="w-3.5 h-3.5" />
-                                                    <span>Límite excedido</span>
+                                                    <span>{t('budget.limitExceeded')}</span>
                                                 </div>
                                             ) : (
                                                 <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-lg">
                                                     <TrendingUp className="w-3.5 h-3.5" />
-                                                    <span>Dentro del presupuesto</span>
+                                                    <span>{t('budget.withinBudget')}</span>
                                                 </div>
                                             )}
-                                            <span className="text-zinc-400">Restan {formatCompactCurrency(budget.remaining)}</span>
+                                            <span className="text-zinc-400">{t('budget.remaining')} {formatCompactCurrency(budget.remaining)}</span>
                                         </div>
 
                                         {/* Modo chanchito per-budget (#chanchito): bloquea gastos que superen el límite */}
                                         <div className="pt-3 mt-1 border-t border-zinc-200/50 dark:border-zinc-800/50 flex items-center justify-between">
                                             <span
                                                 className="text-xs font-bold text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5"
-                                                title="Cuando está activo, los gastos que superen este presupuesto serán bloqueados automáticamente."
+                                                title={t('budget.piggyTitle')}
                                             >
-                                                🐷 Modo chanchito
+                                                🐷 {t('budget.piggyMode')}
                                             </span>
                                             <button
                                                 type="button"
                                                 role="switch"
                                                 aria-checked={!!budget.isStrict}
-                                                aria-label="Activar o desactivar modo chanchito"
+                                                aria-label={t('budget.piggyAria')}
                                                 onClick={() => handleToggleStrict(budget)}
                                                 className={cn(
                                                     "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-900",
@@ -283,14 +285,14 @@ export function BudgetPage() {
                     <EmptyState
                         icon={PieChart}
                         tone="violet"
-                        title="Sin presupuestos todavía"
-                        description="Definí cuánto querés gastar como máximo por categoría (Comida, Transporte, etc.) y te avisamos cuando te acerques al límite."
-                        actionLabel="Crear primer presupuesto"
+                        title={t('budget.emptyTitle')}
+                        description={t('budget.emptyDesc')}
+                        actionLabel={t('budget.emptyAction')}
                         onAction={handleOpenCreate}
                     />
                 )}
 
-                <Modal isOpen={isModalOpen} onClose={handleCloseModal} title={editingBudget ? "Editar Presupuesto" : "Nuevo Presupuesto"}>
+                <Modal isOpen={isModalOpen} onClose={handleCloseModal} title={editingBudget ? t('budget.editModalTitle') : t('budget.newModalTitle')}>
                     <BudgetForm
                         onSubmit={handleSubmit}
                         onCancel={handleCloseModal}
@@ -303,8 +305,8 @@ export function BudgetPage() {
                     isOpen={!!confirmDeleteId}
                     onClose={() => !deleting && setConfirmDeleteId(null)}
                     onConfirm={handleConfirmDelete}
-                    title="¿Eliminar presupuesto?"
-                    description="Vas a perder el límite y el tracking de esta categoría."
+                    title={t('budget.confirmDeleteTitle')}
+                    description={t('budget.confirmDeleteDesc')}
                     itemName={budgetToDelete?.categoryName}
                     loading={deleting}
                 />
