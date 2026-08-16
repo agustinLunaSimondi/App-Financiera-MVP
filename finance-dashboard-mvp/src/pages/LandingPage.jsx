@@ -42,6 +42,13 @@ function Nav() {
                     <a href="#features" className="hover:text-zinc-900 dark:hover:text-white transition-colors">Features</a>
                     <a href="#how" className="hover:text-zinc-900 dark:hover:text-white transition-colors">Cómo funciona</a>
                     <a href="#about" className="hover:text-zinc-900 dark:hover:text-white transition-colors">Sobre el proyecto</a>
+                    <Link
+                        to="/pricing"
+                        className="hover:text-zinc-900 dark:hover:text-white transition-colors"
+                        onClick={() => analytics.landingCtaClicked('nav_pricing')}
+                    >
+                        Precios
+                    </Link>
                 </nav>
 
                 <div className="flex items-center gap-2">
