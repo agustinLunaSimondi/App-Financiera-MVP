@@ -2,7 +2,7 @@
 Endpoint público para capturar emails de la landing page (waitlist).
 No requiere autenticación.
 """
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from pydantic import BaseModel, EmailStr
@@ -12,6 +12,7 @@ import logging
 from app.database import models
 from app.database.database import get_db
 from app.core.rate_limit import limiter
+from app.core.turnstile import verify_turnstile
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/waitlist", tags=["waitlist"])
@@ -20,6 +21,7 @@ router = APIRouter(prefix="/waitlist", tags=["waitlist"])
 class WaitlistSignup(BaseModel):
     email: EmailStr
     source: Optional[str] = None
+    turnstile_token: Optional[str] = None
 
 
 class WaitlistResponse(BaseModel):
@@ -36,6 +38,9 @@ def join_waitlist(
     db: Session = Depends(get_db),
 ):
     """Agrega un email a la lista de espera. Idempotente."""
+    if not verify_turnstile(payload.turnstile_token, request.client.host if request.client else None):
+        raise HTTPException(status_code=400, detail="Verificación anti-bot fallida. Recargá la página e intentá de nuevo.")
+
     email_clean = payload.email.lower().strip()
     referrer = request.headers.get("referer")
 

@@ -12,6 +12,7 @@ from app.core import security
 from app.core.deps import get_current_user
 from app.core.rate_limit import limiter
 from app.core.email import send_email
+from app.core.turnstile import verify_turnstile
 from app import schemas
 from app.core import posthog_client
 from app.modules.growth.processor import (
@@ -66,6 +67,9 @@ def _create_default_categories(db: Session, user_id: str):
 @router.post("/register", response_model=schemas.Token)
 @limiter.limit("5/minute")
 def register(request: Request, user_in: schemas.UserCreate, db: Session = Depends(get_db)):
+    if not verify_turnstile(user_in.turnstile_token, request.client.host if request.client else None):
+        raise HTTPException(status_code=400, detail="Verificación anti-bot fallida. Recargá la página e intentá de nuevo.")
+
     email_clean = user_in.email.lower()
     db_user = db.query(models.User).filter(models.User.email == email_clean).first()
     if db_user:

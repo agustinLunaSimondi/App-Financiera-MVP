@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { UserPlus, ArrowRight, ArrowLeft, Loader2, Sparkles, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';
 import { motion } from 'framer-motion';
 import { parseApiError } from '../lib/apiErrors';
+import { TurnstileWidget, TURNSTILE_ENABLED } from '../features/common/components/TurnstileWidget';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -16,6 +17,8 @@ export function RegisterPage() {
     const [acceptTerms, setAcceptTerms] = useState(false);
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [turnstileToken, setTurnstileToken] = useState(null);
+    const turnstileRef = useRef(null);
     const { register, loginWithGoogle, isAuthenticated } = useAuth();
     const navigate = useNavigate();
 
@@ -58,13 +61,19 @@ export function RegisterPage() {
             setError('Tenés que aceptar los Términos y la Política de Privacidad para crear una cuenta.');
             return;
         }
+        if (TURNSTILE_ENABLED && !turnstileToken) {
+            setError('Completá la verificación de seguridad antes de continuar.');
+            return;
+        }
 
         setIsLoading(true);
         try {
-            await register(trimmedName, trimmedEmail, password);
+            await register(trimmedName, trimmedEmail, password, turnstileToken);
         } catch (err) {
             setError(parseApiError(err, 'Error al registrarse'));
             setIsLoading(false);
+            turnstileRef.current?.reset();
+            setTurnstileToken(null);
         }
     };
 
@@ -243,10 +252,12 @@ export function RegisterPage() {
                         <p className="text-[10px] text-zinc-500 font-medium">Tu contraseña se guarda hasheada (bcrypt) y los tokens OAuth de Mercado Pago cifrados.</p>
                     </div>
 
+                    <TurnstileWidget ref={turnstileRef} onVerify={setTurnstileToken} onExpire={() => setTurnstileToken(null)} />
+
                     <button
                         type="submit"
-                        disabled={isLoading || !acceptTerms}
-                        aria-disabled={isLoading || !acceptTerms}
+                        disabled={isLoading || !acceptTerms || (TURNSTILE_ENABLED && !turnstileToken)}
+                        aria-disabled={isLoading || !acceptTerms || (TURNSTILE_ENABLED && !turnstileToken)}
                         aria-busy={isLoading}
                         className="w-full group flex items-center justify-center gap-2 py-4 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-2xl font-black text-sm shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100"
                     >

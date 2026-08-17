@@ -397,8 +397,8 @@ export const completeOnboarding = async () => {
     return res.data;
 };
 
-export const joinWaitlist = async (email, source = 'landing') => {
-    const res = await client.post('/waitlist', { email, source }, { __skipAuthRedirect: true });
+export const joinWaitlist = async (email, source = 'landing', turnstileToken = null) => {
+    const res = await client.post('/waitlist', { email, source, turnstile_token: turnstileToken }, { __skipAuthRedirect: true });
     return res.data;
 };
 

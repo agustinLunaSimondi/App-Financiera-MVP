@@ -35,6 +35,10 @@ class UserBase(CamelModel):
 class UserCreate(UserBase):
     # Mínimo 8 chars (NIST 800-63B); max acota el costo de bcrypt.
     password: str = Field(min_length=8, max_length=128)
+    # Token de Cloudflare Turnstile (anti-bot). Se verifica y se descarta, no se persiste.
+    # Opcional a nivel schema: la verificación real es no-op si TURNSTILE_SECRET_KEY no
+    # está configurada en el server (ver app/core/turnstile.py).
+    turnstile_token: Optional[str] = Field(default=None, max_length=4096)
     # Growth: atribución y referido. Todos opcionales — el registro nunca depende
     # de ellos. Se sanean en growth.logic antes de persistirse.
     utm_source: Optional[str] = Field(default=None, max_length=128)

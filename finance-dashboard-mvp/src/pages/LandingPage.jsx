@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { joinWaitlist, getWaitlistCount } from '../services/api';
 import { analytics } from '../services/analytics';
+import { TurnstileWidget, TURNSTILE_ENABLED } from '../features/common/components/TurnstileWidget';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Sub-components
@@ -79,6 +80,8 @@ function WaitlistForm({ source = 'hero', cta = 'Sumate a la beta', large = false
     const [email, setEmail] = useState('');
     const [status, setStatus] = useState('idle'); // idle | loading | success | error
     const [message, setMessage] = useState('');
+    const [turnstileToken, setTurnstileToken] = useState(null);
+    const turnstileRef = useRef(null);
 
     const onSubmit = async (e) => {
         e.preventDefault();
@@ -90,11 +93,16 @@ function WaitlistForm({ source = 'hero', cta = 'Sumate a la beta', large = false
             setMessage('Ingresá un email válido (ej. tucorreo@gmail.com).');
             return;
         }
+        if (TURNSTILE_ENABLED && !turnstileToken) {
+            setStatus('error');
+            setMessage('Completá la verificación de seguridad antes de continuar.');
+            return;
+        }
 
         setStatus('loading');
         setMessage('');
         try {
-            const res = await joinWaitlist(trimmed, source);
+            const res = await joinWaitlist(trimmed, source, turnstileToken);
             analytics.waitlistSignup(source);
             setStatus('success');
             setMessage(res.message || '¡Listo! Te avisamos pronto.');
@@ -102,6 +110,8 @@ function WaitlistForm({ source = 'hero', cta = 'Sumate a la beta', large = false
         } catch (err) {
             setStatus('error');
             setMessage(err.response?.data?.detail || 'Algo falló. Reintentá en un momento.');
+            turnstileRef.current?.reset();
+            setTurnstileToken(null);
         }
     };
 
@@ -124,14 +134,16 @@ function WaitlistForm({ source = 'hero', cta = 'Sumate a la beta', large = false
                 />
                 <button
                     type="submit"
-                    disabled={isBlocked}
-                    aria-disabled={isBlocked}
+                    disabled={isBlocked || (TURNSTILE_ENABLED && !turnstileToken)}
+                    aria-disabled={isBlocked || (TURNSTILE_ENABLED && !turnstileToken)}
                     aria-busy={status === 'loading'}
                     className={`flex items-center justify-center gap-2 ${large ? 'px-6 py-3.5 text-base' : 'px-5 py-3 text-sm'} bg-emerald-500 hover:bg-emerald-600 disabled:opacity-60 disabled:cursor-not-allowed text-white font-black rounded-xl shadow-lg shadow-emerald-500/30 transition-all active:scale-95 whitespace-nowrap`}
                 >
                     {status === 'loading' ? 'Sumando...' : status === 'success' ? <><Check className="w-4 h-4" />¡Sumado!</> : <>{cta}<ArrowRight className="w-4 h-4" /></>}
                 </button>
             </div>
+
+            <TurnstileWidget ref={turnstileRef} onVerify={setTurnstileToken} onExpire={() => setTurnstileToken(null)} />
 
             <AnimatePresence>
                 {message && (
