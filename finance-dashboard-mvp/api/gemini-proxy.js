@@ -15,6 +15,19 @@ import { timingSafeEqual } from "node:crypto";
 const GEMINI_URL =
   "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 
+// Si CF_ACCOUNT_ID + CF_AI_GATEWAY_ID están seteadas, la llamada a Gemini se enruta a
+// través de Cloudflare AI Gateway (logging, costo, cache, rate limit por gateway) en vez
+// de ir directo a Google. Sin esas env vars, comportamiento idéntico al de antes.
+function buildGeminiUrl(key) {
+  const accountId = process.env.CF_ACCOUNT_ID;
+  const gatewayId = process.env.CF_AI_GATEWAY_ID;
+  const base =
+    accountId && gatewayId
+      ? `https://gateway.ai.cloudflare.com/v1/${accountId}/${gatewayId}/google-ai-studio/v1beta/models/gemini-2.5-flash:generateContent`
+      : GEMINI_URL;
+  return `${base}?key=${key}`;
+}
+
 // Comparación constant-time: `!==` filtra información de timing que permitiría
 // adivinar el secreto carácter por carácter.
 function secretsMatch(provided, expected) {
@@ -47,7 +60,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const upstream = await fetch(`${GEMINI_URL}?key=${key}`, {
+    const upstream = await fetch(buildGeminiUrl(key), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(req.body),
