@@ -48,6 +48,7 @@ export const TurnstileWidget = forwardRef(function TurnstileWidget({ onVerify, o
                 'error-callback': () => onExpire?.(),
                 theme: 'auto',
                 size: 'flexible',
+                appearance: 'interaction-only',
             });
         });
         return () => {
